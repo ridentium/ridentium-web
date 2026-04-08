@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
 import { UserProfile } from '@/types'
@@ -8,19 +9,18 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profilo } = await supabase
+  const admin = createAdminClient()
+  const { data: profilo } = await admin
     .from('profili')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single()
 
   if (!profilo) redirect('/login')
 
-  // Admin non deve stare qui
   if (profilo.ruolo === 'admin') redirect('/admin')
 
-  // Conta alert magazzino per lo staff
-  const { data: alertData } = await supabase
+  const { data: alertData } = await admin
     .from('magazzino')
     .select('id, quantita, soglia_minima')
 
