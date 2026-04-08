@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --font-cormorant: 'Cormorant Garamond', Georgia, serif;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  html {
+    font-family: var(--font-inter);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-obsidian text-cream;
+    min-height: 100vh;
+  }
+
+  /* Scrollbar luxury */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #1A1714; }
+  ::-webkit-scrollbar-thumb { background: #5C5248; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #C9A84C; }
+}
+
+@layer components {
+  .card {
+    @apply bg-obsidian-mid border border-obsidian-light rounded-md p-5 shadow-card;
+  }
+
+  .btn-primary {
+    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded
+           hover:bg-gold-light transition-colors duration-150;
+  }
+
+  .btn-secondary {
+    @apply border border-stone text-stone-light text-sm px-5 py-2.5 rounded
+           hover:border-gold hover:text-gold transition-colors duration-150;
+  }
+
+  .btn-ghost {
+    @apply text-stone-light text-sm px-3 py-2 rounded
+           hover:text-cream hover:bg-obsidian-light transition-colors duration-150;
+  }
+
+  .input {
+    @apply bg-obsidian-light border border-obsidian-light text-cream placeholder-stone
+           rounded px-4 py-2.5 text-sm w-full
+           focus:outline-none focus:border-gold transition-colors duration-150;
+  }
+
+  .badge-alert {
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
+           bg-alert/15 text-red-400 font-medium;
+  }
+
+  .badge-ok {
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
+           bg-ok/15 text-green-400 font-medium;
+  }
+
+  .badge-role {
+    @apply text-xs px-2 py-0.5 rounded-sm border font-medium;
+  }
+
+  .table-ridentium {
+    @apply w-full text-sm;
+  }
+  .table-ridentium th {
+    @apply text-left text-xs uppercase tracking-widest text-stone py-3 px-4
+           border-b border-obsidian-light font-medium;
+  }
+  .table-ridentium td {
+    @apply py-3 px-4 border-b border-obsidian-light/50 text-cream/80;
+  }
+  .table-ridentium tr:hover td {
+    @apply bg-obsidian-light/30;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm text-stone-light
+           hover:text-cream hover:bg-obsidian-light/50 transition-colors duration-150 cursor-pointer;
+  }
+  .nav-item.active {
+    @apply text-gold bg-gold/10 border-l-2 border-gold;
+  }
+
+  .section-title {
+    @apply font-serif text-2xl text-cream font-light tracking-wide;
+  }
+
+  .label-field {
+    @apply text-xs uppercase tracking-widest text-stone font-medium;
+  }
+}
