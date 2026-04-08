@@ -1,13 +1,15 @@
 'use client'
 
-import { stateTransition, useState } from 'react'
+import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Ricorrente, UserProfile } from '@/types'
 import { Plus, Trash2, Power, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const FREQ_LABEL: Record<string, string> = {
-  giornaliero: 'Giornaliero',  settimanale: 'Settimanale',  mensile: 'Mensile',
+  giornaliero: 'Giornaliero',
+  settimanale: 'Settimanale',
+  mensile: 'Mensile',
 }
 
 function getPeriodoKey(frequenza: string): string {
@@ -51,6 +53,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
       completamenti.push({ userId: currentUserId, userName: currentUserNome, periodoKey: key, data: new Date().toISOString() })
     }
     await supabase.from('ricorrenti').update({ completamenti }).eq('id', az.id)
+    // Log
     await supabase.from('registro_attivita').insert({
       user_id: currentUserId, user_nome: currentUserNome,
       azione: idx >= 0 ? 'Azione ricorrente rimossa' : 'Azione ricorrente completata',
@@ -101,6 +104,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
 
   return (
     <div className="space-y-5">
+
       {/* Header actions */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-stone">
@@ -152,6 +156,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
             const totalAssigned = az.assegnato_a ? 1 : staff.length
             const pct = totalAssigned > 0 ? Math.round((completatiPeriodo.length / totalAssigned) * 100) : 0
             const pctColor = pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-gold' : 'text-red-400'
+
             return (
               <div key={az.id} className={`card flex items-start gap-4 ${!az.attiva ? 'opacity-40' : ''}`}>
                 <input
@@ -174,14 +179,14 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                       {assigneeUser ? `${assigneeUser.nome} ${assigneeUser.cognome}` : 'Tutti'}
                     </span>
                     <span className={`text-xs font-medium ${pctColor}`}>
-                      {completatiPeriodo.length}/${totalAssigned} completate ({pct}%)
+                      {completatiPeriodo.length}/{totalAssigned} completate ({pct}%)
                     </span>
                   </div>
                   {completatiPeriodo.length > 0 && (
                     <div className="mt-2 space-y-0.5">
                       {completatiPeriodo.map((c, i) => (
                         <p key={i} className="text-xs text-stone/60">
-                          {c.userName} — {new Date(c.data).toLocaleDateString('it-IT')}
+                          ✓ {c.userName} — {new Date(c.data).toLocaleDateString('it-IT')}
                         </p>
                       ))}
                     </div>
@@ -189,7 +194,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={() => toggleAttiva(az)}
-                          className={`p-1.5 rounded transition-colors ${az.attiva ? 'text-green-400 hover:text-stone' : 'text-stone hover:text-green-400"}`}
+                          className={`p-1.5 rounded transition-colors ${az.attiva ? 'text-green-400 hover:text-stone' : 'text-stone hover:text-green-400'}`}
                           title={az.attiva ? 'Disattiva' : 'Attiva'}>
                     <Power size={14} />
                   </button>
@@ -200,7 +205,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                   </button>
                 </div>
               </div>
-             )
+            )
           })}
         </div>
       )}
