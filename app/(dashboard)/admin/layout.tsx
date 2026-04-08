@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
 import { UserProfile } from '@/types'
@@ -8,16 +9,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: profilo } = await supabase
+  const adminDb = createAdminClient()
+  const { data: profilo } = await adminDb
     .from('profili')
     .select('*')
-    .eq('id', user.id)
+    .eq('id', user!.id)
     .single()
 
   if (profilo?.ruolo !== 'admin') redirect('/staff')
 
-  // Conta prodotti dove quantita < soglia_minima usando una view lato server
-  const { data: alertData } = await supabase
+  const { data: alertData } = await adminDb
     .from('magazzino')
     .select('id, quantita, soglia_minima')
 
