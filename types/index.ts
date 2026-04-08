@@ -70,3 +70,50 @@ export interface StatoScorta {
   item: MagazzinoItem
   alert: boolean
 }
+
+export interface RicorrenteCompletamento {
+  userId: string
+  userName: string
+  periodoKey: string
+  data: string
+}
+
+export interface Ricorrente {
+  id: string
+  titolo: string
+  descrizione?: string
+  frequenza: 'giornaliero' | 'settimanale' | 'mensile'
+  assegnato_a?: string | null
+  attiva: boolean
+  completamenti: RicorrenteCompletamento[]
+  created_at: string
+}
+
+export interface Fornitore {
+  id: string
+  nome: string
+  telefono: string
+  note?: string
+  created_at: string
+}
+
+export interface RegistroEntry {
+  id: string
+  user_id?: string
+  user_nome: string
+  azione: string
+  dettaglio?: string
+  categoria: 'todo' | 'magazzino' | 'staff' | 'ricorrenti' | 'sistema' | 'altro'
+  created_at: string
+}
+
+export interface KPI {
+  id: number
+  pazienti_oggi: number
+  pazienti_settimana: number
+  pazienti_mese: number
+  appuntamenti_oggi: number
+  fatturato_mese: number
+  tasso_presenze: number
+  updated_at: string
+}
