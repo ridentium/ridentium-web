@@ -1,4 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createAdminSupabase } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
@@ -26,28 +27,23 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // Rotte pubbliche
   if (pathname.startsWith('/login')) {
-    if (user) {
-      // Già loggato → redirect alla dashboard
-      return NextResponse.redirect(new URL('/dashboard', request.url))
-    }
+    if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
     return supabaseResponse
   }
 
-  // Rotte protette — non loggato → login
-  if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
+  if (!user) return NextResponse.redirect(new URL('/login', request.url))
 
-  // Protezione rotte admin
   if (pathname.startsWith('/admin')) {
-    const { data: profile } = await supabase
+    const adminDb = createAdminSupabase(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+    const { data: profile } = await adminDb
       .from('profili')
       .select('ruolo')
       .eq('id', user.id)
       .single()
-
     if (profile?.ruolo !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
