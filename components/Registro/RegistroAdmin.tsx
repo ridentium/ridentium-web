@@ -19,7 +19,7 @@ const CAT_COLOR: Record<string, string> = {
   magazzino: 'text-green-400 bg-green-400/10',
   staff: 'text-red-400 bg-red-400/10',
   ricorrenti: 'text-gold bg-gold/10',
-  systema: 'text-blue-400 bg-blue-400/10',
+  sistema: 'text-blue-400 bg-blue-400/10',
   altro: 'text-stone bg-stone/10',
 }
 const CAT_ICON: Record<string, string> = {
@@ -27,7 +27,7 @@ const CAT_ICON: Record<string, string> = {
   magazzino: '📦',
   staff: '👤',
   ricorrenti: '🔄',
-  systema: '⚙️',
+  sistema: '⚙️',
   altro: '📋',
 }
 
@@ -71,11 +71,11 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-cream font-medium">{entry.azione}</p>
                 {entry.dettaglio && <p className="text-xs text-stone mt-0.5">{entry.dettaglio}</p>}
-                <p className="text-xs text-stone/60 mt-1">{entry.user_nome}</p>
+                <p className="text-xs text-stone-60 mt-1">{entry.user_nome}</p>
               </div>
               <div className="text-xs text-stone flex-shrink-0 text-right">
                 <p>{new Date(entry.created_at).toLocaleDateString('it-IT')}</p>
-                <p className="text-stone/60">{new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="text-stone-60">{new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
           ))}
