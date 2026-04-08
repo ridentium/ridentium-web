@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import PageHeader from '@/components/Layout/PageHeader'
-import RegistroAdmin from 'A/components/Registro/RegistroAdmin'
+import RegistroAdmin from '@/components/Registro/RegistroAdmin'
 
 export default async function RegistroAdminPage() {
   const supabase = createClient()
