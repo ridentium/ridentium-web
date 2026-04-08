@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from 'A/lib/supabase/client'
 import { UserProfile } from '@/types'
 import { cn, roleLabel, roleColor } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen,
-  Users, LogOut, ChevronRight, AlertTriangle
+  Users, LogOut, ChevronRight, AlertTriangle,
+  RefreshCw, Phone, ClipboardList, Settings
 } from 'lucide-react'
 
 interface NavItem {
@@ -17,22 +18,27 @@ interface NavItem {
 }
 
 const adminNav: NavItem[] = [
-  { href: '/admin',            label: 'Panoramica',   icon: LayoutDashboard },
-  { href: '/admin/magazzino',  label: 'Magazzino',    icon: Package },
-  { href: '/admin/tasks',      label: 'Task',         icon: CheckSquare },
-  { href: '/admin/sop',        label: 'SOP',          icon: BookOpen },
-  { href: '/admin/staff',      label: 'Staff',        icon: Users },
+  { href: '/admin',              label: 'Panoramica',        icon: LayoutDashboard },
+  { href: '/admin/magazzino',    label: 'Magazzino',         icon: Package },
+  { href: '/admin/tasks',        label: 'Task',              icon: CheckSquare },
+  { href: '/admin/ricorrenti',   label: 'Azioni Ricorrenti', icon: RefreshCw },
+  { href: '/admin/sop',          label: 'SOP',               icon: BookOpen },
+  { href: '/admin/staff',        label: 'Staff',             icon: Users },
+  { href: '/admin/fornitori',    label: 'Fornitori',         icon: Phone },
+  { href: '/admin/registro',     label: 'Registro',          icon: ClipboardList },
+  { href: '/admin/impostazioni', label: 'Impostazioni',      icon: Settings },
 ]
 
 const staffNav: NavItem[] = [
-  { href: '/staff',            label: 'Home',         icon: LayoutDashboard },
-  { href: '/staff/magazzino',  label: 'Magazzino',    icon: Package },
-  { href: '/staff/tasks',      label: 'I miei task',  icon: CheckSquare },
-  { href: '/staff/sop',        label: 'Protocolli',   icon: BookOpen },
+  { href: '/staff',              label: 'Home',              icon: LayoutDashboard },
+  { href: '/staff/magazzino',    label: 'Magazzino',         icon: Package },
+  { href: '/staff/tasks',        label: 'I miei task',       icon: CheckSquare },
+  { href: '/staff/ricorrenti',   label: 'Azioni Ricorrenti', icon: RefreshCw },
+  { href: '/staff/sop',          label: 'Protocolli',        icon: BookOpen },
 ]
 
 interface SidebarProps {
-  profilo: UserProfile
+  profile: UserProfile
   alertCount?: number
 }
 
@@ -40,7 +46,7 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  const isAdmin = profilo.ruolo === 'admin'
+  const isAdmin = profile.ruolo === 'admin'
   const nav = isAdmin ? adminNav : staffNav
 
   async function handleLogout() {
@@ -104,7 +110,7 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
           </div>
         </div>
         <button onClick={handleLogout}
-                className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400">
+               className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400">
           <LogOut size={13} />
           Esci
         </button>
