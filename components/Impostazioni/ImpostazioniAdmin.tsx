@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { KPI } from 'A/types'
+import { KPI } from '@/types'
 import { Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
