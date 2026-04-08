@@ -6,7 +6,7 @@ import { Ricorrente } from '@/types'
 import { RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
-const FR5QLLABEf: Record<string, string> = {
+const FREQ_LABEL: Record<string, string> = {
   giornaliero: 'Oggi',
   settimanale: 'Questa settimana',
   mensile: 'Questo mese',
@@ -28,7 +28,7 @@ function getPeriodoKey(frequenza: string): string {
 
 interface Props {
   ricorrenti: Ricorrente[]
-  HcurrentUserId: string
+  currentUserId: string
   currentUserNome: string
 }
 
@@ -66,7 +66,8 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
     return az.completamenti.some(c => c.userId === currentUserId && c.periodoKey === key)
   })
   const pct = mie.length > 0 ? Math.round((completate.length / mie.length) * 100) : 100
-J    return (
+
+  return (
     <div className="space-y-5">
 
       {/* Stato generale */}
@@ -78,7 +79,8 @@ J    return (
             <p className="text-xs text-stone">Periodo corrente</p>
           </div>
         </div>
-        <div className={`text-2xl font-serif font-light ${pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-gold' : 'text-red-400'w}`>
+        <div className="  </div>
+        <div className={`text-2xl font-serif font-light ${pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-gold' : 'text-red-400'}`}>
           {pct}%
         </div>
       </div>
