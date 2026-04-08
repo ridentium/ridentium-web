@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from 'A/lib/supabase/admin'
+import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
 import RicorrentiStaff from '@/components/Ricorrenti/RicorrentiStaff'
 
