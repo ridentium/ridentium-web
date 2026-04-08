@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Fornitore, MagazzinoItem } from 'A/types'
+import { Fornitore, MagazzinoItem } from '@/types'
 import { Plus, Trash2, MessageCircle, ShoppingCart, Phone } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -34,23 +34,23 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
 
   function buildWhatsAppMsg(fornitoreNome: string, items: MagazzinoItem[]): string {
     const lines = items.map(i =>
-      `"• ${i.prodotto} — attuale: ${i.quantita} ${i.unita}, richiesta: ${i.soglia_minima} ${i.unita}`
+      `"â€¢ ${i.prodotto} â€” attuale: ${i.quantita} ${i.unita}, richiesta: ${i.soglia_minima} ${i.unita}`
     )
     return encodeURIComponent(
       `Buongiorno,\n\nSono lo Studio Dentistico Ridentium.\nVorrei effettuare un ordine per i seguenti prodotti:\n\n${lines.join('\n')}\n\nGrazie.`
     )
   }
- "�(St getFornitorePhone(nome: string): string | null {
+ "‚(St getFornitorePhone(nome: string): string | null {
     const f = fornitori.find(f => f.nome.toLowerCase() === nome.toLowerCase())
-    return(�f?.telefono ?? null
+    return( f?.telefono ?? null
   }
 
   async function addFornitore() {
     if (!nome.trim() || !telefono.trim()) return
- "�0�xawait supabase.from('fornitori').insert({ nome: nome.trim(), telefono: telefono.trim(), note: note.trim() || null })
+ "‚0¡xawait supabase.from('fornitori').insert({ nome: nome.trim(), telefono: telefono.trim(), note: note.trim() || null })
     await supabase.from('registro_attivita').insert({
       user_id: currentUserId, user_nome: currentUserNome,
-      azione: 'Fornitore aggiunto'/�vdettaglio: nome, categoria: 'staff'
+      azione: 'Fornitore aggiunto'/†vdettaglio: nome, categoria: 'staff'
     })
     setNome(''); setTelefono(''); setNote('')
     setShowForm(false)
@@ -80,7 +80,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                       ? 'bg-gold text-obsidian border-gold'
                       : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
                   }`}>
-              {tab === 'lista' ? '📈 Rubica Fornitori'  : `/🛒 Ordini WhatsApp${alertItems.length > 0 ? ` (${Object.keys(byFornitore).length})` : ''}`}
+              {tab === 'lista' ? 'ðŸ“ˆ Rubica Fornitori'  : `/ðŸ›’ Ordini WhatsApp${alertItems.length > 0 ? ` (${Object.keys(byFornitore).length})` : ''}`}
             </button>
         ))}
         {activeTab === 'lista' && (
