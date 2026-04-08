@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from 'A/lib/supabase/client'
+import { createClient } from '@/lib/supabase/client'
 import { UserProfile } from '@/types'
 import { cn, roleLabel, roleColor } from '@/lib/utils'
 import {
