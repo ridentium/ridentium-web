@@ -36,46 +36,101 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
   const [ordini, setOrdini] = useState(initialOrdini)
   const [filtro, setFiltro] = useState<Filtro>('tutti')
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [noteModal, setNoteModal] = useState<{
-    ordineId: string
-    tipo: 'ricevuto' | 'parziale' | 'annullato'
-  } | null>(null)
-  const [noteText, setNoteText] = useState('')
   const [loading, setLoading] = useState<string | null>(null)
+
+  // Modal ricezione (totale o parziale)
+  const [ricezioneModal, setRicezioneModal] = useState<{ ordine: Ordine } | null>(null)
+  const [ricezioneStep, setRicezioneStep] = useState<'tipo' | 'dettaglio'>('tipo')
+  const [ricezioneTipo, setRicezioneTipo] = useState<'totale' | 'parziale' | null>(null)
+  const [quantitaRicevute, setQuantitaRicevute] = useState<Record<string, number>>({})
+  const [ricezioneNote, setRicezioneNote] = useState('')
+  const [ricezioneSaving, setRicezioneSaving] = useState(false)
+
+  // Modal annulla
+  const [annullaModal, setAnnullaModal] = useState<{ ordineId: string } | null>(null)
+  const [annullaNote, setAnnullaNote] = useState('')
 
   const aperti    = ordini.filter(o => o.stato === 'inviato' || o.stato === 'parziale')
   const ricevuti  = ordini.filter(o => o.stato === 'ricevuto')
   const annullati = ordini.filter(o => o.stato === 'annullato')
 
-  const filtered = filtro === 'tutti'     ? ordini
-    : filtro === 'aperti'    ? aperti
-    : filtro === 'ricevuti'  ? ricevuti
+  const filtered = filtro === 'tutti'    ? ordini
+    : filtro === 'aperti'   ? aperti
+    : filtro === 'ricevuti' ? ricevuti
     : annullati
 
-  async function cambiaStato(
-    ordineId: string,
-    nuovoStato: 'ricevuto' | 'parziale' | 'annullato',
-    note?: string
-  ) {
-    setLoading(ordineId)
-    const updates: Record<string, unknown> = { stato: nuovoStato, note: note || null }
-    if (nuovoStato === 'ricevuto' || nuovoStato === 'parziale') {
-      updates.data_ricezione = new Date().toISOString()
+  function apriRicezione(ordine: Ordine) {
+    setRicezioneModal({ ordine })
+    setRicezioneStep('tipo')
+    setRicezioneTipo(null)
+    setQuantitaRicevute({})
+    setRicezioneNote('')
+  }
+
+  function selezionaTipo(tipo: 'totale' | 'parziale') {
+    setRicezioneTipo(tipo)
+    const q: Record<string, number> = {}
+    ricezioneModal!.ordine.righe?.forEach(r => {
+      q[r.id] = tipo === 'totale' ? r.quantita_ordinata : 0
+    })
+    setQuantitaRicevute(q)
+    setRicezioneStep('dettaglio')
+  }
+
+  async function confermaRicezione() {
+    if (!ricezioneModal || !ricezioneTipo) return
+    setRicezioneSaving(true)
+
+    // 1. Aggiorna quantità magazzino per ogni riga ricevuta
+    for (const riga of (ricezioneModal.ordine.righe ?? [])) {
+      const qty = quantitaRicevute[riga.id] ?? 0
+      if (qty > 0 && riga.magazzino_id) {
+        const { data: item } = await supabase
+          .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
+        if (item) {
+          await supabase.from('magazzino')
+            .update({ quantita: (item.quantita ?? 0) + qty })
+            .eq('id', riga.magazzino_id)
+        }
+      }
     }
-    const { error } = await supabase.from('ordini').update(updates).eq('id', ordineId)
+
+    // 2. Aggiorna stato ordine
+    const nuovoStato = ricezioneTipo === 'totale' ? 'ricevuto' : 'parziale'
+    setLoading(ricezioneModal.ordine.id)
+    const updates: Record<string, unknown> = {
+      stato: nuovoStato,
+      note: ricezioneNote || null,
+      data_ricezione: new Date().toISOString(),
+    }
+    const { error } = await supabase.from('ordini').update(updates).eq('id', ricezioneModal.ordine.id)
     if (!error) {
+      const ordineId = ricezioneModal.ordine.id
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
-      const ordine = ordini.find(o => o.id === ordineId)
       await logActivity(
         userId, userNome,
         `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}`,
-        ordine?.fornitore_nome,
+        ricezioneModal.ordine.fornitore_nome,
         'magazzino'
       )
     }
     setLoading(null)
-    setNoteModal(null)
-    setNoteText('')
+    setRicezioneModal(null)
+    setRicezioneSaving(false)
+  }
+
+  async function cambiaStatoAnnullato(ordineId: string, note?: string) {
+    setLoading(ordineId)
+    const updates = { stato: 'annullato', note: note || null }
+    const { error } = await supabase.from('ordini').update(updates).eq('id', ordineId)
+    if (!error) {
+      setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
+      const ordine = ordini.find(o => o.id === ordineId)
+      await logActivity(userId, userNome, 'Ordine annullato', ordine?.fornitore_nome, 'magazzino')
+    }
+    setLoading(null)
+    setAnnullaModal(null)
+    setAnnullaNote('')
   }
 
   function formatData(iso: string) {
@@ -189,21 +244,14 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                 {aperto && (
                   <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
                     <button
-                      onClick={() => { setNoteModal({ ordineId: ordine.id, tipo: 'ricevuto' }); setNoteText('') }}
+                      onClick={() => apriRicezione(ordine)}
                       disabled={isLoading}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
                     >
                       <Check size={11} /> Ricevuto
                     </button>
                     <button
-                      onClick={() => { setNoteModal({ ordineId: ordine.id, tipo: 'parziale' }); setNoteText('') }}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
-                    >
-                      <AlertCircle size={11} /> Parziale
-                    </button>
-                    <button
-                      onClick={() => { setNoteModal({ ordineId: ordine.id, tipo: 'annullato' }); setNoteText('') }}
+                      onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote('') }}
                       disabled={isLoading}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                     >
@@ -217,24 +265,126 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
         </div>
       )}
 
-      {/* Modal conferma stato */}
-      {noteModal && (
+      {/* Modal ricezione ordine */}
+      {ricezioneModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+
+            {ricezioneStep === 'tipo' ? (
+              <>
+                <h2 className="text-cream font-medium mb-1">Ricezione ordine</h2>
+                <p className="text-stone text-xs mb-6">
+                  Ordine da <span className="text-cream">{ricezioneModal.ordine.fornitore_nome}</span> — come è stato consegnato?
+                </p>
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  <button
+                    onClick={() => selezionaTipo('totale')}
+                    className="flex flex-col items-center gap-2 p-4 rounded-lg border border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
+                  >
+                    <Check size={20} />
+                    <span className="text-sm font-medium">Totalmente</span>
+                    <span className="text-xs text-green-400/70">Tutto ricevuto</span>
+                  </button>
+                  <button
+                    onClick={() => selezionaTipo('parziale')}
+                    className="flex flex-col items-center gap-2 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                  >
+                    <AlertCircle size={20} />
+                    <span className="text-sm font-medium">Parzialmente</span>
+                    <span className="text-xs text-blue-400/70">Solo in parte</span>
+                  </button>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setRicezioneModal(null)}
+                    className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                  >
+                    Annulla
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-cream font-medium mb-1">
+                  {ricezioneTipo === 'totale' ? 'Ricezione totale' : 'Ricezione parziale'}
+                </h2>
+                <p className="text-stone text-xs mb-4">
+                  {ricezioneTipo === 'totale'
+                    ? 'Verifica le quantità — verranno aggiunte al magazzino'
+                    : 'Inserisci le quantità effettivamente ricevute (0 = non consegnato)'}
+                </p>
+
+                <div className="space-y-2 mb-4 max-h-60 overflow-y-auto pr-1">
+                  {ricezioneModal.ordine.righe?.map(r => (
+                    <div key={r.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                      <span className="text-sm text-cream/80 flex-1 truncate">{r.prodotto_nome}</span>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        {ricezioneTipo === 'parziale' ? (
+                          <input
+                            type="number"
+                            min={0}
+                            max={r.quantita_ordinata}
+                            value={quantitaRicevute[r.id] ?? 0}
+                            onChange={e => setQuantitaRicevute(prev => ({
+                              ...prev,
+                              [r.id]: Math.max(0, Math.min(r.quantita_ordinata, parseInt(e.target.value) || 0))
+                            }))}
+                            className="w-16 text-center bg-obsidian-light border border-obsidian-light/60 rounded px-2 py-1 text-cream text-xs focus:outline-none focus:border-gold/50"
+                          />
+                        ) : (
+                          <span className="text-green-400 text-sm font-medium">{r.quantita_ordinata}</span>
+                        )}
+                        <span className="text-stone text-xs w-6">{r.unita ?? 'pz'}</span>
+                        {ricezioneTipo === 'parziale' && (
+                          <span className="text-stone/40 text-[10px] w-10">/ {r.quantita_ordinata}</span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <textarea
+                  value={ricezioneNote}
+                  onChange={e => setRicezioneNote(e.target.value)}
+                  placeholder="Note (opzionale)..."
+                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
+                  rows={2}
+                />
+
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setRicezioneStep('tipo')}
+                    className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                  >
+                    ← Indietro
+                  </button>
+                  <button
+                    onClick={confermaRicezione}
+                    disabled={ricezioneSaving}
+                    className={`text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50 ${
+                      ricezioneTipo === 'totale'
+                        ? 'bg-green-500/20 border-green-500/40 text-green-400 hover:bg-green-500/30'
+                        : 'bg-blue-500/20 border-blue-500/40 text-blue-400 hover:bg-blue-500/30'
+                    }`}
+                  >
+                    {ricezioneSaving ? 'Salvataggio...' : 'Conferma ricezione'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal annulla ordine */}
+      {annullaModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">
-              {noteModal.tipo === 'ricevuto'  ? 'Segna come ricevuto' :
-               noteModal.tipo === 'parziale'  ? 'Ricezione parziale'  : 'Annulla ordine'}
-            </h2>
-            <p className="text-stone text-xs mb-4">
-              {noteModal.tipo === 'parziale'
-                ? 'Indica cosa è stato ricevuto parzialmente'
-                : noteModal.tipo === 'annullato'
-                ? 'Motivo annullamento (opzionale)'
-                : 'Note sulla ricezione (opzionale)'}
-            </p>
+            <h2 className="text-cream font-medium mb-1">Annulla ordine</h2>
+            <p className="text-stone text-xs mb-4">Motivo annullamento (opzionale)</p>
             <textarea
-              value={noteText}
-              onChange={e => setNoteText(e.target.value)}
+              value={annullaNote}
+              onChange={e => setAnnullaNote(e.target.value)}
               placeholder="Note..."
               className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
               rows={3}
@@ -242,20 +392,14 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
             />
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setNoteModal(null); setNoteText('') }}
+                onClick={() => { setAnnullaModal(null); setAnnullaNote('') }}
                 className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
               >
                 Annulla
               </button>
               <button
-                onClick={() => cambiaStato(noteModal.ordineId, noteModal.tipo, noteText || undefined)}
-                className={`text-xs px-4 py-2 rounded border transition-colors ${
-                  noteModal.tipo === 'ricevuto'
-                    ? 'bg-green-500/20 border-green-500/40 text-green-400 hover:bg-green-500/30'
-                    : noteModal.tipo === 'parziale'
-                    ? 'bg-blue-500/20 border-blue-500/40 text-blue-400 hover:bg-blue-500/30'
-                    : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
-                }`}
+                onClick={() => cambiaStatoAnnullato(annullaModal.ordineId, annullaNote || undefined)}
+                className="text-xs px-4 py-2 rounded border bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors"
               >
                 Conferma
               </button>
