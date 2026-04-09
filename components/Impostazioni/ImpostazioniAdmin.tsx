@@ -41,7 +41,7 @@ export default function ImpostazioniAdmin({ kpi, currentUserId }: Props) {
     { key: 'pazienti_oggi', label: 'Pazienti Oggi' },
     { key: 'appuntamenti_oggi', label: 'Appuntamenti Oggi' },
     { key: 'pazienti_settimana', label: 'Pazienti questa settimana' },
-    { categoria: 'Pazienti questo mese' },
+    { key: 'pazienti_mese', label: 'Pazienti questo mese' },
     { key: 'fatturato_mese', label: 'Fatturato del mese', prefix: '€' },
     { key: 'tasso_presenze', label: 'Tasso presenze (%)', suffix: '%' },
   ]
