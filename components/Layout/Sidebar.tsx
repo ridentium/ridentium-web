@@ -1,4 +1,5 @@
 'use client'
+
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -7,7 +8,8 @@ import { cn, roleLabel, roleColor } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen,
   Users, LogOut, ChevronRight, AlertTriangle,
-  RefreshCw, Phone, ClipboardList, Settings, UserCircle
+  RefreshCw, Phone, ClipboardList, Settings, UserCircle,
+  ShoppingCart
 } from 'lucide-react'
 
 interface NavItem {
@@ -17,35 +19,36 @@ interface NavItem {
 }
 
 const adminNav: NavItem[] = [
-  { href: '/admin', label: 'Panoramica', icon: LayoutDashboard },
-  { href: '/admin/magazzino', label: 'Magazzino', icon: Package },
-  { href: '/admin/tasks', label: 'Task', icon: CheckSquare },
-  { href: '/admin/ricorrenti', label: 'Azioni Ricorrenti', icon: RefreshCw },
-  { href: '/admin/sop', label: 'SOP', icon: BookOpen },
-  { href: '/admin/staff', label: 'Staff', icon: Users },
-  { href: '/admin/fornitori', label: 'Fornitori', icon: Phone },
-  { href: '/admin/registro', label: 'Registro', icon: ClipboardList },
-  { href: '/admin/impostazioni', label: 'Impostazioni', icon: Settings },
+  { href: '/admin',              label: 'Panoramica',        icon: LayoutDashboard },
+  { href: '/admin/magazzino',    label: 'Magazzino',         icon: Package },
+  { href: '/admin/ordini',       label: 'Ordini',            icon: ShoppingCart },
+  { href: '/admin/tasks',        label: 'Task',              icon: CheckSquare },
+  { href: '/admin/ricorrenti',   label: 'Azioni Ricorrenti', icon: RefreshCw },
+  { href: '/admin/sop',          label: 'SOP',               icon: BookOpen },
+  { href: '/admin/staff',        label: 'Staff',             icon: Users },
+  { href: '/admin/fornitori',    label: 'Fornitori',         icon: Phone },
+  { href: '/admin/registro',     label: 'Registro',          icon: ClipboardList },
+  { href: '/admin/impostazioni', label: 'Impostazioni',      icon: Settings },
 ]
 
 const staffNav: NavItem[] = [
-  { href: '/staff', label: 'Home', icon: LayoutDashboard },
-  { href: '/staff/magazzino', label: 'Magazzino', icon: Package },
-  { href: '/staff/tasks', label: 'I miei task', icon: CheckSquare },
-  { href: '/staff/ricorrenti', label: 'Azioni Ricorrenti', icon: RefreshCw },
-  { href: '/staff/sop', label: 'Protocolli', icon: BookOpen },
+  { href: '/staff',              label: 'Home',              icon: LayoutDashboard },
+  { href: '/staff/magazzino',    label: 'Magazzino',         icon: Package },
+  { href: '/staff/tasks',        label: 'I miei task',       icon: CheckSquare },
+  { href: '/staff/ricorrenti',   label: 'Azioni Ricorrenti', icon: RefreshCw },
+  { href: '/staff/sop',          label: 'Protocolli',        icon: BookOpen },
 ]
 
 interface SidebarProps {
   profilo: UserProfile
   alertCount?: number
+  ordiniAperti?: number
 }
 
-export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
+export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-
   const isAdmin = profilo.ruolo === 'admin'
   const nav = isAdmin ? adminNav : staffNav
   const profiloHref = isAdmin ? '/admin/profilo' : '/staff/profilo'
@@ -58,6 +61,7 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
 
   return (
     <aside className="w-56 min-h-screen bg-obsidian border-r border-obsidian-light flex flex-col">
+
       {/* Brand */}
       <div className="px-6 py-7 border-b border-obsidian-light">
         <h1 className="font-serif text-xl text-cream tracking-[0.2em] font-light">
@@ -68,11 +72,11 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
         </p>
       </div>
 
-      {/* Alert banner */}
+      {/* Alert banner scorte sotto soglia */}
       {alertCount > 0 && (
-        <Link
-          href={isAdmin ? '/admin/magazzino' : '/staff/magazzino'}
-          className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded bg-alert/10 border border-alert/20 text-red-400 text-xs hover:bg-alert/15 transition-colors">
+        <Link href={isAdmin ? '/admin/magazzino' : '/staff/magazzino'}
+              className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded bg-alert/10
+                         border border-alert/20 text-red-400 text-xs hover:bg-alert/15 transition-colors">
           <AlertTriangle size={12} />
           <span>{alertCount} prodott{alertCount === 1 ? 'o' : 'i'} sotto soglia</span>
           <ChevronRight size={10} className="ml-auto" />
@@ -83,26 +87,33 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
+          const badge = href === '/admin/ordini' && ordiniAperti > 0 ? ordiniAperti : null
           return (
-            <Link key={href} href={href} className={cn('nav-item', active && 'active')}>
+            <Link key={href} href={href}
+                  className={cn('nav-item', active && 'active')}>
               <Icon size={15} className={active ? 'text-gold' : ''} />
-              <span>{label}</span>
+              <span className="flex-1">{label}</span>
+              {badge && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-gold/20 text-gold border border-gold/30 font-medium">
+                  {badge}
+                </span>
+              )}
             </Link>
           )
         })}
       </nav>
 
-      {/* Profilo utente */}
+      {/* Profilo utente — cliccabile */}
       <div className="border-t border-obsidian-light px-3 py-3">
-        <Link
-          href={profiloHref}
-          className={cn(
-            'flex items-center gap-3 px-3 py-2.5 rounded transition-colors mb-1',
-            pathname === profiloHref
-              ? 'bg-stone-dark/20 border border-gold/20'
-              : 'hover:bg-obsidian-light/50'
-          )}>
-          <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold text-xs font-medium flex-shrink-0">
+        <Link href={profiloHref}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded transition-colors mb-1',
+                pathname === profiloHref
+                  ? 'bg-stone-dark/20 border border-gold/20'
+                  : 'hover:bg-obsidian-light/50'
+              )}>
+          <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30
+                          flex items-center justify-center text-gold text-xs font-medium flex-shrink-0">
             {profilo.nome[0]}{profilo.cognome[0]}
           </div>
           <div className="min-w-0 flex-1">
@@ -115,9 +126,9 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
           </div>
           <UserCircle size={13} className="text-stone/50 flex-shrink-0" />
         </Link>
-        <button
-          onClick={handleLogout}
-          className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400 text-xs px-3 py-2">
+
+        <button onClick={handleLogout}
+                className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400 text-xs px-3 py-2">
           <LogOut size={13} />
           Esci
         </button>
