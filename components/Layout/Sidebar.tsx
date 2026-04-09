@@ -80,6 +80,10 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
       )}
 
       {/* Navigazione */}
+      <nav className="flex-1k>
+      )}
+
+      {/* Navigazione */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
@@ -93,14 +97,20 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
         })}
       </nav>
 
-      {/* Profilo utente */}
-      <div className="border-t border-obsidian-light px-4 py-4">
-        <div className="flex items-center gap-3 mb-3">
+      {/* Profilo utente — cliccabile */}
+      <div className="border-t border-obsidian-light px-3 py-3">
+        <Link href={profiloHref}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded transition-colors mb-1',
+                pathname === profiloHref
+                  ? 'bg-stone-dark/20 border border-gold/20'
+                  : 'hover:bg-obsidian-light/50'
+              )}>
           <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30
-                          flex items-center justify-center text-gold text-xs font-medium">
+                          flex items-center justify-center text-gold text-xs font-medium flex-shrink-0">
             {profilo.nome[0]}{profilo.cognome[0]}
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-cream text-sm font-medium truncate">
               {profilo.nome} {profilo.cognome}
             </p>
@@ -108,9 +118,11 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
               {roleLabel(profilo.ruolo)}
             </p>
           </div>
-        </div>
+          <UserCircle size={13} className="text-stone/50 flex-shrink-0" />
+        </Link>
+
         <button onClick={handleLogout}
-                className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400">
+                className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400 text-xs px-3 py-2">
           <LogOut size={13} />
           Esci
         </button>
