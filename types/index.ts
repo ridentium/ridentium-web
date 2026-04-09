@@ -53,7 +53,7 @@ export interface SOP {
   contenuto: string            // markdown
   versione: string
   autore: string
-  ruoli_visibili: UserRole[]   // chi può vedere questa SOP
+  ruoli_visibili: UserRole[]   // chi puÃ² vedere questa SOP
   created_at: string
   updated_at: string
 }
@@ -120,6 +120,7 @@ export interface OrdineRiga {
   magazzino_id?: string | null
   prodotto_nome: string
   quantita_ordinata: number
+  quantita_ricevuta?: number | null
   unita?: string | null
 }
 
