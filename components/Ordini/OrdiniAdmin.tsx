@@ -172,10 +172,14 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
         ? { ...o, ...updates, righe: righeAggiornate } as Ordine
         : o
     ))
+    const prodottiRicevuti = righe
+      .filter(r => (quantitaRicevute[r.id] ?? 0) > 0)
+      .map(r => `${r.prodotto_nome}: +${quantitaRicevute[r.id]} ${r.unita ?? 'pz'}`)
+      .join(', ')
     await logActivity(
       userId, userNome,
-      `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}`,
-      ricezioneModal.ordine.fornitore_nome,
+      `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}: ${ricezioneModal.ordine.fornitore_nome}`,
+      prodottiRicevuti || undefined,
       'magazzino'
     )
     setLoading(null)
@@ -186,13 +190,17 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
   async function cambiaStatoAnnullato(ordineId: string, note?: string) {
     setLoading(ordineId)
     const ordine = ordini.find(o => o.id === ordineId)
+    const prodottiScalati: string[] = []
 
-    // Se l'ordine aveva già una ricezione parziale, scala il magazzino
-    if (ordine && ordine.stato === 'parziale') {
+    // Se l'ordine aveva ricevuto merce (parziale o totale), scala il magazzino
+    if (ordine && (ordine.stato === 'parziale' || ordine.stato === 'ricevuto')) {
       for (const riga of (ordine.righe ?? [])) {
-        // Usa quantita_ricevuta se disponibile (salvata durante la ricezione),
-        // altrimenti 0 (inviato non aveva ancora ricevuto nulla)
-        const qtyToSubtract = (riga as OrdineRigaConRicevuta).quantita_ricevuta ?? 0
+        // Per parziale: usa quantita_ricevuta salvata sul DB
+        // Per ricevuto totale: fallback a quantita_ordinata (tutto era stato ricevuto)
+        const qtyToSubtract =
+          (riga as OrdineRigaConRicevuta).quantita_ricevuta != null
+            ? ((riga as OrdineRigaConRicevuta).quantita_ricevuta as number)
+            : ordine.stato === 'ricevuto' ? riga.quantita_ordinata : 0
         if (qtyToSubtract > 0 && riga.magazzino_id) {
           const { data: item } = await supabase
             .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
@@ -201,6 +209,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
               .update({ quantita: Math.max(0, (item.quantita ?? 0) - qtyToSubtract) })
               .eq('id', riga.magazzino_id)
           }
+          prodottiScalati.push(`${riga.prodotto_nome}: -${qtyToSubtract} ${riga.unita ?? 'pz'}`)
         }
       }
     }
@@ -209,7 +218,17 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     const { error } = await supabase.from('ordini').update(updates).eq('id', ordineId)
     if (!error) {
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
-      await logActivity(userId, userNome, 'Ordine annullato', ordine?.fornitore_nome, 'magazzino')
+      const azioneLabel = ordine?.stato === 'ricevuto'
+        ? `Ricezione annullata: ${ordine.fornitore_nome}`
+        : `Ordine annullato: ${ordine?.fornitore_nome ?? ''}`
+      await logActivity(
+        userId, userNome,
+        azioneLabel,
+        prodottiScalati.length > 0
+          ? `Scalato dal magazzino — ${prodottiScalati.join(', ')}`
+          : undefined,
+        'magazzino'
+      )
     }
     setLoading(null)
     setAnnullaModal(null)
@@ -305,7 +324,13 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     }
     setOrdini(prev => [ordineCompleto, ...prev])
 
-    await logActivity(userId, userNome, 'Nuovo ordine creato', nuovoFornitore.trim(), 'magazzino')
+    const prodottiOrdinati = righeValide.map(r => `${r.prodotto_nome}: ${r.quantita} ${r.unita}`).join(', ')
+    await logActivity(
+      userId, userNome,
+      `Nuovo ordine creato: ${nuovoFornitore.trim()}`,
+      prodottiOrdinati,
+      'magazzino'
+    )
 
     setNuovoSaving(false)
     setNuovoModal(false)
@@ -404,7 +429,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                       </p>
                     )}
                     {ordine.note && (
-                      <p className="text-xs text-stone.70 mt-1 italic">"{ordine.note}"</p>
+                      <p className="text-xs text-stone/70 mt-1 italic">"{ordine.note}"</p>
                     )}
                   </div>
                   {/* Toggle righe */}
@@ -450,6 +475,19 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                     >
                       <X size={11} /> Annulla
+                    </button>
+                  </div>
+                )}
+
+                {/* Azione annulla ricezione (solo ordini già totalmente ricevuti) */}
+                {ordine.stato === 'ricevuto' && (
+                  <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
+                    <button
+                      onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote('') }}
+                      disabled={isLoading}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
+                    >
+                      <X size={11} /> Annulla ricezione
                     </button>
                   </div>
                 )}
@@ -556,7 +594,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                     onClick={() => setRicezioneStep('tipo')}
                     className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
                   >
-                    ← Indietro
+                     ← Indietro
                   </button>
                   <button
                     onClick={confermaRicezione}
@@ -576,12 +614,23 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
         </div>
       )}
 
-      {/* Modal annulla ordine */}
-      {annullaModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      {/* Modal annulla ordine / annulla ricezione */}
+      {annullaModal && (() => {
+        const ordineTarget = ordini.find(o => o.id === annullaModal.ordineId)
+        const isRicezioneAnnullata = ordineTarget?.stato === 'ricevuto' || ordineTarget?.stato === 'parziale'
+        return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center g-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">Annulla ordine</h2>
-            <p className="text-stone text-xs mb-4">Motivo annullamento (opzionale)</p>
+            <h2 className="text-cream font-medium mb-1">
+              {ordineTarget?.stato === 'ricevuto' ? 'Annulla ricezione' : 'Annulla ordine'}
+            </h2>
+            {isRicezioneAnnullata ? (
+              <p className="text-orange-400/80 text-xs mb-4">
+                ⚠ Le quantità aggiunte al magazzino verranno scalate. Aggiungi un motivo (opzionale).
+              </p>
+            ) : (
+              <p className="text-stone text-xs mb-4">Motivo annullamento (opzionale)</p>
+            )}
             <textarea
               value={annullaNote}
               onChange={e => setAnnullaNote(e.target.value)}
@@ -599,14 +648,19 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
               </button>
               <button
                 onClick={() => cambiaStatoAnnullato(annullaModal.ordineId, annullaNote || undefined)}
-                className="text-xs px-4 py-2 rounded border bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors"
+                className={`text-xs px-4 py-2 rounded border transition-colors ${
+                  isRicezioneAnnullata
+                    ? 'bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30'
+                    : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
+                }`}
               >
                 Conferma
               </button>
             </div>
           </div>
         </div>
-      )}
+        )
+      })()}
 
       {/* Modal nuovo ordine */}
       {nuovoModal && (
