@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
 import Link from 'next/link'
-import { Package, CheckSquare, Users, AlertTriangle, TrendingUp, Calendar, Euro, Activity, RefreshCw } from 'lucide-react'
+import { Package, CheckSquare, AlertTriangle, TrendingUp, Calendar, Euro, Activity, RefreshCw } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 
@@ -43,22 +43,20 @@ export default async function AdminHome() {
     { data: magazzinoAll },
     { data: tasksOpen },
     { data: tasksCompleted },
-    { data: staffAll },
     { data: riordiniAperti },
     { data: kpi },
     { data: ricorrenti },
     { data: profilo },
     { data: fornitori },
   ] = await Promise.all([
-    supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, azienda, prezzo_unitario, fornitore_id, unita'),
+    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, azienda, prezzo_unitario, fornitore_id, unita'),
     supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a').neq('stato', 'completato'),
     supabase.from('tasks').select('id').eq('stato', 'completato'),
-    adminDb.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true),
     supabase.from('riordini').select('id, created_at, magazzino_id, magazzino(prodotto)').eq('stato', 'aperta'),
     supabase.from('kpi').select('*').single(),
     supabase.from('ricorrenti').select('*').eq('attiva', true),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
-    supabase.from('fornitori').select('id, nome, telefono, email').order('nome'),
+    adminDb.from('fornitori').select('id, nome, telefono, email').order('nome'),
   ])
 
   const alertItems = (magazzinoAll ?? []).filter(
