@@ -3,8 +3,9 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Fornitore, MagazzinoItem } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, Plus, Pencil, X, AlertCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Plus, Pencil, X, AlertCircle, Trash2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { logActivity } from '@/lib/registro'
 
 const CATEGORIE = [
   'Tutte', 'Impianti', 'Componentistica Protesica', 'Materiali Chirurgici',
@@ -16,16 +17,18 @@ interface Props {
   items: MagazzinoItem[]
   riordini: any[]
   fornitori?: Fornitore[]
+  userId?: string
+  userNome?: string
 }
 
-export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Props) {
+export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId = '', userNome = '' }: Props) {
   const [categoria, setCategoria] = useState('Tutte')
   const [soloAlert, setSoloAlert] = useState(false)
   const [editItem, setEditItem] = useState<MagazzinoItem | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const router = useRouter()
   const supabase = createClient()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   const filtered = items.filter(item => {
     if (categoria !== 'Tutte' && item.categoria !== categoria) return false
@@ -34,15 +37,23 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
   })
 
   const alertCount = items.filter(i => i.quantita < i.soglia_minima).length
+  const hasImpianti = filtered.some(i => i.categoria === 'Impianti')
 
   async function saveQuantita(id: string, nuovaQuantita: number) {
+    const item = items.find(i => i.id === id)
     const { error } = await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
-    if (!error) startTransition(() => router.refresh())
+    if (!error) {
+      await logActivity(userId, userNome, 'Quantità aggiornata', `${item?.prodotto ?? id}: ${nuovaQuantita} ${item?.unita ?? ''}`, 'magazzino')
+      startTransition(() => router.refresh())
+    }
   }
 
   async function evadiRiordine(riordineId: string) {
     const { error } = await supabase.from('riordini').update({ stato: 'evasa' }).eq('id', riordineId)
-    if (!error) startTransition(() => router.refresh())
+    if (!error) {
+      await logActivity(userId, userNome, 'Riordine evaso', riordineId, 'magazzino')
+      startTransition(() => router.refresh())
+    }
   }
 
   return (
@@ -74,9 +85,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           {CATEGORIE.map(cat => (
-            <button
-              key={cat}
-              onClick={() => setCategoria(cat)}
+            <button key={cat} onClick={() => setCategoria(cat)}
               className={`text-xs px-3 py-1.5 rounded border transition-colors ${
                 categoria === cat
                   ? 'bg-gold text-obsidian border-gold'
@@ -89,16 +98,12 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
         <button
           onClick={() => setSoloAlert(!soloAlert)}
           className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ml-auto ${
-            soloAlert
-              ? 'bg-red-400/10 text-red-400 border-red-400/30'
-              : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+            soloAlert ? 'bg-red-400/10 text-red-400 border-red-400/30' : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
           }`}>
-          <AlertTriangle size={11} />
-          Solo alert ({alertCount})
+          <AlertTriangle size={11} /> Solo alert ({alertCount})
         </button>
         <button onClick={() => setShowAddForm(true)} className="btn-primary flex items-center gap-1.5 text-xs">
-          <Plus size={13} />
-          Aggiungi
+          <Plus size={13} /> Aggiungi
         </button>
       </div>
 
@@ -107,13 +112,13 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
           <thead>
             <tr>
               <th>Prodotto</th><th>Categoria</th><th>Azienda</th>
-              <th>Diametro</th><th>Lunghezza</th><th>Qtà</th>
-              <th>Min.</th><th>Stato</th><th>Scadenza</th><th></th>
+              {hasImpianti && <><th>Diametro</th><th>Lunghezza</th></>}
+              <th>Qtà</th><th>Min.</th><th>Stato</th><th>Scadenza</th><th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={10} className="text-center text-stone py-8">Nessun prodotto trovato</td></tr>
+              <tr><td colSpan={hasImpianti ? 10 : 8} className="text-center text-stone py-8">Nessun prodotto trovato</td></tr>
             ) : filtered.map(item => {
               const isAlert = item.quantita < item.soglia_minima
               return (
@@ -121,8 +126,12 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
                   <td className="font-medium text-cream">{item.prodotto}</td>
                   <td>{item.categoria}</td>
                   <td>{item.azienda ?? '—'}</td>
-                  <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
-                  <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
+                  {hasImpianti && (
+                    <>
+                      <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
+                      <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
+                    </>
+                  )}
                   <td>
                     <QuantitaEditor value={item.quantita} onChange={val => saveQuantita(item.id, val)} />
                   </td>
@@ -152,6 +161,8 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
         <ItemModal
           item={editItem}
           fornitori={fornitori}
+          userId={userId}
+          userNome={userNome}
           onClose={() => { setEditItem(null); setShowAddForm(false) }}
           onSave={() => {
             setEditItem(null)
@@ -167,6 +178,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
 function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(String(value))
+
   if (!editing) {
     return (
       <button onClick={() => setEditing(true)} className="text-cream hover:text-gold transition-colors font-medium">
@@ -174,9 +186,11 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
       </button>
     )
   }
+
   return (
     <input
-      type="number" value={val}
+      type="number"
+      value={val}
       onChange={e => setVal(e.target.value)}
       onBlur={() => { onChange(Number(val)); setEditing(false) }}
       onKeyDown={e => { if (e.key === 'Enter') { onChange(Number(val)); setEditing(false) } }}
@@ -186,9 +200,13 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
   )
 }
 
-function ItemModal({ item, fornitori, onClose, onSave }: {
+function ItemModal({
+  item, fornitori, userId, userNome, onClose, onSave
+}: {
   item: MagazzinoItem | null
   fornitori: Fornitore[]
+  userId: string
+  userNome: string
   onClose: () => void
   onSave: () => void
 }) {
@@ -197,8 +215,11 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
     prodotto: '', categoria: 'Impianti', azienda: '', quantita: 0, soglia_minima: 2, unita: 'pz'
   })
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
+  const isImpianto = form.categoria === 'Impianti'
 
   function handleFornitoreChange(fornitoreId: string) {
     set('fornitore_id', fornitoreId || null)
@@ -212,16 +233,30 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
     if (!form.prodotto?.trim()) { setError('Il nome del prodotto è obbligatorio.'); return }
     setSaving(true)
     setError(null)
+    const data = { ...form }
+    if (!isImpianto) { data.diametro = undefined; data.lunghezza = undefined }
     let dbError: any = null
     if (item) {
-      const { error } = await supabase.from('magazzino').update(form).eq('id', item.id)
+      const { error } = await supabase.from('magazzino').update(data).eq('id', item.id)
       dbError = error
+      if (!dbError) await logActivity(userId, userNome, 'Prodotto modificato', form.prodotto, 'magazzino')
     } else {
-      const { error } = await supabase.from('magazzino').insert(form)
+      const { error } = await supabase.from('magazzino').insert(data)
       dbError = error
+      if (!dbError) await logActivity(userId, userNome, 'Prodotto aggiunto', form.prodotto, 'magazzino')
     }
     setSaving(false)
     if (dbError) { setError('Errore nel salvataggio: ' + dbError.message); return }
+    onSave()
+  }
+
+  async function handleDelete() {
+    if (!item) return
+    if (!confirm(`Eliminare "${item.prodotto}" dal magazzino? Questa azione non può essere annullata.`)) return
+    setDeleting(true)
+    const { error } = await supabase.from('magazzino').delete().eq('id', item.id)
+    if (error) { setError('Errore eliminazione: ' + error.message); setDeleting(false); return }
+    await logActivity(userId, userNome, 'Prodotto eliminato', item.prodotto, 'magazzino')
     onSave()
   }
 
@@ -245,7 +280,6 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
             <label className="label-field block mb-1.5">Prodotto *</label>
             <input className="input" value={form.prodotto ?? ''} onChange={e => set('prodotto', e.target.value)} />
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Categoria</label>
             <select className="input" value={form.categoria ?? ''} onChange={e => set('categoria', e.target.value)}>
@@ -255,21 +289,15 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
               )}
             </select>
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Fornitore</label>
-            <select
-              className="input"
-              value={form.fornitore_id ?? ''}
-              onChange={e => handleFornitoreChange(e.target.value)}
-            >
+            <select className="input" value={form.fornitore_id ?? ''} onChange={e => handleFornitoreChange(e.target.value)}>
               <option value="">{fornitori.length === 0 ? '— nessun fornitore —' : '— seleziona —'}</option>
               {fornitori.map(f => (
                 <option key={f.id} value={f.id}>{f.nome}</option>
               ))}
             </select>
           </div>
-
           <div className="col-span-2">
             <label className="label-field block mb-1.5">
               Azienda{form.fornitore_id ? ' (da fornitore)' : ''}
@@ -278,52 +306,50 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
               className="input"
               value={form.azienda ?? ''}
               onChange={e => set('azienda', e.target.value)}
-              placeholder={form.fornitore_id ? '' : "Nome azienda"}
+              placeholder={form.fornitore_id ? '' : 'Nome azienda'}
             />
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Codice Articolo</label>
             <input className="input" value={form.codice_articolo ?? ''} onChange={e => set('codice_articolo', e.target.value)} />
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Unità</label>
             <select className="input" value={form.unita ?? 'pz'} onChange={e => set('unita', e.target.value)}>
               {['pz','conf','ml','rotoli','kit','scatole'].map(u => <option key={u}>{u}</option>)}
             </select>
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Quantità</label>
             <input type="number" className="input" value={form.quantita ?? 0} onChange={e => set('quantita', +e.target.value)} />
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Soglia Minima</label>
             <input type="number" className="input" value={form.soglia_minima ?? 0} onChange={e => set('soglia_minima', +e.target.value)} />
           </div>
-
-          <div>
-            <label className="label-field block mb-1.5">Diametro (mm)</label>
-            <input type="number" step="0.1" className="input" value={form.diametro ?? ''} onChange={e => set('diametro', e.target.value ? +e.target.value : null)} />
-          </div>
-
-          <div>
-            <label className="label-field block mb-1.5">Lunghezza (mm)</label>
-            <input type="number" step="0.5" className="input" value={form.lunghezza ?? ''} onChange={e => set('lunghezza', e.target.value ? +e.target.value : null)} />
-          </div>
-
+          {isImpianto && (
+            <>
+              <div>
+                <label className="label-field block mb-1.5">Diametro (mm)</label>
+                <input type="number" step="0.1" className="input" value={form.diametro ?? ''}
+                  onChange={e => set('diametro', e.target.value ? +e.target.value : null)} />
+              </div>
+              <div>
+                <label className="label-field block mb-1.5">Lunghezza (mm)</label>
+                <input type="number" step="0.5" className="input" value={form.lunghezza ?? ''}
+                  onChange={e => set('lunghezza', e.target.value ? +e.target.value : null)} />
+              </div>
+            </>
+          )}
           <div>
             <label className="label-field block mb-1.5">Scadenza</label>
             <input type="date" className="input" value={form.scadenza ?? ''} onChange={e => set('scadenza', e.target.value || null)} />
           </div>
-
           <div>
             <label className="label-field block mb-1.5">Prezzo Unitario (€)</label>
-            <input type="number" step="0.01" className="input" value={form.prezzo_unitario ?? ''} onChange={e => set('prezzo_unitario', e.target.value ? +e.target.value : null)} />
+            <input type="number" step="0.01" className="input" value={form.prezzo_unitario ?? ''}
+              onChange={e => set('prezzo_unitario', e.target.value ? +e.target.value : null)} />
           </div>
-
           <div className="col-span-2">
             <label className="label-field block mb-1.5">Note</label>
             <textarea className="input resize-none" rows={2} value={form.note ?? ''} onChange={e => set('note', e.target.value)} />
@@ -331,6 +357,15 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
         </div>
 
         <div className="flex gap-3 mt-6">
+          {item && (
+            <button
+              onClick={handleDelete}
+              disabled={deleting}
+              className="p-2 text-red-400 hover:bg-red-400/10 border border-red-400/30 rounded transition-colors disabled:opacity-50"
+              title="Elimina prodotto">
+              <Trash2 size={15} />
+            </button>
+          )}
           <button onClick={onClose} className="btn-secondary flex-1">Annulla</button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
             {saving ? 'Salvataggio…' : 'Salva'}
