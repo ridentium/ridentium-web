@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MagazzinoItem } from '@/types'
+import { Fornitore, MagazzinoItem } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, ChevronDown, Filter, Plus, Pencil, X } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Plus, Pencil, X, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const CATEGORIE = [
@@ -16,9 +16,10 @@ const CATEGORIE = [
 interface Props {
   items: MagazzinoItem[]
   riordini: any[]
+  fornitori?: Fornitore[]
 }
 
-export default function MagazzinoAdmin({ items, riordini }: Props) {
+export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Props) {
   const [categoria, setCategoria] = useState('Tutte')
   const [soloAlert, setSoloAlert] = useState(false)
   const [editItem, setEditItem] = useState<MagazzinoItem | null>(null)
@@ -36,13 +37,13 @@ export default function MagazzinoAdmin({ items, riordini }: Props) {
   const alertCount = items.filter(i => i.quantita < i.soglia_minima).length
 
   async function saveQuantita(id: string, nuovaQuantita: number) {
-    await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
-    startTransition(() => router.refresh())
+    const { error } = await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
+    if (!error) startTransition(() => router.refresh())
   }
 
   async function evadiRiordine(riordineId: string) {
-    await supabase.from('riordini').update({ stato: 'evasa' }).eq('id', riordineId)
-    startTransition(() => router.refresh())
+    const { error } = await supabase.from('riordini').update({ stato: 'evasa' }).eq('id', riordineId)
+    if (!error) startTransition(() => router.refresh())
   }
 
   return (
@@ -50,7 +51,7 @@ export default function MagazzinoAdmin({ items, riordini }: Props) {
 
       {/* Riordini aperti */}
       {riordini.length > 0 && (
-        <div className="card border-gold/20 bg-gold/5">
+        <div className="card border-gold/30 bg-gold/5">
           <h3 className="text-xs uppercase tracking-widest text-gold mb-3">
             Richieste di Riordino ({riordini.length})
           </h3>
@@ -165,10 +166,10 @@ export default function MagazzinoAdmin({ items, riordini }: Props) {
         </table>
       </div>
 
-      {/* Modal modifica/aggiunta — semplificato */}
       {(editItem || showAddForm) && (
         <ItemModal
           item={editItem}
+          fornitori={fornitori}
           onClose={() => { setEditItem(null); setShowAddForm(false) }}
           onSave={() => {
             setEditItem(null)
@@ -206,44 +207,80 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
   )
 }
 
-function ItemModal({ item, onClose, onSave }: {
+function ItemModal({ item, fornitori, onClose, onSave }: {
   item: MagazzinoItem | null
+  fornitori: Fornitore[]
   onClose: () => void
   onSave: () => void
 }) {
   const supabase = createClient()
   const [form, setForm] = useState<Partial<MagazzinoItem>>(item ?? {
-    prodotto: '', categoria: 'Impianti', azienda: 'Neodent',
+    prodotto: '', categoria: 'Impianti', azienda: '',
     quantita: 0, soglia_minima: 2, unita: 'pz'
   })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
-  async function handleSave() {
-    setSaving(true)
-    if (item) {
-      await supabase.from('magazzino').update(form).eq('id', item.id)
-    } else {
-      await supabase.from('magazzino').insert(form)
+  // Quando si seleziona un fornitore, popola il campo azienda
+  function handleFornitoreChange(fornitoreId: string) {
+    set('fornitore_id', fornitoreId || null)
+    if (fornitoreId) {
+      const f = fornitori.find(f => f.id === fornitoreId)
+      if (f) set('azienda', f.nome)
     }
+  }
+
+  async function handleSave() {
+    if (!form.prodotto?.trim()) {
+      setError('Il nome del prodotto è obbligatorio.')
+      return
+    }
+    setSaving(true)
+    setError(null)
+
+    let dbError: any = null
+    if (item) {
+      const { error } = await supabase.from('magazzino').update(form).eq('id', item.id)
+      dbError = error
+    } else {
+      const { error } = await supabase.from('magazzino').insert(form)
+      dbError = error
+    }
+
     setSaving(false)
+
+    if (dbError) {
+      setError(`Errore nel salvataggio: ${dbError.message}`)
+      return
+    }
+
     onSave()
   }
 
   return (
-    <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-obsidian/85 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-5">
           <h3 className="section-title text-lg">{item ? 'Modifica prodotto' : 'Nuovo prodotto'}</h3>
           <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
         </div>
 
+        {/* Errore */}
+        {error && (
+          <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-400 text-sm">
+            <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="label-field block mb-1.5">Prodotto *</label>
             <input className="input" value={form.prodotto ?? ''} onChange={e => set('prodotto', e.target.value)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Categoria</label>
             <select className="input" value={form.categoria ?? ''} onChange={e => set('categoria', e.target.value)}>
@@ -253,10 +290,42 @@ function ItemModal({ item, onClose, onSave }: {
               )}
             </select>
           </div>
-          <div>
-            <label className="label-field block mb-1.5">Azienda</label>
-            <input className="input" value={form.azienda ?? ''} onChange={e => set('azienda', e.target.value)} />
-          </div>
+
+          {/* Fornitore dropdown (se presenti fornitori in rubrica) */}
+          {fornitori.length > 0 ? (
+            <div>
+              <label className="label-field block mb-1.5">Fornitore</label>
+              <select
+                className="input"
+                value={form.fornitore_id ?? ''}
+                onChange={e => handleFornitoreChange(e.target.value)}
+              >
+                <option value="">— seleziona —</option>
+                {fornitori.map(f => (
+                  <option key={f.id} value={f.id}>{f.nome}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="label-field block mb-1.5">Azienda</label>
+              <input className="input" value={form.azienda ?? ''} onChange={e => set('azienda', e.target.value)} />
+            </div>
+          )}
+
+          {/* Se è stato scelto un fornitore, mostra comunque il campo azienda (read-only) */}
+          {fornitori.length > 0 && (
+            <div className="col-span-2">
+              <label className="label-field block mb-1.5">Azienda {form.fornitore_id ? '(da fornitore)' : ''}</label>
+              <input
+                className="input"
+                value={form.azienda ?? ''}
+                onChange={e => set('azienda', e.target.value)}
+                placeholder="O scrivi manualmente"
+              />
+            </div>
+          )}
+
           <div>
             <label className="label-field block mb-1.5">Codice Articolo</label>
             <input className="input" value={form.codice_articolo ?? ''} onChange={e => set('codice_articolo', e.target.value)} />
