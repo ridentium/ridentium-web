@@ -6,7 +6,8 @@ export interface UserProfile {
   nome: string
   cognome: string
   ruolo: UserRole
-  avatar_url?: string
+  telefono?: string | null
+  avatar_url?: string | null
   created_at: string
 }
 
@@ -26,6 +27,7 @@ export interface MagazzinoItem {
   scadenza?: string
   ultimo_riordino?: string
   note?: string
+  fornitore_id?: string | null
   created_at: string
   updated_at: string
 }
