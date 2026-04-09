@@ -82,7 +82,7 @@ export default async function StaffHome() {
               <CheckSquare size={13} /> I miei task
             </h3>
             <Link href="/staff/tasks" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Vedi tutto →
+              Vedi tutti →
             </Link>
           </div>
           {myTasks?.length === 0 ? (
@@ -148,7 +148,7 @@ export default async function StaffHome() {
                 <RefreshCw size={13} /> Azioni Ricorrenti
               </h3>
               <Link href="/staff/ricorrenti" className="text-xs text-gold hover:text-gold-light transition-colors">
-                Vedi tutto →
+                Vedi tutte →
               </Link>
             </div>
             {ricorrentiPendenti.length === 0 ? (
