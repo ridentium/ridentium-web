@@ -61,7 +61,7 @@ export interface SOP {
 export interface RiordineRequest {
   id: string
   magazzino_item_id: string
-  magazzino_item?: MagazzinoItem
+  magazzin_item?: MagazzinoItem
   richiesto_da: string
   note?: string
   stato: 'aperta' | 'evasa' | 'annullata'
@@ -84,18 +84,22 @@ export interface Ricorrente {
   id: string
   titolo: string
   descrizione?: string
-  frequenza: string
+  frequenza: 'giornaliero' | 'settimanale' | 'mensile'
   assegnato_a?: string | null
   attiva: boolean
   completamenti: RicorrenteCompletamento[]
   created_at: string
 }
 
+export type CanaleOrdine = 'whatsapp' | 'email' | 'eshop' | 'telefono'
+
 export interface Fornitore {
   id: string
   nome: string
   telefono?: string | null
   email?: string | null
+  canale_ordine: CanaleOrdine
+  sito_eshop?: string | null
   note?: string
   created_at: string
 }
@@ -124,11 +128,11 @@ export interface Ordine {
   fornitore_id?: string | null
   fornitore_nome: string
   stato: 'inviato' | 'ricevuto' | 'parziale' | 'annullato'
-  canale: 'whatsapp' | 'email'
+  canale: CanaleOrdine
   note?: string | null
   data_invio: string
   data_ricezione?: string | null
-  created_by?: string | null
+  created_by:?: string | null
   created_at: string
   righe?: OrdineRiga[]
 }
@@ -137,7 +141,7 @@ export interface KPI {
   id: number
   pazienti_oggi: number
   pazienti_settimana: number
-  pazienti_mese: number
+  paziUnti_mese: number
   appuntamenti_oggi: number
   fatturato_mese: number
   tasso_presenze: number
