@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -23,11 +23,11 @@
     min-height: 100vh;
   }
 
-  /* Scrollbar luxury */
+  /* Scrollbar — brand palette */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #1A1714; }
-  ::-webkit-scrollbar-thumb { background: #5C5248; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #C9A84C; }
+  ::-webkit-scrollbar-track { background: #18130E; }
+  ::-webkit-scrollbar-thumb { background: #665647; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #D2C6B6; }
 }
 
 @layer components {
@@ -35,6 +35,7 @@
     @apply bg-obsidian-mid border border-obsidian-light rounded-md p-5 shadow-card;
   }
 
+  /* Primary CTA — brand beige on deep dark */
   .btn-primary {
     @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded
            hover:bg-gold-light transition-colors duration-150;
@@ -84,19 +85,26 @@
     @apply bg-obsidian-light/30;
   }
 
+  /* Nav items — brand taupe active state */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm text-stone-light
            hover:text-cream hover:bg-obsidian-light/50 transition-colors duration-150 cursor-pointer;
   }
   .nav-item.active {
-    @apply text-gold bg-gold/10 border-l-2 border-gold;
+    @apply text-gold bg-stone-dark/20 border-l-2 border-gold;
   }
 
+  /* Luxury serif headings */
   .section-title {
     @apply font-serif text-2xl text-cream font-light tracking-wide;
   }
 
   .label-field {
     @apply text-xs uppercase tracking-widest text-stone font-medium;
+  }
+
+  /* Divisore luxury */
+  .divider-luxury {
+    @apply border-t border-obsidian-light/60;
   }
 }
