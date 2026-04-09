@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Task, UserProfile } from '@/types'
 import { formatDate, roleLabel } from '@/lib/utils'
-import { Plus, X, CheckCircle2, Circle, Clock, ChevronUp } from 'lucide-react'
+import { Plus, X, CheckCircle2, Circle, Clock, ChevronUp, AlertCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 const STATI = ['da_fare', 'in_corso', 'completato'] as const
@@ -35,8 +35,8 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   const filtered = tasks.filter(t => filterStato === 'tutti' || t.stato === filterStato)
 
   async function updateStato(id: string, stato: string) {
-    await supabase.from('tasks').update({ stato }).eq('id', id)
-    startTransition(() => router.refresh())
+    const { error } = await supabase.from('tasks').update({ stato }).eq('id', id)
+    if (!error) startTransition(() => router.refresh())
   }
 
   return (
@@ -156,29 +156,51 @@ function NewTaskModal({ staff, onClose, onSave }: {
     priorita: 'media', stato: 'da_fare', scadenza: ''
   })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSave() {
-    if (!form.titolo) return
+    if (!form.titolo.trim()) return
     setSaving(true)
+    setError(null)
+
     const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('tasks').insert({
-      ...form,
+
+    const { error: dbError } = await supabase.from('tasks').insert({
+      titolo: form.titolo.trim(),
+      descrizione: form.descrizione.trim() || null,
+      priorita: form.priorita,
+      stato: form.stato,
       creato_da: user?.id,
       assegnato_a: form.assegnato_a || null,
       scadenza: form.scadenza || null,
     })
+
     setSaving(false)
+
+    if (dbError) {
+      setError(`Errore nel salvataggio: ${dbError.message}`)
+      return
+    }
+
     onSave()
   }
 
   return (
-    <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-obsidian/85 backdrop-blur-sm flex items-center justify-center z-50 p-4">
       <div className="card w-full max-w-md">
         <div className="flex items-center justify-between mb-5">
           <h3 className="section-title text-lg">Nuovo Task</h3>
           <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
         </div>
+
+        {error && (
+          <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-400 text-sm">
+            <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+            <span>{error}</span>
+          </div>
+        )}
+
         <div className="space-y-4">
           <div>
             <label className="label-field block mb-1.5">Titolo *</label>
@@ -212,7 +234,7 @@ function NewTaskModal({ staff, onClose, onSave }: {
         </div>
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="btn-secondary flex-1">Annulla</button>
-          <button onClick={handleSave} disabled={saving || !form.titolo} className="btn-primary flex-1 disabled:opacity-50">
+          <button onClick={handleSave} disabled={saving || !form.titolo.trim()} className="btn-primary flex-1 disabled:opacity-50">
             {saving ? 'Salvataggio…' : 'Crea Task'}
           </button>
         </div>
