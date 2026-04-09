@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Ordine } from '@/types'
+import { Ordine, MagazzinoItem } from '@/types'
 import { logActivity } from '@/lib/registro'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
-  Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone
+  Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone,
+  Plus, Trash2
 } from 'lucide-react'
 
 interface Props {
@@ -31,6 +32,13 @@ const STATO_COLOR: Record<string, string> = {
   annullato: 'text-stone border-stone/30 bg-stone/10',
 }
 
+interface NuovaRiga {
+  magazzino_id: string
+  prodotto_nome: string
+  quantita: number
+  unita: string
+}
+
 export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }: Props) {
   const supabase = createClient()
   const [ordini, setOrdini] = useState(initialOrdini)
@@ -49,6 +57,18 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
   // Modal annulla
   const [annullaModal, setAnnullaModal] = useState<{ ordineId: string } | null>(null)
   const [annullaNote, setAnnullaNote] = useState('')
+
+  // Modal nuovo ordine
+  const [nuovoModal, setNuovoModal] = useState(false)
+  const [nuovoFornitore, setNuovoFornitore] = useState('')
+  const [nuovoCanale, setNuovoCanale] = useState<'whatsapp' | 'email' | 'eshop' | 'telefono'>('whatsapp')
+  const [nuovoRighe, setNuovoRighe] = useState<NuovaRiga[]>([
+    { magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }
+  ])
+  const [nuovoNote, setNuovoNote] = useState('')
+  const [nuovoSaving, setNuovoSaving] = useState(false)
+  const [magazzino, setMagazzino] = useState<MagazzinoItem[]>([])
+  const [magazzinoLoaded, setMagazzinoLoaded] = useState(false)
 
   const aperti    = ordini.filter(o => o.stato === 'inviato' || o.stato === 'parziale')
   const ricevuti  = ordini.filter(o => o.stato === 'ricevuto')
@@ -133,6 +153,101 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     setAnnullaNote('')
   }
 
+  async function apriNuovoOrdine() {
+    setNuovoModal(true)
+    setNuovoFornitore('')
+    setNuovoCanale('whatsapp')
+    setNuovoRighe([{ magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }])
+    setNuovoNote('')
+    if (!magazzinoLoaded) {
+      const { data } = await supabase
+        .from('magazzino')
+        .select('id, prodotto, unita, azienda')
+        .order('prodotto', { ascending: true })
+      if (data) {
+        setMagazzino(data as MagazzinoItem[])
+        setMagazzinoLoaded(true)
+      }
+    }
+  }
+
+  function aggiungiRiga() {
+    setNuovoRighe(prev => [...prev, { magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }])
+  }
+
+  function rimuoviRiga(idx: number) {
+    setNuovoRighe(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  function aggiornaRiga(idx: number, field: keyof NuovaRiga, value: string | number) {
+    setNuovoRighe(prev => prev.map((r, i) => {
+      if (i !== idx) return r
+      if (field === 'magazzino_id' && typeof value === 'string') {
+        const item = magazzino.find(m => m.id === value)
+        return {
+          ...r,
+          magazzino_id: value,
+          prodotto_nome: item?.prodotto ?? r.prodotto_nome,
+          unita: item?.unita ?? r.unita,
+        }
+      }
+      return { ...r, [field]: value }
+    }))
+  }
+
+  async function creaNuovoOrdine() {
+    if (!nuovoFornitore.trim()) return
+    const righeValide = nuovoRighe.filter(r => r.prodotto_nome.trim() && r.quantita > 0)
+    if (righeValide.length === 0) return
+
+    setNuovoSaving(true)
+
+    // 1. Crea ordine
+    const { data: nuovoOrdine, error: errOrdine } = await supabase
+      .from('ordini')
+      .insert({
+        fornitore_nome: nuovoFornitore.trim(),
+        canale: nuovoCanale,
+        stato: 'inviato',
+        note: nuovoNote.trim() || null,
+        data_invio: new Date().toISOString(),
+        created_by: userId,
+      })
+      .select()
+      .single()
+
+    if (errOrdine || !nuovoOrdine) {
+      setNuovoSaving(false)
+      return
+    }
+
+    // 2. Inserisci righe
+    const righeInsert = righeValide.map(r => ({
+      ordine_id: nuovoOrdine.id,
+      magazzino_id: r.magazzino_id || null,
+      prodotto_nome: r.prodotto_nome.trim(),
+      quantita_ordinata: r.quantita,
+      unita: r.unita || 'pz',
+    }))
+
+    const { data: righeData } = await supabase
+      .from('ordini_righe')
+      .insert(righeInsert)
+      .select()
+
+    // 3. Aggiorna stato locale
+    const ordineCompleto: Ordine = {
+      ...nuovoOrdine,
+      righe: righeData ?? [],
+    }
+    setOrdini(prev => [ordineCompleto, ...prev])
+
+    await logActivity(userId, userNome, 'Nuovo ordine creato', nuovoFornitore.trim(), 'magazzino')
+
+    setNuovoSaving(false)
+    setNuovoModal(false)
+  }
+
   function formatData(iso: string) {
     return new Date(iso).toLocaleDateString('it-IT', {
       day: '2-digit', month: '2-digit', year: 'numeric',
@@ -147,30 +262,46 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     { id: 'annullati', label: 'Annullati', count: annullati.length },
   ]
 
+  const CANALI = [
+    { id: 'whatsapp', label: 'WhatsApp', icon: <MessageCircle size={13} /> },
+    { id: 'email',    label: 'Email',    icon: <Mail size={13} /> },
+    { id: 'eshop',    label: 'Eshop',    icon: <Globe size={13} /> },
+    { id: 'telefono', label: 'Telefono', icon: <Phone size={13} /> },
+  ] as const
+
   return (
     <div>
-      {/* Filtri */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {tabs.map(t => (
-          <button
-            key={t.id}
-            onClick={() => setFiltro(t.id)}
-            className={`text-xs px-4 py-1.5 rounded border transition-colors ${
-              filtro === t.id
-                ? 'bg-gold/20 border-gold/40 text-gold'
-                : 'border-obsidian-light/40 text-stone hover:text-cream'
-            }`}
-          >
-            {t.label}
-            {t.count > 0 && (
-              <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
-                filtro === t.id ? 'bg-gold/30' : 'bg-obsidian-light/40'
-              }`}>
-                {t.count}
-              </span>
-            )}
-          </button>
-        ))}
+      {/* Header: filtri + pulsante nuovo ordine */}
+      <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          {tabs.map(t => (
+            <button
+              key={t.id}
+              onClick={() => setFiltro(t.id)}
+              className={`text-xs px-4 py-1.5 rounded border transition-colors ${
+                filtro === t.id
+                  ? 'bg-gold/20 border-gold/40 text-gold'
+                  : 'border-obsidian-light/40 text-stone hover:text-cream'
+              }`}
+            >
+              {t.label}
+              {t.count > 0 && (
+                <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                  filtro === t.id ? 'bg-gold/30' : 'bg-obsidian-light/40'
+                }`}>
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={apriNuovoOrdine}
+          className="flex items-center gap-1.5 text-xs px-4 py-1.5 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors"
+        >
+          <Plus size={13} /> Nuovo ordine
+        </button>
       </div>
 
       {/* Lista ordini */}
@@ -402,6 +533,145 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                 className="text-xs px-4 py-2 rounded border bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30 transition-colors"
               >
                 Conferma
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal nuovo ordine */}
+      {nuovoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-cream font-medium">Nuovo ordine</h2>
+              <button
+                onClick={() => setNuovoModal(false)}
+                className="text-stone hover:text-cream transition-colors"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Fornitore */}
+            <div className="mb-4">
+              <label className="block text-xs text-stone mb-1.5">Fornitore</label>
+              <input
+                type="text"
+                value={nuovoFornitore}
+                onChange={e => setNuovoFornitore(e.target.value)}
+                placeholder="Es. Neodent, Nobel Biocare..."
+                className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                autoFocus
+              />
+            </div>
+
+            {/* Canale */}
+            <div className="mb-4">
+              <label className="block text-xs text-stone mb-1.5">Canale ordine</label>
+              <div className="grid grid-cols-4 gap-2">
+                {CANALI.map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setNuovoCanale(c.id)}
+                    className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border text-xs transition-colors ${
+                      nuovoCanale === c.id
+                        ? 'border-gold/50 bg-gold/15 text-gold'
+                        : 'border-obsidian-light/40 text-stone hover:text-cream hover:border-obsidian-light'
+                    }`}
+                  >
+                    {c.icon}
+                    {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Prodotti ordinati */}
+            <div className="mb-4">
+              <label className="block text-xs text-stone mb-1.5">Prodotti ordinati</label>
+              <div className="space-y-2">
+                {nuovoRighe.map((riga, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    {/* Selettore prodotto */}
+                    <div className="flex-1 min-w-0">
+                      {magazzino.length > 0 ? (
+                        <select
+                          value={riga.magazzino_id}
+                          onChange={e => aggiornaRiga(idx, 'magazzino_id', e.target.value)}
+                          className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
+                        >
+                          <option value="">— Seleziona prodotto —</option>
+                          {magazzino.map(m => (
+                            <option key={m.id} value={m.id}>{m.prodotto}</option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          value={riga.prodotto_nome}
+                          onChange={e => aggiornaRiga(idx, 'prodotto_nome', e.target.value)}
+                          placeholder="Nome prodotto..."
+                          className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
+                        />
+                      )}
+                    </div>
+                    {/* Quantità */}
+                    <input
+                      type="number"
+                      min={1}
+                      value={riga.quantita}
+                      onChange={e => aggiornaRiga(idx, 'quantita', Math.max(1, parseInt(e.target.value) || 1))}
+                      className="w-16 text-center bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
+                    />
+                    <span className="text-stone text-xs w-6 flex-shrink-0">{riga.unita}</span>
+                    {/* Rimuovi riga */}
+                    {nuovoRighe.length > 1 && (
+                      <button
+                        onClick={() => rimuoviRiga(idx)}
+                        className="text-stone/50 hover:text-red-400 transition-colors flex-shrink-0"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={aggiungiRiga}
+                className="mt-2 flex items-center gap-1 text-xs text-stone hover:text-gold transition-colors"
+              >
+                <Plus size={12} /> Aggiungi prodotto
+              </button>
+            </div>
+
+            {/* Note */}
+            <div className="mb-5">
+              <label className="block text-xs text-stone mb-1.5">Note (opzionale)</label>
+              <textarea
+                value={nuovoNote}
+                onChange={e => setNuovoNote(e.target.value)}
+                placeholder="Riferimento ordine, istruzioni di consegna..."
+                className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
+                rows={2}
+              />
+            </div>
+
+            {/* Azioni */}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setNuovoModal(false)}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={creaNuovoOrdine}
+                disabled={nuovoSaving || !nuovoFornitore.trim() || nuovoRighe.every(r => !r.prodotto_nome.trim())}
+                className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-gold/40 bg-gold/15 text-gold hover:bg-gold/25 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ShoppingCart size={12} />
+                {nuovoSaving ? 'Salvataggio...' : 'Crea ordine'}
               </button>
             </div>
           </div>
