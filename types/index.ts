@@ -36,7 +36,7 @@ export interface Task {
   id: string
   titolo: string
   descrizione?: string
-  assegnato_a: string          // user id
+  assegnato_a: string // user id
   assegnato_a_profilo?: UserProfile
   creato_da: string
   stato: 'da_fare' | 'in_corso' | 'completato'
@@ -50,10 +50,10 @@ export interface SOP {
   id: string
   titolo: string
   categoria: string
-  contenuto: string            // markdown
+  contenuto: string // markdown
   versione: string
   autore: string
-  ruoli_visibili: UserRole[]   // chi può vedere questa SOP
+  ruoli_visibili: UserRole[] // chi può vedere questa SOP
   created_at: string
   updated_at: string
 }
@@ -84,7 +84,7 @@ export interface Ricorrente {
   id: string
   titolo: string
   descrizione?: string
-  frequenza: 'giornaliero' | 'settimanale' | 'mensile'
+  frequenza: string
   assegnato_a?: string | null
   attiva: boolean
   completamenti: RicorrenteCompletamento[]
@@ -94,7 +94,8 @@ export interface Ricorrente {
 export interface Fornitore {
   id: string
   nome: string
-  telefono: string
+  telefono?: string | null
+  email?: string | null
   note?: string
   created_at: string
 }
@@ -105,7 +106,7 @@ export interface RegistroEntry {
   user_nome: string
   azione: string
   dettaglio?: string
-  categoria: 'todo' | 'magazzino' | 'staff' | 'ricorrenti' | 'sistema' | 'altro'
+  categoria: string
   created_at: string
 }
 
