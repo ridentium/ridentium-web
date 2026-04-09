@@ -71,11 +71,11 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
               <div className="flex-1 min-w-0">
                 <p className="text-sm text-cream font-medium">{entry.azione}</p>
                 {entry.dettaglio && <p className="text-xs text-stone mt-0.5">{entry.dettaglio}</p>}
-                <p className="text-xs text-stone-60 mt-1">{entry.user_nome}</p>
+                <p className="text-xs text-stone/60 mt-1">{entry.user_nome}</p>
               </div>
               <div className="text-xs text-stone flex-shrink-0 text-right">
                 <p>{new Date(entry.created_at).toLocaleDateString('it-IT')}</p>
-                <p className="text-stone-60">{new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
+                <p className="text-stone/60">{new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
             </div>
           ))}
