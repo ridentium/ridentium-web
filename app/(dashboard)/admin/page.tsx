@@ -51,7 +51,7 @@ export default async function AdminHome() {
     { data: profilo },
     { data: fornitori },
   ] = await Promise.all([
-    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, azienda, prezzo_unitario, fornitore_id, unita'),
+    adminDb.from('magazzino').select('*'),
     supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a').neq('stato', 'completato'),
     supabase.from('tasks').select('id').eq('stato', 'completato'),
     supabase.from('riordini').select('id, created_at, magazzino_id, magazzino(prodotto)').eq('stato', 'aperta'),
