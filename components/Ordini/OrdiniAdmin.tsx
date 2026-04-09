@@ -6,7 +6,7 @@ import { Ordine } from '@/types'
 import { logActivity } from '@/lib/registro'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
-  Package, ChevronDown, ChevronUp, ShoppingCart
+  Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone
 } from 'lucide-react'
 
 interface Props {
@@ -197,10 +197,10 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                         {STATO_LABEL[ordine.stato]}
                       </span>
                       <span className="text-[10px] px-2 py-0.5 rounded border border-obsidian-light/30 text-stone flex items-center gap-1">
-                        {ordine.canale === 'whatsapp'
-                          ? <><MessageCircle size={9} /> WhatsApp</>
-                          : <><Mail size={9} /> Email</>
-                        }
+                        {ordine.canale === 'whatsapp' && <><MessageCircle size={9} /> WhatsApp</>}
+                        {ordine.canale === 'email'    && <><Mail size={9} /> Email</>}
+                        {ordine.canale === 'eshop'    && <><Globe size={9} /> Eshop</>}
+                        {ordine.canale === 'telefono' && <><Phone size={9} /> Telefono</>}
                       </span>
                     </div>
                     <p className="text-xs text-stone">{formatData(ordine.data_invio)}</p>
