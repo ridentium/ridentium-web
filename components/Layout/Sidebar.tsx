@@ -8,7 +8,7 @@ import { cn, roleLabel, roleColor } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen,
   Users, LogOut, ChevronRight, AlertTriangle,
-  RefreshCw, Phone, ClipboardList, Settings
+  RefreshCw, Phone, ClipboardList, Settings, UserCircle
 } from 'lucide-react'
 
 interface NavItem {
@@ -97,7 +97,7 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
         })}
       </nav>
 
-      {/* Profilo utente — cliccabile */}
+      {/* Profilo utente â cliccabile */}
       <div className="border-t border-obsidian-light px-3 py-3">
         <Link href={profiloHref}
               className={cn(
