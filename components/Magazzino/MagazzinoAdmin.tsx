@@ -1,5 +1,4 @@
 'use client'
-
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Fornitore, MagazzinoItem } from '@/types'
@@ -9,8 +8,8 @@ import { useRouter } from 'next/navigation'
 
 const CATEGORIE = [
   'Tutte', 'Impianti', 'Componentistica Protesica', 'Materiali Chirurgici',
-  'Consumabili', 'Compositi & Cementi', 'Endodonzia',
-  'Igiene & Profilassi', 'DPI & Sterilizzazione'
+  'Consumabili', 'Compositi & Cementi', 'Endodonzia', 'Igiene & Profilassi',
+  'DPI & Sterilizzazione'
 ]
 
 interface Props {
@@ -48,8 +47,6 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
 
   return (
     <div className="space-y-6">
-
-      {/* Riordini aperti */}
       {riordini.length > 0 && (
         <div className="card border-gold/30 bg-gold/5">
           <h3 className="text-xs uppercase tracking-widest text-gold mb-3">
@@ -57,8 +54,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
           </h3>
           <div className="space-y-2">
             {riordini.map((r: any) => (
-              <div key={r.id} className="flex items-center justify-between py-2
-                                          border-b border-obsidian-light/30 last:border-0">
+              <div key={r.id} className="flex items-center justify-between py-2 border-b border-obsidian-light/30 last:border-0">
                 <div>
                   <p className="text-sm text-cream">{r.magazzino_id}</p>
                   <p className="text-xs text-stone">
@@ -66,8 +62,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
                   </p>
                   {r.note && <p className="text-xs text-stone/70 italic mt-0.5">{r.note}</p>}
                 </div>
-                <button onClick={() => evadiRiordine(r.id)}
-                        className="btn-primary text-xs py-1.5 px-3">
+                <button onClick={() => evadiRiordine(r.id)} className="btn-primary text-xs py-1.5 px-3">
                   Evadi
                 </button>
               </div>
@@ -76,59 +71,49 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
         </div>
       )}
 
-      {/* Filtri */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2 flex-wrap">
           {CATEGORIE.map(cat => (
-            <button key={cat}
-                    onClick={() => setCategoria(cat)}
-                    className={`text-xs px-3 py-1.5 rounded border transition-colors ${
-                      categoria === cat
-                        ? 'bg-gold text-obsidian border-gold'
-                        : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
-                    }`}>
+            <button
+              key={cat}
+              onClick={() => setCategoria(cat)}
+              className={`text-xs px-3 py-1.5 rounded border transition-colors ${
+                categoria === cat
+                  ? 'bg-gold text-obsidian border-gold'
+                  : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+              }`}>
               {cat}
             </button>
           ))}
         </div>
-        <button onClick={() => setSoloAlert(!soloAlert)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ml-auto ${
-                  soloAlert
-                    ? 'bg-red-400/10 text-red-400 border-red-400/30'
-                    : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
-                }`}>
+        <button
+          onClick={() => setSoloAlert(!soloAlert)}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ml-auto ${
+            soloAlert
+              ? 'bg-red-400/10 text-red-400 border-red-400/30'
+              : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+          }`}>
           <AlertTriangle size={11} />
           Solo alert ({alertCount})
         </button>
         <button onClick={() => setShowAddForm(true)} className="btn-primary flex items-center gap-1.5 text-xs">
-          <Plus size={13} /> Aggiungi
+          <Plus size={13} />
+          Aggiungi
         </button>
       </div>
 
-      {/* Tabella */}
       <div className="card p-0 overflow-hidden">
         <table className="table-ridentium">
           <thead>
             <tr>
-              <th>Prodotto</th>
-              <th>Categoria</th>
-              <th>Azienda</th>
-              <th>Diametro</th>
-              <th>Lunghezza</th>
-              <th>Qtà</th>
-              <th>Min.</th>
-              <th>Stato</th>
-              <th>Scadenza</th>
-              <th></th>
+              <th>Prodotto</th><th>Categoria</th><th>Azienda</th>
+              <th>Diametro</th><th>Lunghezza</th><th>Qtà</th>
+              <th>Min.</th><th>Stato</th><th>Scadenza</th><th></th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="text-center text-stone py-8">
-                  Nessun prodotto trovato
-                </td>
-              </tr>
+              <tr><td colSpan={10} className="text-center text-stone py-8">Nessun prodotto trovato</td></tr>
             ) : filtered.map(item => {
               const isAlert = item.quantita < item.soglia_minima
               return (
@@ -139,10 +124,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
                   <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
                   <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
                   <td>
-                    <QuantitaEditor
-                      value={item.quantita}
-                      onChange={val => saveQuantita(item.id, val)}
-                    />
+                    <QuantitaEditor value={item.quantita} onChange={val => saveQuantita(item.id, val)} />
                   </td>
                   <td className="text-stone">{item.soglia_minima}</td>
                   <td>
@@ -185,19 +167,16 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [] }: Prop
 function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   const [editing, setEditing] = useState(false)
   const [val, setVal] = useState(String(value))
-
   if (!editing) {
     return (
-      <button onClick={() => setEditing(true)}
-              className="text-cream hover:text-gold transition-colors font-medium">
+      <button onClick={() => setEditing(true)} className="text-cream hover:text-gold transition-colors font-medium">
         {value}
       </button>
     )
   }
   return (
     <input
-      type="number"
-      value={val}
+      type="number" value={val}
       onChange={e => setVal(e.target.value)}
       onBlur={() => { onChange(Number(val)); setEditing(false) }}
       onKeyDown={e => { if (e.key === 'Enter') { onChange(Number(val)); setEditing(false) } }}
@@ -215,15 +194,12 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
 }) {
   const supabase = createClient()
   const [form, setForm] = useState<Partial<MagazzinoItem>>(item ?? {
-    prodotto: '', categoria: 'Impianti', azienda: '',
-    quantita: 0, soglia_minima: 2, unita: 'pz'
+    prodotto: '', categoria: 'Impianti', azienda: '', quantita: 0, soglia_minima: 2, unita: 'pz'
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
-  // Quando si seleziona un fornitore, popola il campo azienda
   function handleFornitoreChange(fornitoreId: string) {
     set('fornitore_id', fornitoreId || null)
     if (fornitoreId) {
@@ -233,13 +209,9 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
   }
 
   async function handleSave() {
-    if (!form.prodotto?.trim()) {
-      setError('Il nome del prodotto è obbligatorio.')
-      return
-    }
+    if (!form.prodotto?.trim()) { setError('Il nome del prodotto è obbligatorio.'); return }
     setSaving(true)
     setError(null)
-
     let dbError: any = null
     if (item) {
       const { error } = await supabase.from('magazzino').update(form).eq('id', item.id)
@@ -248,14 +220,8 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
       const { error } = await supabase.from('magazzino').insert(form)
       dbError = error
     }
-
     setSaving(false)
-
-    if (dbError) {
-      setError(`Errore nel salvataggio: ${dbError.message}`)
-      return
-    }
-
+    if (dbError) { setError('Errore nel salvataggio: ' + dbError.message); return }
     onSave()
   }
 
@@ -267,7 +233,6 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
           <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
         </div>
 
-        {/* Errore */}
         {error && (
           <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-400 text-sm">
             <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
@@ -291,75 +256,74 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
             </select>
           </div>
 
-          {/* Fornitore dropdown (se presenti fornitori in rubrica) */}
-          {fornitori.length > 0 ? (
-            <div>
-              <label className="label-field block mb-1.5">Fornitore</label>
-              <select
-                className="input"
-                value={form.fornitore_id ?? ''}
-                onChange={e => handleFornitoreChange(e.target.value)}
-              >
-                <option value="">— seleziona —</option>
-                {fornitori.map(f => (
-                  <option key={f.id} value={f.id}>{f.nome}</option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div>
-              <label className="label-field block mb-1.5">Azienda</label>
-              <input className="input" value={form.azienda ?? ''} onChange={e => set('azienda', e.target.value)} />
-            </div>
-          )}
+          <div>
+            <label className="label-field block mb-1.5">Fornitore</label>
+            <select
+              className="input"
+              value={form.fornitore_id ?? ''}
+              onChange={e => handleFornitoreChange(e.target.value)}
+            >
+              <option value="">{fornitori.length === 0 ? '— nessun fornitore —' : '— seleziona —'}</option>
+              {fornitori.map(f => (
+                <option key={f.id} value={f.id}>{f.nome}</option>
+              ))}
+            </select>
+          </div>
 
-          {/* Se è stato scelto un fornitore, mostra comunque il campo azienda (read-only) */}
-          {fornitori.length > 0 && (
-            <div className="col-span-2">
-              <label className="label-field block mb-1.5">Azienda {form.fornitore_id ? '(da fornitore)' : ''}</label>
-              <input
-                className="input"
-                value={form.azienda ?? ''}
-                onChange={e => set('azienda', e.target.value)}
-                placeholder="O scrivi manualmente"
-              />
-            </div>
-          )}
+          <div className="col-span-2">
+            <label className="label-field block mb-1.5">
+              Azienda{form.fornitore_id ? ' (da fornitore)' : ''}
+            </label>
+            <input
+              className="input"
+              value={form.azienda ?? ''}
+              onChange={e => set('azienda', e.target.value)}
+              placeholder={form.fornitore_id ? '' : "Nome azienda"}
+            />
+          </div>
 
           <div>
             <label className="label-field block mb-1.5">Codice Articolo</label>
             <input className="input" value={form.codice_articolo ?? ''} onChange={e => set('codice_articolo', e.target.value)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Unità</label>
             <select className="input" value={form.unita ?? 'pz'} onChange={e => set('unita', e.target.value)}>
               {['pz','conf','ml','rotoli','kit','scatole'].map(u => <option key={u}>{u}</option>)}
             </select>
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Quantità</label>
             <input type="number" className="input" value={form.quantita ?? 0} onChange={e => set('quantita', +e.target.value)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Soglia Minima</label>
             <input type="number" className="input" value={form.soglia_minima ?? 0} onChange={e => set('soglia_minima', +e.target.value)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Diametro (mm)</label>
             <input type="number" step="0.1" className="input" value={form.diametro ?? ''} onChange={e => set('diametro', e.target.value ? +e.target.value : null)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Lunghezza (mm)</label>
             <input type="number" step="0.5" className="input" value={form.lunghezza ?? ''} onChange={e => set('lunghezza', e.target.value ? +e.target.value : null)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Scadenza</label>
             <input type="date" className="input" value={form.scadenza ?? ''} onChange={e => set('scadenza', e.target.value || null)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Prezzo Unitario (€)</label>
             <input type="number" step="0.01" className="input" value={form.prezzo_unitario ?? ''} onChange={e => set('prezzo_unitario', e.target.value ? +e.target.value : null)} />
           </div>
+
           <div className="col-span-2">
             <label className="label-field block mb-1.5">Note</label>
             <textarea className="input resize-none" rows={2} value={form.note ?? ''} onChange={e => set('note', e.target.value)} />
