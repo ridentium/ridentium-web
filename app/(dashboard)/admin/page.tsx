@@ -4,6 +4,35 @@ import PageHeader from '@/components/Layout/PageHeader'
 import Link from 'next/link'
 import { Package, CheckSquare, Users, AlertTriangle, TrendingUp, Calendar, Euro, Activity, RefreshCw } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
+
+function getPeriodoKey(frequenza: string): string {
+  const now = new Date()
+  if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
+  if (frequenza === 'settimanale') {
+    const d = new Date(now); d.setDate(d.getDate() - d.getDay() + 1)
+    return 'W' + d.toISOString().split('T')[0]
+  }
+  if (frequenza === 'mensile') return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+  const m = frequenza.match(/^ogni_(\d+)_(giorni|settimane|mesi)$/)
+  if (m) {
+    const n = parseInt(m[1]); const unita = m[2]
+    const epoch = new Date('2024-01-01').getTime()
+    if (unita === 'giorni') { const days = Math.floor((now.getTime() - epoch) / 86400000); return 'D' + n + '_' + Math.floor(days / n) }
+    if (unita === 'settimane') { const weeks = Math.floor((now.getTime() - epoch) / (7 * 86400000)); return 'W' + n + '_' + Math.floor(weeks / n) }
+    if (unita === 'mesi') { const tm = now.getFullYear() * 12 + now.getMonth(); return 'M' + n + '_' + Math.floor((tm - 2024 * 12) / n) }
+  }
+  return now.toISOString().split('T')[0]
+}
+
+function freqLabel(frequenza: string): string {
+  if (frequenza === 'giornaliero') return 'Ogni giorno'
+  if (frequenza === 'settimanale') return 'Ogni settimana'
+  if (frequenza === 'mensile') return 'Ogni mese'
+  const m = frequenza.match(/^ogni_(\d+)_(giorni|settimane|mesi)$/)
+  if (m) { const n = parseInt(m[1]); return n === 1 ? 'Ogni ' + m[2].slice(0, -1) : `Ogni ${n} ${m[2]}` }
+  return frequenza
+}
 
 export default async function AdminHome() {
   const supabase = createClient()
@@ -19,8 +48,9 @@ export default async function AdminHome() {
     { data: kpi },
     { data: ricorrenti },
     { data: profilo },
+    { data: fornitori },
   ] = await Promise.all([
-    supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, azienda, prezzo_unitario'),
+    supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, azienda, prezzo_unitario, fornitore_id, unita'),
     supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a').neq('stato', 'completato'),
     supabase.from('tasks').select('id').eq('stato', 'completato'),
     adminDb.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true),
@@ -28,6 +58,7 @@ export default async function AdminHome() {
     supabase.from('kpi').select('*').single(),
     supabase.from('ricorrenti').select('*').eq('attiva', true),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
+    supabase.from('fornitori').select('id, nome, telefono, email').order('nome'),
   ])
 
   const alertItems = (magazzinoAll ?? []).filter(
@@ -35,22 +66,9 @@ export default async function AdminHome() {
   )
   const taskUrgenti = (tasksOpen ?? []).filter((t: any) => t.priorita === 'alta')
 
-  // Valore magazzino
-  const valoreMagazzino = (magazzinoAll ?? []).reduce((s: number, i: any) =>
-    s + (i.quantita ?? 0) * (i.prezzo_unitario ?? 0), 0
+  const valoreMagazzino = (magazzinoAll ?? []).reduce(
+    (s: number, i: any) => s + (i.quantita ?? 0) * (i.prezzo_unitario ?? 0), 0
   )
-
-  // Ricorrenti pendenti dell'admin
-  function getPeriodoKey(frequenza: string): string {
-    const now = new Date()
-    if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
-    if (frequenza === 'settimanale') {
-      const d = new Date(now); d.setDate(d.getDate() - d.getDay() + 1)
-      return 'W' + d.toISOString().split('T')[0]
-    }
-    if (frequenza === 'mensile') return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-    return now.toISOString().split('T')[0]
-  }
 
   const ricorrentiPendenti = (ricorrenti ?? []).filter((az: any) => {
     if (!az.attiva) return false
@@ -60,20 +78,13 @@ export default async function AdminHome() {
     return !completamenti.some((c: any) => c.userId === user!.id && c.periodoKey === key)
   })
 
-  const oggi = new Date().toLocaleDateString('it-IT', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-  })
-
+  const oggi = new Date().toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
   const nomeAdmin = profilo?.nome ?? 'Mariano'
 
   return (
     <div>
-      <PageHeader
-        title={`Buongiorno, ${nomeAdmin}.`}
-        subtitle={oggi.charAt(0).toUpperCase() + oggi.slice(1)}
-      />
+      <PageHeader title={`Buongiorno, ${nomeAdmin}.`} subtitle={oggi.charAt(0).toUpperCase() + oggi.slice(1)} />
 
-      {/* KPI clinici (se configurati) */}
       {kpi && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
           <KpiCard label="Pazienti oggi" value={kpi.pazienti_oggi} icon={Calendar} color="text-cream" />
@@ -85,40 +96,15 @@ export default async function AdminHome() {
         </div>
       )}
 
-      {/* KPI operativi */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
-          label="Prodotti sotto soglia"
-          value={alertItems.length}
-          icon={AlertTriangle}
-          href="/admin/magazzino"
-          alert={alertItems.length > 0}
-        />
-        <StatCard
-          label="Task aperti"
-          value={tasksOpen?.length ?? 0}
-          icon={CheckSquare}
-          href="/admin/tasks"
-        />
-        <StatCard
-          label="Riordini da evadere"
-          value={riordiniAperti?.length ?? 0}
-          icon={Package}
-          href="/admin/magazzino"
-          alert={(riordiniAperti?.length ?? 0) > 0}
-        />
-        <StatCard
-          label="Valore magazzino"
-          value={`€${Math.round(valoreMagazzino).toLocaleString('it-IT')}`}
-          icon={Package}
-          href="/admin/magazzino"
-          asText
-        />
+        <StatCard label="Prodotti sotto soglia" value={alertItems.length} icon={AlertTriangle} href="/admin/magazzino" alert={alertItems.length > 0} />
+        <StatCard label="Task aperti" value={tasksOpen?.length ?? 0} icon={CheckSquare} href="/admin/tasks" />
+        <StatCard label="Riordini da evadere" value={riordiniAperti?.length ?? 0} icon={Package} href="/admin/magazzino" alert={(riordiniAperti?.length ?? 0) > 0} />
+        <StatCard label="Valore magazzino" value={`€${Math.round(valoreMagazzino).toLocaleString('it-IT')}`} icon={Package} href="/admin/magazzino" asText />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-        {/* Alert magazzino */}
+        {/* Sotto soglia con pulsante ordine */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
@@ -128,27 +114,12 @@ export default async function AdminHome() {
               Vedi tutto →
             </Link>
           </div>
-          {alertItems.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">✓ Tutto in ordine</p>
-          ) : (
-            <div className="space-y-2">
-              {alertItems.slice(0, 5).map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between py-2
-                                               border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-sm text-cream/80">{item.prodotto}</span>
-                  <span className="badge-alert">
-                    <AlertTriangle size={10} />
-                    {item.quantita}/{item.soglia_minima}
-                  </span>
-                </div>
-              ))}
-              {alertItems.length > 5 && (
-                <p className="text-stone text-xs text-center pt-1">
-                  +{alertItems.length - 5} altri prodotti
-                </p>
-              )}
-            </div>
-          )}
+          <SottoSogliaOrdina
+            alertItems={alertItems as any}
+            fornitori={fornitori ?? []}
+            userId={user!.id}
+            userNome={nomeAdmin}
+          />
         </div>
 
         {/* Task urgenti */}
@@ -166,13 +137,10 @@ export default async function AdminHome() {
           ) : (
             <div className="space-y-2">
               {taskUrgenti.slice(0, 5).map((task: any) => (
-                <div key={task.id} className="flex items-start justify-between py-2
-                                               border-b border-obsidian-light/40 last:border-0">
+                <div key={task.id} className="flex items-start justify-between py-2 border-b border-obsidian-light/40 last:border-0">
                   <span className="text-sm text-cream/80">{task.titolo}</span>
                   {task.scadenza && (
-                    <span className="text-xs text-stone ml-3 shrink-0">
-                      {formatDate(task.scadenza)}
-                    </span>
+                    <span className="text-xs text-stone ml-3 shrink-0">{formatDate(task.scadenza)}</span>
                   )}
                 </div>
               ))}
@@ -198,7 +166,7 @@ export default async function AdminHome() {
                 <div key={az.id} className="flex items-center gap-3 py-2 border-b border-obsidian-light/40 last:border-0">
                   <span className="text-stone text-sm">○</span>
                   <span className="text-sm text-cream/80 flex-1">{az.titolo}</span>
-                  <span className="text-xs text-stone capitalize">{az.frequenza}</span>
+                  <span className="text-xs text-stone">{freqLabel(az.frequenza)}</span>
                 </div>
               ))}
               {ricorrentiPendenti.length > 5 && (
@@ -209,7 +177,7 @@ export default async function AdminHome() {
         </div>
 
         {/* Riordini aperti */}
-        y(riordiniAperti?.length ?? 0) > 0 && (
+        {(riordiniAperti?.length ?? 0) > 0 && (
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
@@ -221,8 +189,7 @@ export default async function AdminHome() {
             </div>
             <div className="space-y-2">
               {riordiniAperti?.slice(0, 4).map((r: any) => (
-                <div key={r.id} className="flex items-center justify-between py-2
-                                            border-b border-obsidian-light/40 last:border-0">
+                <div key={r.id} className="flex items-center justify-between py-2 border-b border-obsidian-light/40 last:border-0">
                   <span className="text-sm text-cream/80">{(r.magazzino as any)?.prodotto ?? '—'}</span>
                   <span className="badge-alert">Aperta</span>
                 </div>
@@ -235,9 +202,7 @@ export default async function AdminHome() {
   )
 }
 
-function KpiCard({ label, value, icon: Icon, color }: {
-  label: string; value: string | number; icon: React.ElementType; color: string
-}) {
+function KpiCard({ label, value, icon: Icon, color }: { label: string; value: string | number; icon: React.ElementType; color: string }) {
   return (
     <div className="card py-3 px-4">
       <p className="text-[10px] uppercase tracking-widest text-stone mb-1">{label}</p>
@@ -249,9 +214,7 @@ function KpiCard({ label, value, icon: Icon, color }: {
   )
 }
 
-function StatCard({
-  label, value, icon: Icon, href, alert = false, asText = false
-}: {
+function StatCard({ label, value, icon: Icon, href, alert = false, asText = false }: {
   label: string
   value: number | string
   icon: React.ElementType
