@@ -53,7 +53,7 @@ export interface SOP {
   contenuto: string            // markdown
   versione: string
   autore: string
-  ruoli_visibili: UserRole[]   // chi puÃ² vedere questa SOP
+  ruoli_visibili: UserRole[]   // chi può vedere questa SOP
   created_at: string
   updated_at: string
 }
