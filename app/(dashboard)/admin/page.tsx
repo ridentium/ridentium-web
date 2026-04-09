@@ -122,14 +122,14 @@ export default async function AdminHome() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
-              Magazzino â€” Sotto Soglia
+              Magazzino — Sotto Soglia
             </h3>
             <Link href="/admin/magazzino" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Vedi tutto â†’
+              Vedi tutto →
             </Link>
           </div>
           {alertItems.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">âœ“ Tutto in ordine</p>
+            <p className="text-stone text-sm py-4 text-center">✓ Tutto in ordine</p>
           ) : (
             <div className="space-y-2">
               {alertItems.slice(0, 5).map((item: any) => (
@@ -155,10 +155,10 @@ export default async function AdminHome() {
         <div className="card">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
-              Task ad alta prioritÃ 
+              Task ad alta priorità
             </h3>
             <Link href="/admin/tasks" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Vedi tutto â†’
+              Vedi tutto →
             </Link>
           </div>
           {taskUrgenti.length === 0 ? (
@@ -187,16 +187,16 @@ export default async function AdminHome() {
               <RefreshCw size={13} /> Azioni Ricorrenti
             </h3>
             <Link href="/admin/ricorrenti" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Gestisci â†’
+              Gestisci →
             </Link>
           </div>
           {ricorrentiPendenti.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">âœ“ Tutte completate per questo periodo</p>
+            <p className="text-stone text-sm py-4 text-center">✓ Tutte completate per questo periodo</p>
           ) : (
             <div className="space-y-1">
               {ricorrentiPendenti.slice(0, 5).map((az: any) => (
                 <div key={az.id} className="flex items-center gap-3 py-2 border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-stone text-sm">â—‹</span>
+                  <span className="text-stone text-sm">○</span>
                   <span className="text-sm text-cream/80 flex-1">{az.titolo}</span>
                   <span className="text-xs text-stone capitalize">{az.frequenza}</span>
                 </div>
@@ -209,21 +209,21 @@ export default async function AdminHome() {
         </div>
 
         {/* Riordini aperti */}
-        {(riordiniAperti?.length ?? 0) > 0 && (
+        y(riordiniAperti?.length ?? 0) > 0 && (
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
                 Richieste Riordino
               </h3>
               <Link href="/admin/magazzino" className="text-xs text-gold hover:text-gold-light transition-colors">
-                Gestisci â†’
+                Gestisci →
               </Link>
             </div>
             <div className="space-y-2">
               {riordiniAperti?.slice(0, 4).map((r: any) => (
                 <div key={r.id} className="flex items-center justify-between py-2
                                             border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-sm text-cream/80">{(r.magazzino as any)?.prodotto ?? 'â€”'}</span>
+                  <span className="text-sm text-cream/80">{(r.magazzino as any)?.prodotto ?? '—'}</span>
                   <span className="badge-alert">Aperta</span>
                 </div>
               ))}
@@ -235,7 +235,9 @@ export default async function AdminHome() {
   )
 }
 
-function KpiCard({ label, value, icon: Icon, color }: {label: string; value: string | number; icon: React.ElementType; color: string}) {
+function KpiCard({ label, value, icon: Icon, color }: {
+  label: string; value: string | number; icon: React.ElementType; color: string
+}) {
   return (
     <div className="card py-3 px-4">
       <p className="text-[10px] uppercase tracking-widest text-stone mb-1">{label}</p>
@@ -244,21 +246,29 @@ function KpiCard({ label, value, icon: Icon, color }: {label: string; value: str
         <p className={`text-xl font-serif font-light ${color}`}>{value}</p>
       </div>
     </div>
-  )B}
+  )
+}
 
 function StatCard({
   label, value, icon: Icon, href, alert = false, asText = false
-}: {label: string; value: number | string; icon: React.ElementType; href: string; alert?: Êoolean; asText?: Êoolean;}) {
+}: {
+  label: string
+  value: number | string
+  icon: React.ElementType
+  href: string
+  alert?: boolean
+  asText?: boolean
+}) {
   return (
     <Link href={href} className="card hover:border-gold/30 transition-colors group block">
       <div className="flex items-start justify-between mb-3">
         <Icon size={16} className={alert && typeof value === 'number' && value > 0 ? 'text-red-400' : 'text-stone'} />
-        <span className="text-[10px] text-stone group-hover:text-gold transition-colors">â†’</span>
+        <span className="text-[10px] text-stone group-hover:text-gold transition-colors">→</span>
       </div>
       <p className={`text-3xl font-light font-serif mb-1 ${alert && typeof value === 'number' && value > 0 ? 'text-red-400' : asText ? 'text-gold' : 'text-cream'}`}>
         {value}
       </p>
-      <p className="text-xs text-stone uppercase tracking-wider">{iabel}</p>
+      <p className="text-xs text-stone uppercase tracking-wider">{label}</p>
     </Link>
   )
 }
