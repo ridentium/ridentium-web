@@ -1,14 +1,18 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
 import MagazzinoAdmin from '@/components/Magazzino/MagazzinoAdmin'
 
 export default async function MagazzinoPage() {
   const supabase = createClient()
+  const adminDb = createAdminClient()
+  const { data: { user } } = await supabase.auth.getUser()
 
   const [
     { data: items },
     { data: riordini },
     { data: fornitori },
+    { data: profilo },
   ] = await Promise.all([
     supabase
       .from('magazzino')
@@ -26,18 +30,22 @@ export default async function MagazzinoPage() {
       .from('fornitori')
       .select('*')
       .order('nome'),
+    adminDb
+      .from('profili')
+      .select('nome')
+      .eq('id', user!.id)
+      .single(),
   ])
 
   return (
     <div>
-      <PageHeader
-        title="Magazzino"
-        subtitle="Gestione scorte e riordini"
-      />
+      <PageHeader title="Magazzino" subtitle="Gestione scorte e riordini" />
       <MagazzinoAdmin
         items={items ?? []}
         riordini={riordini ?? []}
         fornitori={fornitori ?? []}
+        userId={user!.id}
+        userNome={profilo?.nome ?? ''}
       />
     </div>
   )
