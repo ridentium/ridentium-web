@@ -36,7 +36,7 @@ export interface Task {
   id: string
   titolo: string
   descrizione?: string
-  assegnato_a: string // user id
+  assegnato_a: string          // user id
   assegnato_a_profilo?: UserProfile
   creato_da: string
   stato: 'da_fare' | 'in_corso' | 'completato'
@@ -50,10 +50,10 @@ export interface SOP {
   id: string
   titolo: string
   categoria: string
-  contenuto: string // markdown
+  contenuto: string            // markdown
   versione: string
   autore: string
-  ruoli_visibili: UserRole[] // chi può vedere questa SOP
+  ruoli_visibili: UserRole[]   // chi può vedere questa SOP
   created_at: string
   updated_at: string
 }
@@ -108,6 +108,29 @@ export interface RegistroEntry {
   dettaglio?: string
   categoria: string
   created_at: string
+}
+
+export interface OrdineRiga {
+  id: string
+  ordine_id: string
+  magazzino_id?: string | null
+  prodotto_nome: string
+  quantita_ordinata: number
+  unita?: string | null
+}
+
+export interface Ordine {
+  id: string
+  fornitore_id?: string | null
+  fornitore_nome: string
+  stato: 'inviato' | 'ricevuto' | 'parziale' | 'annullato'
+  canale: 'whatsapp' | 'email'
+  note?: string | null
+  data_invio: string
+  data_ricezione?: string | null
+  created_by?: string | null
+  created_at: string
+  righe?: OrdineRiga[]
 }
 
 export interface KPI {
