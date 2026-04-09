@@ -61,7 +61,7 @@ export interface SOP {
 export interface RiordineRequest {
   id: string
   magazzino_item_id: string
-  magazzin_item?: MagazzinoItem
+  magazzino_item?: MagazzinoItem
   richiesto_da: string
   note?: string
   stato: 'aperta' | 'evasa' | 'annullata'
@@ -132,7 +132,7 @@ export interface Ordine {
   note?: string | null
   data_invio: string
   data_ricezione?: string | null
-  created_by:?: string | null
+  created_by?: string | null
   created_at: string
   righe?: OrdineRiga[]
 }
@@ -141,7 +141,7 @@ export interface KPI {
   id: number
   pazienti_oggi: number
   pazienti_settimana: number
-  paziUnti_mese: number
+  pazienti_mese: number
   appuntamenti_oggi: number
   fatturato_mese: number
   tasso_presenze: number
