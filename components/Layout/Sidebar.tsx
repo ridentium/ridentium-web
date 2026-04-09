@@ -38,7 +38,7 @@ const staffNav: NavItem[] = [
 ]
 
 interface SidebarProps {
-  profile: UserProfile
+  profilo: UserProfile
   alertCount?: number
 }
 
@@ -46,7 +46,7 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
-  const isAdmin = profile.ruolo === 'admin'
+  const isAdmin = profilo.ruolo === 'admin'
   const nav = isAdmin ? adminNav : staffNav
 
   async function handleLogout() {
@@ -110,7 +110,7 @@ export default function Sidebar({ profilo, alertCount = 0 }: SidebarProps) {
           </div>
         </div>
         <button onClick={handleLogout}
-               className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400">
+                className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400">
           <LogOut size={13} />
           Esci
         </button>
