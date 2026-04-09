@@ -32,6 +32,11 @@ const STATO_COLOR: Record<string, string> = {
   annullato: 'text-stone border-stone/30 bg-stone/10',
 }
 
+// Estende OrdineRiga con il campo quantita_ricevuta salvato durante la ricezione
+interface OrdineRigaConRicevuta {
+  quantita_ricevuta?: number | null
+}
+
 interface NuovaRiga {
   magazzino_id: string
   prodotto_nome: string
@@ -53,6 +58,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
   const [quantitaRicevute, setQuantitaRicevute] = useState<Record<string, number>>({})
   const [ricezioneNote, setRicezioneNote] = useState('')
   const [ricezioneSaving, setRicezioneSaving] = useState(false)
+  const [ricezioneError, setRicezioneError] = useState<string | null>(null)
 
   // Modal annulla
   const [annullaModal, setAnnullaModal] = useState<{ ordineId: string } | null>(null)
@@ -85,6 +91,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     setRicezioneTipo(null)
     setQuantitaRicevute({})
     setRicezioneNote('')
+    setRicezioneError(null)
   }
 
   function selezionaTipo(tipo: 'totale' | 'parziale') {
@@ -100,9 +107,13 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
   async function confermaRicezione() {
     if (!ricezioneModal || !ricezioneTipo) return
     setRicezioneSaving(true)
+    setRicezioneError(null)
 
-    // 1. Aggiorna quantità magazzino per ogni riga ricevuta
-    for (const riga of (ricezioneModal.ordine.righe ?? [])) {
+    const righe = ricezioneModal.ordine.righe ?? []
+    const nuovoStato = ricezioneTipo === 'totale' ? 'ricevuto' : 'parziale'
+
+    // 1. Aggiorna magazzino e salva quantita_ricevuta su ogni riga
+    for (const riga of righe) {
       const qty = quantitaRicevute[riga.id] ?? 0
       if (qty > 0 && riga.magazzino_id) {
         const { data: item } = await supabase
@@ -113,10 +124,15 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
             .eq('id', riga.magazzino_id)
         }
       }
+      // Persisti la quantità ricevuta sulla riga (necessario per rollback in annullamento)
+      if (qty >= 0) {
+        await supabase.from('ordini_righe')
+          .update({ quantita_ricevuta: qty })
+          .eq('id', riga.id)
+      }
     }
 
     // 2. Aggiorna stato ordine
-    const nuovoStato = ricezioneTipo === 'totale' ? 'ricevuto' : 'parziale'
     setLoading(ricezioneModal.ordine.id)
     const updates: Record<string, unknown> = {
       stato: nuovoStato,
@@ -124,16 +140,44 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
       data_ricezione: new Date().toISOString(),
     }
     const { error } = await supabase.from('ordini').update(updates).eq('id', ricezioneModal.ordine.id)
-    if (!error) {
-      const ordineId = ricezioneModal.ordine.id
-      setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
-      await logActivity(
-        userId, userNome,
-        `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}`,
-        ricezioneModal.ordine.fornitore_nome,
-        'magazzino'
-      )
+
+    if (error) {
+      // Rollback magazzino: annulla le modifiche appena fatte
+      for (const riga of righe) {
+        const qty = quantitaRicevute[riga.id] ?? 0
+        if (qty > 0 && riga.magazzino_id) {
+          const { data: item } = await supabase
+            .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
+          if (item) {
+            await supabase.from('magazzino')
+              .update({ quantita: Math.max(0, (item.quantita ?? 0) - qty) })
+              .eq('id', riga.magazzino_id)
+          }
+        }
+      }
+      setRicezioneError('Errore nel salvataggio. Riprova.')
+      setLoading(null)
+      setRicezioneSaving(false)
+      return // Non chiudere il modal: lascia riprovare
     }
+
+    // Successo: aggiorna stato locale incluse le quantita_ricevute
+    const ordineId = ricezioneModal.ordine.id
+    const righeAggiornate = righe.map(r => ({
+      ...r,
+      quantita_ricevuta: quantitaRicevute[r.id] ?? null,
+    }))
+    setOrdini(prev => prev.map(o =>
+      o.id === ordineId
+        ? { ...o, ...updates, righe: righeAggiornate } as Ordine
+        : o
+    ))
+    await logActivity(
+      userId, userNome,
+      `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}`,
+      ricezioneModal.ordine.fornitore_nome,
+      'magazzino'
+    )
     setLoading(null)
     setRicezioneModal(null)
     setRicezioneSaving(false)
@@ -141,11 +185,30 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
 
   async function cambiaStatoAnnullato(ordineId: string, note?: string) {
     setLoading(ordineId)
+    const ordine = ordini.find(o => o.id === ordineId)
+
+    // Se l'ordine aveva già una ricezione parziale, scala il magazzino
+    if (ordine && ordine.stato === 'parziale') {
+      for (const riga of (ordine.righe ?? [])) {
+        // Usa quantita_ricevuta se disponibile (salvata durante la ricezione),
+        // altrimenti 0 (inviato non aveva ancora ricevuto nulla)
+        const qtyToSubtract = (riga as OrdineRigaConRicevuta).quantita_ricevuta ?? 0
+        if (qtyToSubtract > 0 && riga.magazzino_id) {
+          const { data: item } = await supabase
+            .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
+          if (item) {
+            await supabase.from('magazzino')
+              .update({ quantita: Math.max(0, (item.quantita ?? 0) - qtyToSubtract) })
+              .eq('id', riga.magazzino_id)
+          }
+        }
+      }
+    }
+
     const updates = { stato: 'annullato', note: note || null }
     const { error } = await supabase.from('ordini').update(updates).eq('id', ordineId)
     if (!error) {
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
-      const ordine = ordini.find(o => o.id === ordineId)
       await logActivity(userId, userNome, 'Ordine annullato', ordine?.fornitore_nome, 'magazzino')
     }
     setLoading(null)
@@ -341,7 +404,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                       </p>
                     )}
                     {ordine.note && (
-                      <p className="text-xs text-stone/70 mt-1 italic">"{ordine.note}"</p>
+                      <p className="text-xs text-stone.70 mt-1 italic">"{ordine.note}"</p>
                     )}
                   </div>
                   {/* Toggle righe */}
@@ -481,6 +544,12 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
                   rows={2}
                 />
+
+                {ricezioneError && (
+                  <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+                    <AlertCircle size={12} /> {ricezioneError}
+                  </p>
+                )}
 
                 <div className="flex gap-3 justify-end">
                   <button
