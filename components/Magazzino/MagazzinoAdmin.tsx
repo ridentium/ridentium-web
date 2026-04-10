@@ -4,9 +4,22 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Fornitore, MagazzinoItem } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, Plus, Minus, Pencil, X, AlertCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Plus, Minus, Pencil, X, AlertCircle, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logActivity } from '@/lib/registro'
+
+// Helpers per la scadenza
+function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
+  if (!scadenza) return 'none'
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const expDate = new Date(scadenza)
+  if (expDate < today) return 'expired'
+  const in30 = new Date(today)
+  in30.setDate(in30.getDate() + 30)
+  if (expDate <= in30) return 'expiring'
+  return 'ok'
+}
 
 const CATEGORIE = [
   'Tutte', 'Impianti', 'Componentistica Protesica', 'Materiali Chirurgici',
@@ -25,6 +38,7 @@ interface Props {
 export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId, userNome }: Props) {
   const [categoria, setCategoria] = useState('Tutte')
   const [soloAlert, setSoloAlert] = useState(false)
+  const [soloScadenza, setSoloScadenza] = useState(false)
   const [editItem, setEditItem] = useState<MagazzinoItem | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const router = useRouter()
@@ -34,10 +48,18 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
   const filtered = items.filter(item => {
     if (categoria !== 'Tutte' && item.categoria !== categoria) return false
     if (soloAlert && item.quantita >= item.soglia_minima) return false
+    if (soloScadenza) {
+      const es = getExpiryStatus(item.scadenza)
+      if (es === 'ok' || es === 'none') return false
+    }
     return true
   })
 
   const alertCount = items.filter(i => i.quantita < i.soglia_minima).length
+  const scadenzaCount = items.filter(i => {
+    const es = getExpiryStatus(i.scadenza)
+    return es === 'expired' || es === 'expiring'
+  }).length
 
   async function saveQuantita(id: string, nuovaQuantita: number, vecchiaQuantita?: number) {
     const { error } = await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
@@ -105,15 +127,26 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
             </button>
           ))}
         </div>
-        <button onClick={() => setSoloAlert(!soloAlert)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ml-auto ${
-                  soloAlert
-                    ? 'bg-red-400/10 text-red-400 border-red-400/30'
-                    : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
-                }`}>
-          <AlertTriangle size={11} />
-          Solo alert ({alertCount})
-        </button>
+        <div className="flex items-center gap-2 ml-auto">
+          <button onClick={() => { setSoloAlert(!soloAlert); setSoloScadenza(false) }}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+                    soloAlert
+                      ? 'bg-red-400/10 text-red-400 border-red-400/30'
+                      : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                  }`}>
+            <AlertTriangle size={11} />
+            Sotto soglia ({alertCount})
+          </button>
+          <button onClick={() => { setSoloScadenza(!soloScadenza); setSoloAlert(false) }}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+                    soloScadenza
+                      ? 'bg-amber-400/10 text-amber-400 border-amber-400/30'
+                      : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                  }`}>
+            <Clock size={11} />
+            In scadenza ({scadenzaCount})
+          </button>
+        </div>
         <button onClick={() => setShowAddForm(true)} className="btn-primary flex items-center gap-1.5 text-xs">
           <Plus size={13} /> Aggiungi
         </button>
@@ -146,8 +179,16 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
               </tr>
             ) : filtered.map(item => {
               const isAlert = item.quantita < item.soglia_minima
+              const expiryStatus = getExpiryStatus(item.scadenza)
+              const rowBg = isAlert
+                ? 'bg-red-400/5'
+                : expiryStatus === 'expired'
+                  ? 'bg-red-400/5'
+                  : expiryStatus === 'expiring'
+                    ? 'bg-amber-400/5'
+                    : ''
               return (
-                <tr key={item.id} className={isAlert ? 'bg-red-400/5' : ''}>
+                <tr key={item.id} className={rowBg}>
                   <td className="font-medium text-cream">{item.prodotto}</td>
                   <td>{item.categoria}</td>
                   <td>{item.azienda ?? '—'}</td>
@@ -161,12 +202,31 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
                   </td>
                   <td className="text-stone">{item.soglia_minima}</td>
                   <td>
-                    {isAlert
-                      ? <span className="badge-alert"><AlertTriangle size={10} /> Sotto soglia</span>
-                      : <span className="badge-ok"><CheckCircle size={10} /> OK</span>
-                    }
+                    <div className="flex flex-col gap-1">
+                      {isAlert && (
+                        <span className="badge-alert flex items-center gap-1">
+                          <AlertTriangle size={10} /> Sotto soglia
+                        </span>
+                      )}
+                      {expiryStatus === 'expired' && (
+                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-red-400/15 text-red-400 border border-red-400/20 w-fit">
+                          <AlertCircle size={10} /> Scaduto
+                        </span>
+                      )}
+                      {expiryStatus === 'expiring' && (
+                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-400 border border-amber-400/20 w-fit">
+                          <Clock size={10} /> In scadenza
+                        </span>
+                      )}
+                      {!isAlert && expiryStatus !== 'expired' && expiryStatus !== 'expiring' && (
+                        <span className="badge-ok flex items-center gap-1"><CheckCircle size={10} /> OK</span>
+                      )}
+                    </div>
                   </td>
-                  <td className={item.scadenza && new Date(item.scadenza) < new Date() ? 'text-red-400' : ''}>
+                  <td className={
+                    expiryStatus === 'expired' ? 'text-red-400 font-medium' :
+                    expiryStatus === 'expiring' ? 'text-amber-400 font-medium' : ''
+                  }>
                     {formatDate(item.scadenza)}
                   </td>
                   <td>
@@ -204,7 +264,6 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
 
   return (
     <div className="flex items-center gap-1">
-      {/* Bottone - */}
       <button
         onClick={() => onChange(Math.max(0, value - 1))}
         className="w-6 h-6 rounded border border-obsidian-light/50 text-stone hover:text-cream hover:border-stone flex items-center justify-center transition-colors flex-shrink-0"
@@ -213,7 +272,6 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
         <Minus size={10} />
       </button>
 
-      {/* Valore (cliccabile per modifica diretta) */}
       {editing ? (
         <input
           type="number"
@@ -237,7 +295,6 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
         </button>
       )}
 
-      {/* Bottone + */}
       <button
         onClick={() => onChange(value + 1)}
         className="w-6 h-6 rounded border border-obsidian-light/50 text-stone hover:text-cream hover:border-stone flex items-center justify-center transition-colors flex-shrink-0"
@@ -265,7 +322,6 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
-  // Quando si seleziona un fornitore, popola il campo azienda
   function handleFornitoreChange(fornitoreId: string) {
     set('fornitore_id', fornitoreId || null)
     if (fornitoreId) {
@@ -309,7 +365,6 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
           <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
         </div>
 
-        {/* Errore */}
         {error && (
           <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-400 text-sm">
             <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
@@ -333,7 +388,6 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
             </select>
           </div>
 
-          {/* Fornitore dropdown (se presenti fornitori in rubrica) */}
           {fornitori.length > 0 ? (
             <div>
               <label className="label-field block mb-1.5">Fornitore</label>
@@ -355,7 +409,6 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
             </div>
           )}
 
-          {/* Se è stato scelto un fornitore, mostra comunque il campo azienda (read-only) */}
           {fornitori.length > 0 && (
             <div className="col-span-2">
               <label className="label-field block mb-1.5">Azienda {form.fornitore_id ? '(da fornitore)' : ''}</label>
