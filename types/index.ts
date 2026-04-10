@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'aso' | 'segretaria' | 'manager'
+export type UserRole = 'admin' | 'aso' | 'segretaria' | 'manager' | 'clinico'
 
 export interface UserProfile {
   id: string
@@ -36,7 +36,7 @@ export interface Task {
   id: string
   titolo: string
   descrizione?: string
-  assegnato_a: string          // user id
+  assegnato_a: string // user id
   assegnato_a_profilo?: UserProfile
   creato_da: string
   stato: 'da_fare' | 'in_corso' | 'completato'
@@ -50,10 +50,10 @@ export interface SOP {
   id: string
   titolo: string
   categoria: string
-  contenuto: string            // markdown
+  contenuto: string // markdown
   versione: string
   autore: string
-  ruoli_visibili: UserRole[]   // chi può vedere questa SOP
+  ruoli_visibili: UserRole[] // chi può vedere questa SOP
   created_at: string
   updated_at: string
 }
