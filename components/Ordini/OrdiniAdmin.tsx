@@ -125,53 +125,32 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
     const righe = ricezioneModal.ordine.righe ?? []
     const nuovoStato = ricezioneTipo === 'totale' ? 'ricevuto' : 'parziale'
+    const ordineId = ricezioneModal.ordine.id
+    setLoading(ordineId)
 
-    for (const riga of righe) {
-      const qty = quantitaRicevute[riga.id] ?? 0
-      if (qty > 0 && riga.magazzino_id) {
-        const { data: item } = await supabase
-          .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
-        if (item) {
-          await supabase.from('magazzino')
-            .update({ quantita: (item.quantita ?? 0) + qty })
-            .eq('id', riga.magazzino_id)
-        }
-      }
-      if (qty >= 0) {
-        await supabase.from('ordini_righe')
-          .update({ quantita_ricevuta: qty })
-          .eq('id', riga.id)
-      }
-    }
+    // Delega tutto all'API route (usa admin client server-side, bypassa RLS)
+    const apiRes = await fetch(`/api/ordini/${ordineId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'ricevi',
+        tipo: ricezioneTipo,
+        quantitaRicevute,
+        note: ricezioneNote,
+        righe,
+      }),
+    })
 
-    setLoading(ricezioneModal.ordine.id)
-    const updates: Record<string, unknown> = {
-      stato: nuovoStato,
-      note: ricezioneNote || null,
-      data_ricezione: new Date().toISOString(),
-    }
-    const { error } = await supabase.from('ordini').update(updates).eq('id', ricezioneModal.ordine.id)
-
-    if (error) {
-      for (const riga of righe) {
-        const qty = quantitaRicevute[riga.id] ?? 0
-        if (qty > 0 && riga.magazzino_id) {
-          const { data: item } = await supabase
-            .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
-          if (item) {
-            await supabase.from('magazzino')
-              .update({ quantita: Math.max(0, (item.quantita ?? 0) - qty) })
-              .eq('id', riga.magazzino_id)
-          }
-        }
-      }
-      setRicezioneError('Errore nel salvataggio. Riprova.')
+    if (!apiRes.ok) {
+      const errBody = await apiRes.json().catch(() => ({}))
+      setRicezioneError(errBody.error ?? 'Errore nel salvataggio. Riprova.')
       setLoading(null)
       setRicezioneSaving(false)
       return
     }
 
-    const ordineId = ricezioneModal.ordine.id
+    const { updates } = await apiRes.json()
+
     const righeAggiornate = righe.map(r => ({
       ...r,
       quantita_ricevuta: quantitaRicevute[r.id] ?? null,
@@ -181,6 +160,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
         ? { ...o, ...updates, righe: righeAggiornate } as Ordine
         : o
     ))
+
     const prodottiRicevuti = righe
       .filter(r => (quantitaRicevute[r.id] ?? 0) > 0)
       .map(r => `${r.prodotto_nome}: +${quantitaRicevute[r.id]} ${r.unita ?? 'pz'}`)
@@ -199,31 +179,37 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   async function cambiaStatoAnnullato(ordineId: string, note?: string) {
     setLoading(ordineId)
     const ordine = ordini.find(o => o.id === ordineId)
-    const prodottiScalati: string[] = []
 
-    if (ordine && (ordine.stato === 'parziale' || ordine.stato === 'ricevuto')) {
-      for (const riga of (ordine.righe ?? [])) {
-        const qtyToSubtract =
-          (riga as OrdineRigaConRicevuta).quantita_ricevuta != null
-            ? ((riga as OrdineRigaConRicevuta).quantita_ricevuta as number)
-            : ordine.stato === 'ricevuto' ? riga.quantita_ordinata : 0
-        if (qtyToSubtract > 0 && riga.magazzino_id) {
-          const { data: item } = await supabase
-            .from('magazzino').select('quantita').eq('id', riga.magazzino_id).single()
-          if (item) {
-            await supabase.from('magazzino')
-              .update({ quantita: Math.max(0, (item.quantita ?? 0) - qtyToSubtract) })
-              .eq('id', riga.magazzino_id)
-          }
-          prodottiScalati.push(`${riga.prodotto_nome}: -${qtyToSubtract} ${riga.unita ?? 'pz'}`)
-        }
-      }
-    }
+    // Delega tutto all'API route (usa admin client server-side, bypassa RLS)
+    const apiRes = await fetch(`/api/ordini/${ordineId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'annulla',
+        note: note ?? '',
+        statoCorrente: ordine?.stato ?? '',
+        righe: ordine?.righe ?? [],
+      }),
+    })
 
-    const updates = { stato: 'annullato', note: note || null }
-    const { error } = await supabase.from('ordini').update(updates).eq('id', ordineId)
-    if (!error) {
+    if (apiRes.ok) {
+      const { updates } = await apiRes.json()
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
+
+      const prodottiScalati = (ordine?.righe ?? [])
+        .filter(r => {
+          const qty = (r as OrdineRigaConRicevuta).quantita_ricevuta != null
+            ? (r as OrdineRigaConRicevuta).quantita_ricevuta as number
+            : ordine?.stato === 'ricevuto' ? r.quantita_ordinata : 0
+          return qty > 0 && r.magazzino_id
+        })
+        .map(r => {
+          const qty = (r as OrdineRigaConRicevuta).quantita_ricevuta != null
+            ? (r as OrdineRigaConRicevuta).quantita_ricevuta as number
+            : r.quantita_ordinata
+          return `${r.prodotto_nome}: -${qty} ${r.unita ?? 'pz'}`
+        })
+
       const azioneLabel = ordine?.stato === 'ricevuto'
         ? `Ricezione annullata: ${ordine.fornitore_nome}`
         : `Ordine annullato: ${ordine?.fornitore_nome ?? ''}`
@@ -236,6 +222,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
         'magazzino'
       )
     }
+
     setLoading(null)
     setAnnullaModal(null)
     setAnnullaNote('')
