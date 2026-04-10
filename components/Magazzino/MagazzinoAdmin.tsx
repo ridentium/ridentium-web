@@ -4,9 +4,10 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Fornitore, MagazzinoItem } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, Plus, Minus, Pencil, X, AlertCircle, Clock } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Plus, Minus, Pencil, X, AlertCircle, Clock, ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logActivity } from '@/lib/registro'
+import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 
 // Helpers per la scadenza
 function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
@@ -85,30 +86,50 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
   return (
     <div className="space-y-6">
 
-      {/* Riordini aperti */}
+      {/* Riordini staff aperti */}
       {riordini.length > 0 && (
         <div className="card border-gold/30 bg-gold/5">
-          <h3 className="text-xs uppercase tracking-widest text-gold mb-3">
-            Richieste di Riordino ({riordini.length})
+          <h3 className="text-xs uppercase tracking-widest text-gold mb-3 flex items-center gap-2">
+            <ShoppingBag size={12} /> Richieste di Riordino dallo Staff ({riordini.length})
           </h3>
           <div className="space-y-2">
             {riordini.map((r: any) => (
               <div key={r.id} className="flex items-center justify-between py-2
                                           border-b border-obsidian-light/30 last:border-0">
                 <div>
-                  <p className="text-sm text-cream">{r.magazzino_id}</p>
-                  <p className="text-xs text-stone">
+                  <p className="text-sm text-cream font-medium">
+                    {(r.magazzino as any)?.prodotto ?? r.magazzino_id}
+                  </p>
+                  {(r.magazzino as any)?.categoria && (
+                    <p className="text-[11px] text-stone/60">{(r.magazzino as any).categoria}</p>
+                  )}
+                  <p className="text-xs text-stone mt-0.5">
                     da {r.profili?.nome} {r.profili?.cognome} · {formatDate(r.created_at)}
                   </p>
                   {r.note && <p className="text-xs text-stone/70 italic mt-0.5">{r.note}</p>}
                 </div>
                 <button onClick={() => evadiRiordine(r.id)}
-                        className="btn-primary text-xs py-1.5 px-3">
+                        className="btn-primary text-xs py-1.5 px-3 shrink-0">
                   Evadi
                 </button>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Riordino suggerito — prodotti sotto soglia raggruppati per fornitore */}
+      {userId && userNome && fornitori.length > 0 && items.some(i => i.quantita < i.soglia_minima) && (
+        <div className="card border-gold/20">
+          <h3 className="text-xs uppercase tracking-widest text-gold mb-3 flex items-center gap-2">
+            <ShoppingBag size={12} /> Riordino Suggerito
+          </h3>
+          <SottoSogliaOrdina
+            alertItems={items.filter(i => i.quantita < i.soglia_minima)}
+            fornitori={fornitori}
+            userId={userId}
+            userNome={userNome}
+          />
         </div>
       )}
 
