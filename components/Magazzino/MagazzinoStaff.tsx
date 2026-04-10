@@ -74,6 +74,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props)
 
       {/* Tabella */}
       <div className="card p-0 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="table-ridentium">
           <thead>
             <tr>
@@ -128,6 +129,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props)
             })}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   )
