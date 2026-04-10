@@ -7,10 +7,9 @@ import { createClient } from '@/lib/supabase/client'
 import { UserProfile } from '@/types'
 import { cn, roleLabel, roleColor } from '@/lib/utils'
 import {
-  LayoutDashboard, Package, CheckSquare, BookOpen,
-  Users, LogOut, ChevronRight, AlertTriangle,
-  RefreshCw, Phone, ClipboardList, Settings, UserCircle,
-  ShoppingCart, Menu, X, Bell,
+  LayoutDashboard, Package, CheckSquare, BookOpen, Users, LogOut,
+  ChevronRight, AlertTriangle, RefreshCw, Phone, ClipboardList,
+  Settings, UserCircle, ShoppingCart, Menu, X, Bell,
 } from 'lucide-react'
 
 interface NavItem {
@@ -20,40 +19,52 @@ interface NavItem {
 }
 
 const adminNav: NavItem[] = [
-  { href: '/admin',              label: 'Panoramica',        icon: LayoutDashboard },
-  { href: '/admin/magazzino',    label: 'Magazzino',         icon: Package },
-  { href: '/admin/ordini',       label: 'Ordini',            icon: ShoppingCart },
-  { href: '/admin/tasks',        label: 'Task',              icon: CheckSquare },
-  { href: '/admin/ricorrenti',   label: 'Azioni Ricorrenti', icon: RefreshCw },
-  { href: '/admin/sop',          label: 'SOP',               icon: BookOpen },
-  { href: '/admin/staff',        label: 'Staff',             icon: Users },
-  { href: '/admin/fornitori',    label: 'Fornitori',         icon: Phone },
-  { href: '/admin/registro',     label: 'Registro',          icon: ClipboardList },
-  { href: '/admin/notifiche',    label: 'Notifiche',         icon: Bell },
-  { href: '/admin/impostazioni', label: 'Impostazioni',      icon: Settings },
+  { href: '/admin', label: 'Panoramica', icon: LayoutDashboard },
+  { href: '/admin/magazzino', label: 'Magazzino', icon: Package },
+  { href: '/admin/ordini', label: 'Ordini', icon: ShoppingCart },
+  { href: '/admin/tasks', label: 'Task', icon: CheckSquare },
+  { href: '/admin/ricorrenti', label: 'Azioni Ricorrenti', icon: RefreshCw },
+  { href: '/admin/sop', label: 'SOP', icon: BookOpen },
+  { href: '/admin/staff', label: 'Staff', icon: Users },
+  { href: '/admin/fornitori', label: 'Fornitori', icon: Phone },
+  { href: '/admin/registro', label: 'Registro', icon: ClipboardList },
+  { href: '/admin/notifiche', label: 'Notifiche', icon: Bell },
+  { href: '/admin/impostazioni', label: 'Impostazioni', icon: Settings },
 ]
 
 const staffNav: NavItem[] = [
-  { href: '/staff',              label: 'Home',              icon: LayoutDashboard },
-  { href: '/staff/magazzino',    label: 'Magazzino',         icon: Package },
-  { href: '/staff/tasks',        label: 'I miei task',       icon: CheckSquare },
-  { href: '/staff/ricorrenti',   label: 'Azioni Ricorrenti', icon: RefreshCw },
-  { href: '/staff/sop',          label: 'Protocolli',        icon: BookOpen },
+  { href: '/staff', label: 'Home', icon: LayoutDashboard },
+  { href: '/staff/magazzino', label: 'Magazzino', icon: Package },
+  { href: '/staff/tasks', label: 'I miei task', icon: CheckSquare },
+  { href: '/staff/ricorrenti', label: 'Azioni Ricorrenti', icon: RefreshCw },
+  { href: '/staff/sop', label: 'Protocolli', icon: BookOpen },
 ]
 
 interface SidebarProps {
   profilo: UserProfile
   alertCount?: number
   ordiniAperti?: number
+  permessiSezioni?: string[]
 }
 
-export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: SidebarProps) {
+export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, permessiSezioni }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
   const isAdmin = profilo.ruolo === 'admin'
-  const nav = isAdmin ? adminNav : staffNav
+
+  // Filter staff nav based on permissions (admin always sees everything)
+  const filteredStaffNav = permessiSezioni
+    ? staffNav.filter(item => {
+        if (item.href === '/staff') return true
+        const sezione = item.href.replace('/staff/', '')
+        return permessiSezioni.includes(sezione)
+      })
+    : staffNav
+
+  const nav = isAdmin ? adminNav : filteredStaffNav
   const profiloHref = isAdmin ? '/admin/profilo' : '/staff/profilo'
 
   // Close sidebar on route change (mobile)
@@ -103,8 +114,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: S
       {alertCount > 0 && (
         <Link
           href={isAdmin ? '/admin/magazzino' : '/staff/magazzino'}
-          className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded bg-alert/10
-                     border border-alert/20 text-red-400 text-xs hover:bg-alert/15 transition-colors"
+          className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded bg-alert/10 border border-alert/20 text-red-400 text-xs hover:bg-alert/15 transition-colors"
         >
           <AlertTriangle size={12} />
           <span>{alertCount} prodott{alertCount === 1 ? 'o' : 'i'} sotto soglia</span>
@@ -118,11 +128,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: S
           const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
           const badge = href === '/admin/ordini' && ordiniAperti > 0 ? ordiniAperti : null
           return (
-            <Link
-              key={href}
-              href={href}
-              className={cn('nav-item', active && 'active')}
-            >
+            <Link key={href} href={href} className={cn('nav-item', active && 'active')}>
               <Icon size={15} className={active ? 'text-gold' : ''} />
               <span className="flex-1">{label}</span>
               {badge && (
@@ -146,8 +152,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: S
               : 'hover:bg-obsidian-light/50'
           )}
         >
-          <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30
-                          flex items-center justify-center text-gold text-xs font-medium flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold text-xs font-medium flex-shrink-0">
             {profilo.nome[0]}{profilo.cognome[0]}
           </div>
           <div className="min-w-0 flex-1">
@@ -160,7 +165,6 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: S
           </div>
           <UserCircle size={13} className="text-stone/50 flex-shrink-0" />
         </Link>
-
         <button
           onClick={handleLogout}
           className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400 text-xs px-3 py-2"
@@ -176,9 +180,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: S
     <>
       {/* ── Mobile hamburger trigger (top-left fixed button) ── */}
       <button
-        className="md:hidden fixed top-3.5 left-4 z-50 p-2 rounded-lg bg-obsidian
-                   border border-obsidian-light text-cream shadow-lg hover:bg-obsidian-light
-                   transition-colors"
+        className="md:hidden fixed top-3.5 left-4 z-50 p-2 rounded-lg bg-obsidian border border-obsidian-light text-cream shadow-lg hover:bg-obsidian-light transition-colors"
         onClick={() => setIsOpen(true)}
         aria-label="Apri menu"
       >
@@ -195,8 +197,6 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0 }: S
       />
 
       {/* ── Sidebar ── */}
-      {/* Desktop: static sidebar always visible */}
-      {/* Mobile: fixed overlay, slides in/out */}
       <aside
         className={cn(
           'flex flex-col bg-obsidian border-r border-obsidian-light',
