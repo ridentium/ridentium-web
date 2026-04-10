@@ -2,18 +2,19 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Ordine, MagazzinoItem } from '@/types'
+import { Fornitore, Ordine, MagazzinoItem } from '@/types'
 import { logActivity } from '@/lib/registro'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
   Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone,
-  Plus, Trash2
+  Plus, Trash2, History, Clock
 } from 'lucide-react'
 
 interface Props {
   ordini: Ordine[]
   userId: string
   userNome: string
+  fornitori?: Fornitore[]
 }
 
 type Filtro = 'tutti' | 'aperti' | 'ricevuti' | 'annullati'
@@ -32,7 +33,6 @@ const STATO_COLOR: Record<string, string> = {
   annullato: 'text-stone border-stone/30 bg-stone/10',
 }
 
-// Estende OrdineRiga con il campo quantita_ricevuta salvato durante la ricezione
 interface OrdineRigaConRicevuta {
   quantita_ricevuta?: number | null
 }
@@ -44,12 +44,13 @@ interface NuovaRiga {
   unita: string
 }
 
-export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }: Props) {
+export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, fornitori = [] }: Props) {
   const supabase = createClient()
   const [ordini, setOrdini] = useState(initialOrdini)
   const [filtro, setFiltro] = useState<Filtro>('tutti')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
+  const [showStoricoFornitore, setShowStoricoFornitore] = useState(false)
 
   // Modal ricezione (totale o parziale)
   const [ricezioneModal, setRicezioneModal] = useState<{ ordine: Ordine } | null>(null)
@@ -66,6 +67,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
 
   // Modal nuovo ordine
   const [nuovoModal, setNuovoModal] = useState(false)
+  const [selectedFornitoreId, setSelectedFornitoreId] = useState('')
   const [nuovoFornitore, setNuovoFornitore] = useState('')
   const [nuovoCanale, setNuovoCanale] = useState<'whatsapp' | 'email' | 'eshop' | 'telefono'>('whatsapp')
   const [nuovoRighe, setNuovoRighe] = useState<NuovaRiga[]>([
@@ -84,6 +86,18 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     : filtro === 'aperti'   ? aperti
     : filtro === 'ricevuti' ? ricevuti
     : annullati
+
+  // Storico fornitore: ultimo ordine per ciascun fornitore unico
+  const ultimiPerFornitore: Record<string, Ordine> = {}
+  ordini.forEach(o => {
+    const key = o.fornitore_nome.toLowerCase()
+    if (!ultimiPerFornitore[key] || new Date(o.data_invio) > new Date(ultimiPerFornitore[key].data_invio)) {
+      ultimiPerFornitore[key] = o
+    }
+  })
+  const storicoFornitore = Object.values(ultimiPerFornitore).sort(
+    (a, b) => new Date(b.data_invio).getTime() - new Date(a.data_invio).getTime()
+  )
 
   function apriRicezione(ordine: Ordine) {
     setRicezioneModal({ ordine })
@@ -112,7 +126,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     const righe = ricezioneModal.ordine.righe ?? []
     const nuovoStato = ricezioneTipo === 'totale' ? 'ricevuto' : 'parziale'
 
-    // 1. Aggiorna magazzino e salva quantita_ricevuta su ogni riga
     for (const riga of righe) {
       const qty = quantitaRicevute[riga.id] ?? 0
       if (qty > 0 && riga.magazzino_id) {
@@ -124,7 +137,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
             .eq('id', riga.magazzino_id)
         }
       }
-      // Persisti la quantità ricevuta sulla riga (necessario per rollback in annullamento)
       if (qty >= 0) {
         await supabase.from('ordini_righe')
           .update({ quantita_ricevuta: qty })
@@ -132,7 +144,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
       }
     }
 
-    // 2. Aggiorna stato ordine
     setLoading(ricezioneModal.ordine.id)
     const updates: Record<string, unknown> = {
       stato: nuovoStato,
@@ -142,7 +153,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     const { error } = await supabase.from('ordini').update(updates).eq('id', ricezioneModal.ordine.id)
 
     if (error) {
-      // Rollback magazzino: annulla le modifiche appena fatte
       for (const riga of righe) {
         const qty = quantitaRicevute[riga.id] ?? 0
         if (qty > 0 && riga.magazzino_id) {
@@ -158,10 +168,9 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
       setRicezioneError('Errore nel salvataggio. Riprova.')
       setLoading(null)
       setRicezioneSaving(false)
-      return // Non chiudere il modal: lascia riprovare
+      return
     }
 
-    // Successo: aggiorna stato locale incluse le quantita_ricevute
     const ordineId = ricezioneModal.ordine.id
     const righeAggiornate = righe.map(r => ({
       ...r,
@@ -192,11 +201,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     const ordine = ordini.find(o => o.id === ordineId)
     const prodottiScalati: string[] = []
 
-    // Se l'ordine aveva ricevuto merce (parziale o totale), scala il magazzino
     if (ordine && (ordine.stato === 'parziale' || ordine.stato === 'ricevuto')) {
       for (const riga of (ordine.righe ?? [])) {
-        // Per parziale: usa quantita_ricevuta salvata sul DB
-        // Per ricevuto totale: fallback a quantita_ordinata (tutto era stato ricevuto)
         const qtyToSubtract =
           (riga as OrdineRigaConRicevuta).quantita_ricevuta != null
             ? ((riga as OrdineRigaConRicevuta).quantita_ricevuta as number)
@@ -237,6 +243,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
 
   async function apriNuovoOrdine() {
     setNuovoModal(true)
+    setSelectedFornitoreId('')
     setNuovoFornitore('')
     setNuovoCanale('whatsapp')
     setNuovoRighe([{ magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }])
@@ -250,6 +257,19 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
         setMagazzino(data as MagazzinoItem[])
         setMagazzinoLoaded(true)
       }
+    }
+  }
+
+  function handleSelectFornitore(fornitoreId: string) {
+    setSelectedFornitoreId(fornitoreId)
+    if (fornitoreId) {
+      const f = fornitori.find(x => x.id === fornitoreId)
+      if (f) {
+        setNuovoFornitore(f.nome)
+        setNuovoCanale(f.canale_ordine)
+      }
+    } else {
+      setNuovoFornitore('')
     }
   }
 
@@ -284,11 +304,11 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
 
     setNuovoSaving(true)
 
-    // 1. Crea ordine
     const { data: nuovoOrdine, error: errOrdine } = await supabase
       .from('ordini')
       .insert({
         fornitore_nome: nuovoFornitore.trim(),
+        fornitore_id: selectedFornitoreId || null,
         canale: nuovoCanale,
         stato: 'inviato',
         note: nuovoNote.trim() || null,
@@ -303,7 +323,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
       return
     }
 
-    // 2. Inserisci righe
     const righeInsert = righeValide.map(r => ({
       ordine_id: nuovoOrdine.id,
       magazzino_id: r.magazzino_id || null,
@@ -317,7 +336,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
       .insert(righeInsert)
       .select()
 
-    // 3. Aggiorna stato locale
     const ordineCompleto: Ordine = {
       ...nuovoOrdine,
       righe: righeData ?? [],
@@ -343,6 +361,10 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
     })
   }
 
+  function formatDataBreve(iso: string) {
+    return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })
+  }
+
   const tabs: { id: Filtro; label: string; count: number }[] = [
     { id: 'tutti',     label: 'Tutti',     count: ordini.length },
     { id: 'aperti',    label: 'Aperti',    count: aperti.length },
@@ -359,6 +381,42 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
 
   return (
     <div>
+
+      {/* Storico per fornitore */}
+      {storicoFornitore.length > 0 && (
+        <div className="card mb-6">
+          <button
+            onClick={() => setShowStoricoFornitore(v => !v)}
+            className="flex items-center justify-between w-full"
+          >
+            <span className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone">
+              <History size={12} /> Storico per fornitore ({storicoFornitore.length})
+            </span>
+            {showStoricoFornitore ? <ChevronUp size={13} className="text-stone" /> : <ChevronDown size={13} className="text-stone" />}
+          </button>
+          {showStoricoFornitore && (
+            <div className="mt-3 pt-3 border-t border-obsidian-light/30 grid gap-2 sm:grid-cols-2">
+              {storicoFornitore.map(o => {
+                const totalOrdini = ordini.filter(x => x.fornitore_nome.toLowerCase() === o.fornitore_nome.toLowerCase()).length
+                return (
+                  <div key={o.id} className="flex items-center justify-between gap-3 py-2 px-3 rounded bg-obsidian-light/30">
+                    <div>
+                      <p className="text-sm text-cream font-medium">{o.fornitore_nome}</p>
+                      <p className="text-[11px] text-stone mt-0.5">
+                        {totalOrdini} ordini · ultimo {formatDataBreve(o.data_invio)}
+                      </p>
+                    </div>
+                    <span className={`text-[10px] px-2 py-0.5 rounded border ${STATO_COLOR[o.stato]}`}>
+                      {STATO_LABEL[o.stato]}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Header: filtri + pulsante nuovo ordine */}
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <div className="flex gap-2 flex-wrap">
@@ -404,6 +462,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
             const isExpanded = expandedId === ordine.id
             const isLoading  = loading === ordine.id
             const aperto     = ordine.stato === 'inviato' || ordine.stato === 'parziale'
+            const mostraRicevute = ordine.stato === 'parziale' || ordine.stato === 'ricevuto'
 
             return (
               <div key={ordine.id} className="card">
@@ -422,10 +481,12 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                         {ordine.canale === 'telefono' && <><Phone size={9} /> Telefono</>}
                       </span>
                     </div>
-                    <p className="text-xs text-stone">{formatData(ordine.data_invio)}</p>
+                    <p className="text-xs text-stone flex items-center gap-1">
+                      <Clock size={10} /> {formatData(ordine.data_invio)}
+                    </p>
                     {ordine.data_ricezione && (
-                      <p className="text-xs text-stone/60 mt-0.5">
-                        Ricevuto: {formatData(ordine.data_ricezione)}
+                      <p className="text-xs text-green-400/70 mt-0.5 flex items-center gap-1">
+                        <Check size={10} /> Ricevuto: {formatData(ordine.data_ricezione)}
                       </p>
                     )}
                     {ordine.note && (
@@ -447,15 +508,39 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
 
                 {/* Righe prodotti (espandibile) */}
                 {isExpanded && ordine.righe && ordine.righe.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-obsidian-light/30 space-y-1.5">
-                    {ordine.righe.map(r => (
-                      <div key={r.id} className="flex items-center justify-between text-sm">
-                        <span className="text-cream/80">{r.prodotto_nome}</span>
-                        <span className="text-stone text-xs">
-                          {r.quantita_ordinata} {r.unita ?? 'pz'}
-                        </span>
+                  <div className="mt-3 pt-3 border-t border-obsidian-light/30">
+                    {/* Header colonne */}
+                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-stone/50 mb-2 px-1">
+                      <span>Prodotto</span>
+                      <div className="flex gap-4">
+                        <span>Ordinato</span>
+                        {mostraRicevute && <span>Ricevuto</span>}
                       </div>
-                    ))}
+                    </div>
+                    <div className="space-y-1.5">
+                      {ordine.righe.map(r => {
+                        const ricevuta = (r as OrdineRigaConRicevuta).quantita_ricevuta
+                        const mancante = mostraRicevute && ricevuta != null && ricevuta < r.quantita_ordinata
+                        return (
+                          <div key={r.id} className="flex items-center justify-between text-sm px-1">
+                            <span className={mancante ? 'text-amber-400/80' : 'text-cream/80'}>{r.prodotto_nome}</span>
+                            <div className="flex gap-4 items-center">
+                              <span className="text-stone text-xs">{r.quantita_ordinata} {r.unita ?? 'pz'}</span>
+                              {mostraRicevute && (
+                                <span className={`text-xs font-medium ${
+                                  ricevuta == null ? 'text-stone/40' :
+                                  ricevuta === 0 ? 'text-red-400' :
+                                  ricevuta < r.quantita_ordinata ? 'text-amber-400' :
+                                  'text-green-400'
+                                }`}>
+                                  {ricevuta == null ? '—' : `${ricevuta} ${r.unita ?? 'pz'}`}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
 
@@ -594,7 +679,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                     onClick={() => setRicezioneStep('tipo')}
                     className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
                   >
-                     ← Indietro
+                    ← Indietro
                   </button>
                   <button
                     onClick={confermaRicezione}
@@ -619,7 +704,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
         const ordineTarget = ordini.find(o => o.id === annullaModal.ordineId)
         const isRicezioneAnnullata = ordineTarget?.stato === 'ricevuto' || ordineTarget?.stato === 'parziale'
         return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center g-black/60 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
             <h2 className="text-cream font-medium mb-1">
               {ordineTarget?.stato === 'ricevuto' ? 'Annulla ricezione' : 'Annulla ordine'}
@@ -676,17 +761,39 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
               </button>
             </div>
 
-            {/* Fornitore */}
+            {/* Fornitore: dropdown se presenti, altrimenti testo libero */}
             <div className="mb-4">
               <label className="block text-xs text-stone mb-1.5">Fornitore</label>
-              <input
-                type="text"
-                value={nuovoFornitore}
-                onChange={e => setNuovoFornitore(e.target.value)}
-                placeholder="Es. Neodent, Nobel Biocare..."
-                className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
-                autoFocus
-              />
+              {fornitori.length > 0 ? (
+                <>
+                  <select
+                    value={selectedFornitoreId}
+                    onChange={e => handleSelectFornitore(e.target.value)}
+                    className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 mb-2"
+                  >
+                    <option value="">— Seleziona dalla rubrica —</option>
+                    {fornitori.map(f => (
+                      <option key={f.id} value={f.id}>{f.nome}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    value={nuovoFornitore}
+                    onChange={e => { setNuovoFornitore(e.target.value); setSelectedFornitoreId('') }}
+                    placeholder="O scrivi nome fornitore manualmente..."
+                    className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                  />
+                </>
+              ) : (
+                <input
+                  type="text"
+                  value={nuovoFornitore}
+                  onChange={e => setNuovoFornitore(e.target.value)}
+                  placeholder="Es. Neodent, Nobel Biocare..."
+                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                  autoFocus
+                />
+              )}
             </div>
 
             {/* Canale */}
@@ -716,7 +823,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
               <div className="space-y-2">
                 {nuovoRighe.map((riga, idx) => (
                   <div key={idx} className="flex items-center gap-2">
-                    {/* Selettore prodotto */}
                     <div className="flex-1 min-w-0">
                       {magazzino.length > 0 ? (
                         <select
@@ -739,7 +845,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                         />
                       )}
                     </div>
-                    {/* Quantità */}
                     <input
                       type="number"
                       min={1}
@@ -748,7 +853,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome }:
                       className="w-16 text-center bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
                     />
                     <span className="text-stone text-xs w-6 flex-shrink-0">{riga.unita}</span>
-                    {/* Rimuovi riga */}
                     {nuovoRighe.length > 1 && (
                       <button
                         onClick={() => rimuoviRiga(idx)}
