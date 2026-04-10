@@ -22,7 +22,7 @@ export default async function MagazzinoPage() {
       .order('prodotto'),
     supabase
       .from('riordini')
-      .select('*, profili(nome, cognome)')
+      .select('*, profili(nome, cognome), magazzino(prodotto, categoria)')
       .eq('stato', 'aperta')
       .order('created_at', { ascending: false }),
     supabase
