@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
+import OnboardingWizard from '@/components/Onboarding/OnboardingWizard'
 import Link from 'next/link'
 import { Package, CheckSquare, BookOpen, AlertTriangle, RefreshCw } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
@@ -23,7 +24,7 @@ export default async function StaffHome() {
 
   const { data: profilo } = await adminDb
     .from('profili')
-    .select('nome, cognome')
+    .select('nome, cognome, onboarding_completato')
     .eq('id', user!.id)
     .single()
 
@@ -68,6 +69,11 @@ export default async function StaffHome() {
 
   return (
     <div>
+      {/* Onboarding wizard — shown once on first login */}
+      {profilo && !profilo.onboarding_completato && (
+        <OnboardingWizard userId={user!.id} isAdmin={false} />
+      )}
+
       <PageHeader
         title={`Ciao, ${profilo?.nome ?? ''}.`}
         subtitle={oggi.charAt(0).toUpperCase() + oggi.slice(1)}
