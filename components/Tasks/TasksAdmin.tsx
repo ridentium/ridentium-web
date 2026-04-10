@@ -168,7 +168,7 @@ function NewTaskModal({ staff, onClose, onSave }: {
 
     const { data: { user } } = await supabase.auth.getUser()
 
-    const { error: dbError } = await supabase.from('tasks').insert({
+    const { data: newTask, error: dbError } = await supabase.from('tasks').insert({
       titolo: form.titolo.trim(),
       descrizione: form.descrizione.trim() || null,
       priorita: form.priorita,
@@ -176,13 +176,27 @@ function NewTaskModal({ staff, onClose, onSave }: {
       creato_da: user?.id,
       assegnato_a: form.assegnato_a || null,
       scadenza: form.scadenza || null,
-    })
+    }).select().single()
 
     setSaving(false)
 
     if (dbError) {
       setError(`Errore nel salvataggio: ${dbError.message}`)
       return
+    }
+
+    // Fire push notification to the assignee (non-blocking)
+    if (form.assegnato_a && newTask?.id) {
+      fetch('/api/notify/task', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: form.assegnato_a,
+          taskId: newTask.id,
+          titolo: form.titolo.trim(),
+          priorita: form.priorita,
+        }),
+      }).catch(() => {}) // silent — notifications are best-effort
     }
 
     onSave()
