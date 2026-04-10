@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'aso' | 'segretaria' | 'manager' | 'clinico'
+export type UserRole = 'admin' | 'aso' | 'segretaria' | 'manager'
 
 export interface UserProfile {
   id: string
@@ -8,9 +8,9 @@ export interface UserProfile {
   ruolo: UserRole
   telefono?: string | null
   avatar_url?: string | null
-  attivo: boolean
+  attivo?: boolean
+  onboarding_completato?: boolean
   created_at: string
-  updated_at?: string
 }
 
 export interface MagazzinoItem {
@@ -38,7 +38,7 @@ export interface Task {
   id: string
   titolo: string
   descrizione?: string
-  assegnato_a: string
+  assegnato_a: string          // user id
   assegnato_a_profilo?: UserProfile
   creato_da: string
   stato: 'da_fare' | 'in_corso' | 'completato'
@@ -52,10 +52,10 @@ export interface SOP {
   id: string
   titolo: string
   categoria: string
-  contenuto: string
+  contenuto: string            // markdown
   versione: string
   autore: string
-  ruoli_visibili: UserRole[]
+  ruoli_visibili: UserRole[]   // chi può vedere questa SOP
   created_at: string
   updated_at: string
 }
