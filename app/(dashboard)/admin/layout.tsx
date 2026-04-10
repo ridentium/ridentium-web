@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
+import SessionGuard from '@/components/Layout/SessionGuard'
 import { UserProfile } from '@/types'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -9,7 +10,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Usa admin client per bypassare RLS sulla lettura del profilo
   const adminDb = createAdminClient()
   const { data: profilo } = await adminDb
     .from('profili')
@@ -19,28 +19,28 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (profilo?.ruolo !== 'admin') redirect('/staff')
 
-  // Conta prodotti dove quantita < soglia_minima
   const { data: alertData } = await supabase
     .from('magazzino')
     .select('id, quantita, soglia_minima')
-
   const alertCount = (alertData ?? []).filter(
     (item: any) => item.quantita < item.soglia_minima
   ).length
 
-  // Conta ordini aperti (inviato o parziale)
   const { data: ordiniApertiData } = await adminDb
     .from('ordini')
     .select('id, stato')
     .in('stato', ['inviato', 'parziale'])
-
   const ordiniAperti = ordiniApertiData?.length ?? 0
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} ordiniAperti={ordiniAperti} />
+      <SessionGuard />
+      <Sidebar
+        profilo={profilo as UserProfile}
+        alertCount={alertCount}
+        ordiniAperti={ordiniAperti}
+      />
       <main className="flex-1 overflow-auto">
-        {/* Mobile top bar spacer (hamburger button height) */}
         <div className="md:hidden h-14 border-b border-obsidian-light/50 flex items-center px-14 bg-obsidian/95 sticky top-0 z-30">
           <h2 className="font-serif text-cream tracking-[0.2em] text-sm font-light">RIDENTIUM</h2>
         </div>
