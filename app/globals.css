@@ -10,17 +10,39 @@
 }
 
 @layer base {
-  * { box-sizing: border-box; }
+  * {
+    box-sizing: border-box;
+  }
 
   html {
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Disabilita doppio tap zoom */
+    touch-action: manipulation;
+    /* Niente highlight blu/grigio al tap */
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     @apply bg-obsidian text-cream;
     min-height: 100vh;
+    /* Niente bounce/pull-to-refresh */
+    overscroll-behavior: none;
+    /* Evita selezione testo accidentale */
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Input e textarea: testo selezionabile normalmente */
+  input, textarea, [contenteditable] {
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  /* Niente menu contestuale su long-press (iOS) */
+  button, a, img, .nav-item {
+    -webkit-touch-callout: none;
   }
 
   /* Scrollbar — brand palette */
@@ -35,75 +57,52 @@
     @apply bg-obsidian-mid border border-obsidian-light rounded-md p-5 shadow-card;
   }
 
-  /* Primary CTA — brand beige on deep dark */
   .btn-primary {
-    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded
-           hover:bg-gold-light transition-colors duration-150;
+    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded hover:bg-gold-light transition-colors duration-150;
   }
-
   .btn-secondary {
-    @apply border border-stone text-stone-light text-sm px-5 py-2.5 rounded
-           hover:border-gold hover:text-gold transition-colors duration-150;
+    @apply border border-stone text-stone-light text-sm px-5 py-2.5 rounded hover:border-gold hover:text-gold transition-colors duration-150;
   }
-
   .btn-ghost {
-    @apply text-stone-light text-sm px-3 py-2 rounded
-           hover:text-cream hover:bg-obsidian-light transition-colors duration-150;
+    @apply text-stone-light text-sm px-3 py-2 rounded hover:text-cream hover:bg-obsidian-light transition-colors duration-150;
   }
 
   .input {
-    @apply bg-obsidian-light border border-obsidian-light text-cream placeholder-stone
-           rounded px-4 py-2.5 text-sm w-full
-           focus:outline-none focus:border-gold transition-colors duration-150;
+    @apply bg-obsidian-light border border-obsidian-light text-cream placeholder-stone rounded px-4 py-2.5 text-sm w-full focus:outline-none focus:border-gold transition-colors duration-150;
   }
 
   .badge-alert {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
-           bg-alert/15 text-red-400 font-medium;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-alert/15 text-red-400 font-medium;
   }
-
   .badge-ok {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
-           bg-ok/15 text-green-400 font-medium;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-ok/15 text-green-400 font-medium;
   }
-
   .badge-role {
     @apply text-xs px-2 py-0.5 rounded-sm border font-medium;
   }
 
-  .table-ridentium {
-    @apply w-full text-sm;
-  }
+  .table-ridentium { @apply w-full text-sm; }
   .table-ridentium th {
-    @apply text-left text-xs uppercase tracking-widest text-stone py-3 px-4
-           border-b border-obsidian-light font-medium;
+    @apply text-left text-xs uppercase tracking-widest text-stone py-3 px-4 border-b border-obsidian-light font-medium;
   }
   .table-ridentium td {
     @apply py-3 px-4 border-b border-obsidian-light/50 text-cream/80;
   }
-  .table-ridentium tr:hover td {
-    @apply bg-obsidian-light/30;
-  }
+  .table-ridentium tr:hover td { @apply bg-obsidian-light/30; }
 
-  /* Nav items — brand taupe active state */
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm text-stone-light
-           hover:text-cream hover:bg-obsidian-light/50 transition-colors duration-150 cursor-pointer;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm text-stone-light hover:text-cream hover:bg-obsidian-light/50 transition-colors duration-150 cursor-pointer;
   }
   .nav-item.active {
     @apply text-gold bg-stone-dark/20 border-l-2 border-gold;
   }
 
-  /* Luxury serif headings */
   .section-title {
     @apply font-serif text-2xl text-cream font-light tracking-wide;
   }
-
   .label-field {
     @apply text-xs uppercase tracking-widest text-stone font-medium;
   }
-
-  /* Divisore luxury */
   .divider-luxury {
     @apply border-t border-obsidian-light/60;
   }
