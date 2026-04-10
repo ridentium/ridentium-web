@@ -13,6 +13,7 @@ export default async function OrdiniPage() {
   const [
     { data: ordini },
     { data: profilo },
+    { data: fornitori },
   ] = await Promise.all([
     adminDb
       .from('ordini')
@@ -23,6 +24,10 @@ export default async function OrdiniPage() {
       .select('nome')
       .eq('id', user!.id)
       .single(),
+    adminDb
+      .from('fornitori')
+      .select('*')
+      .order('nome'),
   ])
 
   return (
@@ -35,6 +40,7 @@ export default async function OrdiniPage() {
         ordini={ordini ?? []}
         userId={user!.id}
         userNome={profilo?.nome ?? ''}
+        fornitori={fornitori ?? []}
       />
     </div>
   )
