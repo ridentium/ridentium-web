@@ -12,6 +12,7 @@ export function roleLabel(ruolo: UserRole): string {
     aso: 'ASO',
     segretaria: 'Segreteria',
     manager: 'Manager',
+    clinico: 'Clinico',
   }
   return map[ruolo] ?? ruolo
 }
@@ -22,6 +23,7 @@ export function roleColor(ruolo: UserRole): string {
     aso: 'text-blue-400',
     segretaria: 'text-purple-400',
     manager: 'text-green-400',
+    clinico: 'text-amber-400',
   }
   return map[ruolo] ?? 'text-stone'
 }
@@ -29,6 +31,8 @@ export function roleColor(ruolo: UserRole): string {
 export function formatDate(dateStr?: string): string {
   if (!dateStr) return '—'
   return new Date(dateStr).toLocaleDateString('it-IT', {
-    day: '2-digit', month: '2-digit', year: 'numeric'
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
   })
 }
