@@ -63,6 +63,7 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
 
       {/* Lista task */}
       <div className="card p-0 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="table-ridentium">
           <thead>
             <tr>
@@ -118,6 +119,7 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
             })}
           </tbody>
         </table>
+        </div>
       </div>
 
       {showForm && (
