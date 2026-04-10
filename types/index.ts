@@ -8,7 +8,9 @@ export interface UserProfile {
   ruolo: UserRole
   telefono?: string | null
   avatar_url?: string | null
+  attivo: boolean
   created_at: string
+  updated_at?: string
 }
 
 export interface MagazzinoItem {
@@ -36,7 +38,7 @@ export interface Task {
   id: string
   titolo: string
   descrizione?: string
-  assegnato_a: string // user id
+  assegnato_a: string
   assegnato_a_profilo?: UserProfile
   creato_da: string
   stato: 'da_fare' | 'in_corso' | 'completato'
@@ -50,10 +52,10 @@ export interface SOP {
   id: string
   titolo: string
   categoria: string
-  contenuto: string // markdown
+  contenuto: string
   versione: string
   autore: string
-  ruoli_visibili: UserRole[] // chi può vedere questa SOP
+  ruoli_visibili: UserRole[]
   created_at: string
   updated_at: string
 }
