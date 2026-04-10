@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
-import SessionGuard from '@/components/Layout/SessionGuard'
 import { UserProfile } from '@/types'
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
@@ -10,7 +9,6 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // Usa admin client per bypassare RLS sulla lettura del profilo
   const admin = createAdminClient()
   const { data: profilo } = await admin
     .from('profili')
@@ -19,37 +17,31 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     .single()
 
   if (!profilo) redirect('/login')
-
-  // Admin non deve stare qui
   if (profilo.ruolo === 'admin') redirect('/admin')
 
-  // Conta alert magazzino per lo staff
   const { data: alertData } = await supabase
     .from('magazzino')
-    .select('id, quantita, soglia_minima')
+    .select('id, quantita, soglia_minima, scadenza')
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const in30 = new Date(today)
+  in30.setDate(in30.getDate() + 30)
+
   const alertCount = (alertData ?? []).filter(
     (item: any) => item.quantita < item.soglia_minima
   ).length
 
-  // Carica i permessi sezione per il ruolo dell'utente
-  const { data: permessiData } = await supabase
-    .from('sezione_permessi')
-    .select('sezione, visibile')
-    .eq('ruolo', profilo.ruolo)
-  const permessiSezioni = (permessiData ?? [])
-    .filter((p: any) => p.visibile)
-    .map((p: any) => p.sezione as string)
+  const scadenzaCount = (alertData ?? []).filter((item: any) => {
+    if (!item.scadenza) return false
+    const d = new Date(item.scadenza)
+    return d <= in30
+  }).length
 
   return (
     <div className="flex min-h-screen">
-      <SessionGuard />
-      <Sidebar
-        profilo={profilo as UserProfile}
-        alertCount={alertCount}
-        permessiSezioni={permessiSezioni}
-      />
+      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} scadenzaCount={scadenzaCount} />
       <main className="flex-1 overflow-auto">
-        {/* Mobile top bar spacer */}
         <div className="md:hidden h-14 border-b border-obsidian-light/50 flex items-center px-14 bg-obsidian/95 sticky top-0 z-30">
           <h2 className="font-serif text-cream tracking-[0.2em] text-sm font-light">RIDENTIUM</h2>
         </div>
