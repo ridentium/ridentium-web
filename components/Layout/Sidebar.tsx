@@ -10,8 +10,9 @@ import {
   LayoutDashboard, Package, CheckSquare, BookOpen,
   Users, LogOut, ChevronRight, AlertTriangle,
   RefreshCw, Phone, ClipboardList, Settings, UserCircle,
-  ShoppingCart, Menu, X, Bell, Clock,
+  ShoppingCart, Menu, X, Bell, Clock, Search,
 } from 'lucide-react'
+import SearchModal from '@/components/Layout/SearchModal'
 
 interface NavItem {
   href: string
@@ -50,6 +51,7 @@ interface SidebarProps {
 
 export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, scadenzaCount = 0 }: SidebarProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -57,10 +59,12 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
   const nav = isAdmin ? adminNav : staffNav
   const profiloHref = isAdmin ? '/admin/profilo' : '/staff/profilo'
 
+  // Close sidebar on route change (mobile)
   useEffect(() => {
     setIsOpen(false)
   }, [pathname])
 
+  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = 'hidden'
@@ -70,6 +74,18 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
     return () => { document.body.style.overflow = '' }
   }, [isOpen])
 
+  // Global Cmd+K / Ctrl+K shortcut
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(s => !s)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/login')
@@ -78,6 +94,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
 
   const sidebarContent = (
     <>
+      {/* Brand */}
       <div className="px-6 py-7 border-b border-obsidian-light flex items-center justify-between">
         <div>
           <h1 className="font-serif text-xl text-cream tracking-[0.2em] font-light">
@@ -87,6 +104,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
             {isAdmin ? 'Admin' : 'Staff'}
           </p>
         </div>
+        {/* Close button — mobile only */}
         <button
           className="md:hidden text-stone/50 hover:text-cream p-1 transition-colors"
           onClick={() => setIsOpen(false)}
@@ -96,6 +114,21 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
         </button>
       </div>
 
+      {/* Search button */}
+      <div className="px-3 pt-3">
+        <button
+          onClick={() => setSearchOpen(true)}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded border border-obsidian-light
+                     text-stone/60 hover:text-stone hover:border-stone/30 hover:bg-obsidian-light/30
+                     text-xs transition-colors"
+        >
+          <Search size={13} />
+          <span className="flex-1 text-left">Cerca…</span>
+          <kbd className="hidden sm:inline-flex text-[10px] font-mono text-stone/30 border border-obsidian-light rounded px-1">⌘K</kbd>
+        </button>
+      </div>
+
+      {/* Alert banner scorte sotto soglia */}
       {alertCount > 0 && (
         <Link
           href={isAdmin ? '/admin/magazzino' : '/staff/magazzino'}
@@ -108,6 +141,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
         </Link>
       )}
 
+      {/* Alert banner prodotti in scadenza */}
       {scadenzaCount > 0 && (
         <Link
           href={isAdmin ? '/admin/magazzino' : '/staff/magazzino'}
@@ -120,6 +154,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
         </Link>
       )}
 
+      {/* Navigazione */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
         {nav.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
@@ -142,6 +177,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
         })}
       </nav>
 
+      {/* Profilo utente */}
       <div className="border-t border-obsidian-light px-3 py-3">
         <Link
           href={profiloHref}
@@ -180,6 +216,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
 
   return (
     <>
+      {/* ── Mobile hamburger trigger (top-left fixed button) ── */}
       <button
         className="md:hidden fixed top-3.5 left-4 z-50 p-2 rounded-lg bg-obsidian
                    border border-obsidian-light text-cream shadow-lg hover:bg-obsidian-light
@@ -190,6 +227,7 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
         <Menu size={18} />
       </button>
 
+      {/* ── Mobile overlay backdrop ── */}
       <div
         className={cn(
           'md:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity duration-300',
@@ -198,16 +236,26 @@ export default function Sidebar({ profilo, alertCount = 0, ordiniAperti = 0, sca
         onClick={() => setIsOpen(false)}
       />
 
+      {/* ── Sidebar ── */}
       <aside
         className={cn(
           'flex flex-col bg-obsidian border-r border-obsidian-light',
+          // Desktop
           'md:relative md:w-56 md:min-h-screen md:translate-x-0 md:flex',
+          // Mobile
           'fixed inset-y-0 left-0 z-50 w-72 transition-transform duration-300 ease-in-out',
           isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         )}
       >
         {sidebarContent}
       </aside>
+
+      {/* Global search modal */}
+      <SearchModal
+        isAdmin={isAdmin}
+        open={searchOpen}
+        onClose={() => setSearchOpen(false)}
+      />
     </>
   )
 }
