@@ -16,14 +16,13 @@ webpush.setVapidDetails(
 export async function POST(req: NextRequest) {
   try {
     const { userId, taskId, titolo, priorita } = await req.json()
-
     if (!userId || !titolo) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
     }
 
     const adminDb = createAdminClient()
 
-    // Check if task notification type is enabled
+    // Check global notification type setting
     const { data: setting } = await adminDb
       .from('notification_settings')
       .select('abilitata')
@@ -31,7 +30,19 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (setting && !setting.abilitata) {
-      return NextResponse.json({ ok: true, skipped: 'disabled' })
+      return NextResponse.json({ ok: true, skipped: 'global_disabled' })
+    }
+
+    // Check user-level preference (default: enabled if no row)
+    const { data: userPref } = await adminDb
+      .from('user_notification_prefs')
+      .select('abilitata')
+      .eq('user_id', userId)
+      .eq('tipo', 'task_assegnata')
+      .maybeSingle()
+
+    if (userPref && !userPref.abilitata) {
+      return NextResponse.json({ ok: true, skipped: 'user_disabled' })
     }
 
     // Get the user's push subscriptions
