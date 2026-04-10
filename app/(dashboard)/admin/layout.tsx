@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
-import SessionGuard from '@/components/Layout/SessionGuard'
 import { UserProfile } from '@/types'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -21,25 +20,33 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   const { data: alertData } = await supabase
     .from('magazzino')
-    .select('id, quantita, soglia_minima')
+    .select('id, quantita, soglia_minima, scadenza')
+
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const in30 = new Date(today)
+  in30.setDate(in30.getDate() + 30)
+
   const alertCount = (alertData ?? []).filter(
     (item: any) => item.quantita < item.soglia_minima
   ).length
+
+  const scadenzaCount = (alertData ?? []).filter((item: any) => {
+    if (!item.scadenza) return false
+    const d = new Date(item.scadenza)
+    return d <= in30
+  }).length
 
   const { data: ordiniApertiData } = await adminDb
     .from('ordini')
     .select('id, stato')
     .in('stato', ['inviato', 'parziale'])
+
   const ordiniAperti = ordiniApertiData?.length ?? 0
 
   return (
     <div className="flex min-h-screen">
-      <SessionGuard />
-      <Sidebar
-        profilo={profilo as UserProfile}
-        alertCount={alertCount}
-        ordiniAperti={ordiniAperti}
-      />
+      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} ordiniAperti={ordiniAperti} scadenzaCount={scadenzaCount} />
       <main className="flex-1 overflow-auto">
         <div className="md:hidden h-14 border-b border-obsidian-light/50 flex items-center px-14 bg-obsidian/95 sticky top-0 z-30">
           <h2 className="font-serif text-cream tracking-[0.2em] text-sm font-light">RIDENTIUM</h2>
