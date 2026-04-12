@@ -115,14 +115,12 @@ export async function GET(req: NextRequest) {
   const formato = searchParams.get('format')
   const stato   = searchParams.get('stato')
 
-  let query = adminDb
+  const base = adminDb
     .from('crm_contatti')
     .select('*')
     .order('created_at', { ascending: false })
 
-  if (stato) query = query.eq('stato', stato)
-
-  const { data, error } = await query
+  const { data, error } = await (stato ? base.eq('stato', stato) : base)
 
   if (error) {
     return NextResponse.json({ error: 'Errore nel recupero dati' }, { status: 500 })
