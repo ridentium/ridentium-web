@@ -3,6 +3,8 @@ import { createServerClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import CRMAdmin from '@/components/CRM/CRMAdmin'
 
+export const dynamic = 'force-dynamic'
+
 export default async function Page() {
   const supabase = await createServerClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -16,6 +18,8 @@ export default async function Page() {
   ])
 
   const profilo = profiloRes.data
+  if (!profilo) redirect('/admin')
+
   const isAdmin = profilo.ruolo === 'admin'
 
   return (
