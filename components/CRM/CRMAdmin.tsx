@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { CRMContatto, CRMStato } from '@/types'
+import { logActivity } from '@/lib/registro'
 import {
   Phone, MessageCircle, Mail, Download, Plus, Search,
   UserCircle, X, ChevronDown, Trash2, AlertCircle, Globe,
@@ -42,11 +43,13 @@ function iniziali(c: CRMContatto) {
 interface Props {
   contatti: CRMContatto[]
   isAdmin: boolean
+  userId: string
+  userNome: string
 }
 
 type FiltroStato = CRMStato | 'tutti'
 
-export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) {
+export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, userNome }: Props) {
   const [contatti, setContatti]     = useState(initialContatti)
   const [filtro, setFiltro]         = useState<FiltroStato>('tutti')
   const [cerca, setCerca]           = useState('')
@@ -100,6 +103,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
     if (res.ok) {
       const { contatto } = await res.json()
       setContatti(prev => prev.map(c => c.id === id ? contatto : c))
+      const nome = [contatto.nome, contatto.cognome].filter(Boolean).join(' ') || contatto.email || contatto.telefono || id
+      await logActivity(userId, userNome, `CRM: stato aggiornato a "${nuovoStato}"`, nome, 'crm')
     }
     setStatoLoading(null)
   }
@@ -116,6 +121,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
     if (res.ok) {
       const { contatto } = await res.json()
       setContatti(prev => prev.map(c => c.id === editModal.id ? contatto : c))
+      const nome = [editModal.nome, editModal.cognome].filter(Boolean).join(' ') || editModal.email || editModal.telefono || editModal.id
+      await logActivity(userId, userNome, 'CRM: note aggiornate', nome, 'crm')
       setEditModal(null)
     }
     setEditSaving(false)
@@ -150,6 +157,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
         updated_at: new Date().toISOString(),
       }
       setContatti(prev => [nuovoContatto, ...prev])
+      const nome = [nuovoForm.nome, nuovoForm.cognome].filter(Boolean).join(' ') || nuovoForm.email || nuovoForm.telefono
+      await logActivity(userId, userNome, 'CRM: contatto aggiunto', nome, 'crm')
       setNuovoModal(false)
       setNuovoForm({ nome: '', cognome: '', email: '', telefono: '', sorgente: '', note: '' })
     } else {
@@ -162,8 +171,13 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
   // ── Elimina contatto ───────────────────────────────────────────────────────
   async function eliminaContatto(id: string) {
     if (!confirm('Eliminare questo contatto? L\'azione non è reversibile.')) return
+    const contatto = contatti.find(c => c.id === id)
     const res = await fetch(`/api/crm/contatti/${id}`, { method: 'DELETE' })
-    if (res.ok) setContatti(prev => prev.filter(c => c.id !== id))
+    if (res.ok) {
+      setContatti(prev => prev.filter(c => c.id !== id))
+      const nome = contatto ? ([contatto.nome, contatto.cognome].filter(Boolean).join(' ') || contatto.email || contatto.telefono || id) : id
+      await logActivity(userId, userNome, 'CRM: contatto eliminato', nome, 'crm')
+    }
   }
 
   // ── Export CSV ────────────────────────────────────────────────────────────
