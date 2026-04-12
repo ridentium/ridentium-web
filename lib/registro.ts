@@ -14,11 +14,11 @@ export async function logActivity(
   userNome: string,
   azione: string,
   dettaglio?: string | null,
-  categoria: 'todo' | 'magazzino' | 'staff' | 'ricorrenti' | 'sistema' | 'altro' = 'altro'
+  categoria: 'todo' | 'magazzino' | 'ordini' | 'fornitori' | 'staff' | 'ricorrenti' | 'crm' | 'sistema' | 'altro' = 'altro'
 ) {
   try {
     const supabase = createClient()
-    await supabase.from('registro').insert({
+    await supabase.from('registro_attivita').insert({
       user_id: userId,
       user_nome: userNome,
       azione,
