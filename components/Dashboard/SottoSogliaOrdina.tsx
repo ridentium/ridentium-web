@@ -3,7 +3,6 @@
 import { MagazzinoItem, Fornitore } from '@/types'
 import { MessageCircle, Mail, AlertTriangle, Globe, Phone } from 'lucide-react'
 import { logActivity } from '@/lib/registro'
-import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   alertItems: MagazzinoItem[]
@@ -13,7 +12,6 @@ interface Props {
 }
 
 export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userNome }: Props) {
-  const supabase = createClient()
 
   const grouped: Record<string, MagazzinoItem[]> = {}
   const senzaFornitore: MagazzinoItem[] = []
@@ -27,72 +25,65 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
     }
   }
 
-  function buildMessage(prodotti: MagazzinoItem[]) {
+  function buildMessage(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
     const lista = prodotti
       .map(p => `- ${p.prodotto} (${Math.max(p.soglia_minima - p.quantita, 1)} ${p.unita ?? 'pz'})`)
       .join('\n')
     return `Buongiorno,\n\nvorrei ordinare:\n${lista}\n\nGrazie,\nRidentium`
   }
 
-  async function creaOrdine(fornitore: Fornitore, prodotti: MagazzinoItem[], canale: Fornitore['canale_ordine']) {
+  async function salvaCreaOrdine(fornitore: Fornitore, prodotti: MagazzinoItem[], canale: Fornitore['canale_ordine']) {
     try {
-      const { data: ordine, error } = await supabase
-        .from('ordini')
-        .insert({
+      await fetch('/api/ordini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           fornitore_id: fornitore.id,
           fornitore_nome: fornitore.nome,
-          stato: 'inviato',
           canale,
-          created_by: userId,
-        })
-        .select('id')
-        .single()
-
-      if (error || !ordine) return
-
-      const righe = prodotti.map(p => ({
-        ordine_id: ordine.id,
-        magazzino_id: p.id,
-        prodotto_nome: p.prodotto,
-        quantita_ordinata: Math.max(p.soglia_minima - p.quantita, 1),
-        unita: p.unita ?? null,
-      }))
-
-      await supabase.from('ordini_righe').insert(righe)
-    } catch { /* Non bloccare l'UI */ }
+          righe: prodotti.map(p => ({
+            magazzino_id: p.id,
+            prodotto_nome: p.prodotto,
+            quantita_ordinata: Math.max(p.soglia_minima - p.quantita, 1),
+            unita: p.unita ?? null,
+          })),
+        }),
+      })
+    } catch { /* best-effort */ }
   }
 
-  async function handleWhatsApp(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    const msg = buildMessage(prodotti)
-    await creaOrdine(fornitore, prodotti, 'whatsapp')
-    await logActivity(userId, userNome, 'Ordine inviato via WhatsApp',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino')
+  // IMPORTANTE: window.open va prima di qualsiasi await
+  function handleWhatsApp(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
+    const msg   = buildMessage(fornitore, prodotti)
     const phone = (fornitore.telefono ?? '').replace(/\D/g, '')
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+    salvaCreaOrdine(fornitore, prodotti, 'whatsapp').catch(() => {})
+    logActivity(userId, userNome, 'Ordine inviato via WhatsApp',
+      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
-  async function handleEmail(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    const msg = buildMessage(prodotti)
-    await creaOrdine(fornitore, prodotti, 'email')
-    await logActivity(userId, userNome, 'Ordine inviato via email',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino')
+  function handleEmail(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
+    const msg     = buildMessage(fornitore, prodotti)
     const subject = encodeURIComponent('Ordine - Ridentium')
-    const body = encodeURIComponent(msg)
-    window.open(`mailto:${fornitore.email}?subject=${subject}&body=${body}`, '_blank')
+    const body    = encodeURIComponent(msg)
+    window.open(`mailto:${fornitore.email}?subject=${subject}&body=${body}`)
+    salvaCreaOrdine(fornitore, prodotti, 'email').catch(() => {})
+    logActivity(userId, userNome, 'Ordine inviato via email',
+      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
-  async function handleEshop(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    await creaOrdine(fornitore, prodotti, 'eshop')
-    await logActivity(userId, userNome, 'Ordine avviato via eshop',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino')
+  function handleEshop(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
     window.open(fornitore.sito_eshop ?? '#', '_blank')
+    salvaCreaOrdine(fornitore, prodotti, 'eshop').catch(() => {})
+    logActivity(userId, userNome, 'Ordine avviato via eshop',
+      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
-  async function handleTelefono(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    await creaOrdine(fornitore, prodotti, 'telefono')
-    await logActivity(userId, userNome, 'Ordine avviato via telefono',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino')
+  function handleTelefono(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
     window.open(`tel:${(fornitore.telefono ?? '').replace(/\s/g, '')}`)
+    salvaCreaOrdine(fornitore, prodotti, 'telefono').catch(() => {})
+    logActivity(userId, userNome, 'Ordine avviato via telefono',
+      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
   if (alertItems.length === 0) {
@@ -143,12 +134,11 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
                 </button>
               )}
 
-              {/* Fallback se mancano i dati di contatto */}
               {((canale === 'whatsapp' && !fornitore.telefono) ||
                 (canale === 'email' && !fornitore.email) ||
                 (canale === 'eshop' && !fornitore.sito_eshop) ||
                 (canale === 'telefono' && !fornitore.telefono)) && (
-                <span className="text-xs text-stone italic">Contatto mancante</span>
+                <span className="text-xs text-stone italic">Contatto mancante nel profilo fornitore</span>
               )}
             </div>
 
