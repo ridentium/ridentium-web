@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Fornitore, MagazzinoItem, CanaleOrdine } from '@/types'
 import { Plus, Trash2, MessageCircle, Mail, Globe, Phone, Edit2, Check, X } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { logActivity } from '@/lib/registro'
 
 interface Props {
   fornitori: Fornitore[]
@@ -70,10 +71,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
     if (canale === 'eshop') payload.sito_eshop = sitoEshop.trim() || null
 
     await supabase.from('fornitori').insert(payload)
-    await supabase.from('registro_attivita').insert({
-      user_id: currentUserId, user_nome: currentUserNome,
-      azione: 'Fornitore aggiunto', dettaglio: nome.trim(), categoria: 'staff'
-    })
+    await logActivity(currentUserId, currentUserNome, 'Fornitore aggiunto', nome.trim(), 'fornitori')
     resetForm()
     startTransition(() => router.refresh())
   }
@@ -99,6 +97,8 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
       sito_eshop: editFields.sito_eshop || null,
       note: editFields.note || null,
     }).eq('id', f.id)
+    await logActivity(currentUserId, currentUserNome,
+      'Fornitore modificato', editFields.nome ?? f.nome, 'fornitori')
     setEditingId(null)
     startTransition(() => router.refresh())
   }
@@ -106,10 +106,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
   async function deleteFornitore(f: Fornitore) {
     if (!confirm(`Eliminare il fornitore "${f.nome}"?`)) return
     await supabase.from('fornitori').delete().eq('id', f.id)
-    await supabase.from('registro_attivita').insert({
-      user_id: currentUserId, user_nome: currentUserNome,
-      azione: 'Fornitore eliminato', dettaglio: f.nome, categoria: 'staff'
-    })
+    await logActivity(currentUserId, currentUserNome, 'Fornitore eliminato', f.nome, 'fornitori')
     startTransition(() => router.refresh())
   }
 
