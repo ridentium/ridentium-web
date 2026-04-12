@@ -24,7 +24,7 @@ const STEPS_ADMIN: Step[] = [
   {
     icon: Users,
     titolo: 'Gestione Staff',
-    corpo: "Nella sezione Staff puoi creare i profili del tuo team, assegnare ruoli (ASO, Segretaria, Manager) e gestire l'accesso di ogni collaboratore.",
+    corpo: 'Nella sezione Staff puoi creare i profili del tuo team, assegnare ruoli (ASO, Segretaria, Manager) e gestire l\'accesso di ogni collaboratore.',
     cta: { label: 'Vai allo Staff', href: '/admin/staff' },
   },
   {
@@ -36,7 +36,7 @@ const STEPS_ADMIN: Step[] = [
   {
     icon: CheckSquare,
     titolo: 'Task e Deleghe',
-    corpo: 'Crea task, assegnali ai membri del team e monitora l'avanzamento. I task ad alta priorità vengono evidenziati nella dashboard. Ogni membro riceve una notifica push quando gli viene assegnato un task.',
+    corpo: 'Crea task, assegnali ai membri del team e monitora l\'avanzamento. I task ad alta priorità vengono evidenziati nella dashboard. Ogni membro riceve una notifica push quando gli viene assegnato un task.',
     cta: { label: 'Vai ai Task', href: '/admin/tasks' },
   },
   {
@@ -73,7 +73,7 @@ const STEPS_STAFF: Step[] = [
   {
     icon: BookOpen,
     titolo: 'Protocolli (SOP)',
-    corpo: "I Protocolli raccolgono tutte le procedure operative della clinica. Consultali ogni volta che hai dubbi su come eseguire un'attività in modo corretto.",
+    corpo: 'I Protocolli raccolgono tutte le procedure operative della clinica. Consultali ogni volta che hai dubbi su come eseguire un\'attività in modo corretto.',
     cta: { label: 'Vedi i Protocolli', href: '/staff/sop' },
   },
   {
