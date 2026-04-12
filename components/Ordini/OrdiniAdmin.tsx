@@ -291,56 +291,43 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
     setNuovoSaving(true)
 
-    const { data: nuovoOrdine, error: errOrdine } = await supabase
-      .from('ordini')
-      .insert({
+    const res = await fetch('/api/ordini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
         fornitore_nome: nuovoFornitore.trim(),
-        fornitore_id: selectedFornitoreId || null,
         canale: nuovoCanale,
-        stato: 'inviato',
         note: nuovoNote.trim() || null,
-        data_invio: new Date().toISOString(),
-        created_by: userId,
-      })
-      .select()
-      .single()
+        righe: righeValide.map(r => ({
+          magazzino_id: r.magazzino_id || null,
+          prodotto_nome: r.prodotto_nome.trim(),
+          quantita_ordinata: r.quantita,
+          unita: r.unita || 'pz',
+        })),
+      }),
+    })
 
-    if (errOrdine || !nuovoOrdine) {
+    if (!res.ok) {
       setNuovoSaving(false)
       return
     }
 
-    const righeInsert = righeValide.map(r => ({
-      ordine_id: nuovoOrdine.id,
-      magazzino_id: r.magazzino_id || null,
-      prodotto_nome: r.prodotto_nome.trim(),
-      quantita_ordinata: r.quantita,
-      unita: r.unita || 'pz',
-    }))
-
-    const { data: righeData } = await supabase
-      .from('ordini_righe')
-      .insert(righeInsert)
-      .select()
-
-    const ordineCompleto: Ordine = {
-      ...nuovoOrdine,
-      righe: righeData ?? [],
-    }
-    setOrdini(prev => [ordineCompleto, ...prev])
+    const { ordine: nuovoOrdine } = await res.json()
+    setOrdini(prev => [nuovoOrdine, ...prev])
 
     const prodottiOrdinati = righeValide.map(r => `${r.prodotto_nome}: ${r.quantita} ${r.unita}`).join(', ')
-    await logActivity(
-      userId, userNome,
-      `Nuovo ordine creato: ${nuovoFornitore.trim()}`,
-      prodottiOrdinati,
-      'magazzino'
-    )
+    await logActivity(userId, userNome, `Nuovo ordine creato: ${nuovoFornitore.trim()}`, prodottiOrdinati, 'magazzino')
 
     setNuovoSaving(false)
     setNuovoModal(false)
   }
 
+  function buildReinvioMsg(ordine: Ordine) {
+    const lista = (ordine.righe ?? [])
+      .map(r => `- ${r.prodotto_nome} (${r.quantita_ordinata} ${r.unita ?? 'pz'})`)
+      .join('\n')
+    return `Buongiorno,\n\nvorrei ordinare:\n${lista}\n\nGrazie,\nRidentium`
+  }
   function formatData(iso: string) {
     return new Date(iso).toLocaleDateString('it-IT', {
       day: '2-digit', month: '2-digit', year: 'numeric',
@@ -532,26 +519,58 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                 )}
 
                 {/* Azioni (solo ordini aperti) */}
-                {aperto && (
-                  <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => apriRicezione(ordine)}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
-                    >
-                      <Check size={11} /> Ricevuto
-                    </button>
-                    <button
-                      onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote('') }}
-                      disabled={isLoading}
-                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
-                    >
-                      <X size={11} /> Annulla
-                    </button>
-                  </div>
-                )}
-
-                {/* Azione annulla ricezione (solo ordini già totalmente ricevuti) */}
+                {aperto && (() => {
+                  const forn = fornitori.find(f => f.id === ordine.fornitore_id)
+                  const msg  = buildReinvioMsg(ordine)
+                  return (
+                    <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
+                      {ordine.canale === 'whatsapp' && forn?.telefono && (
+                        <button
+                          onClick={() => {
+                            const phone = forn.telefono!.replace(/\D/g, '')
+                            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+                          }}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-900/30 border border-green-600/30 text-green-400 hover:bg-green-900/50 transition-colors"
+                        >
+                          <MessageCircle size={11} /> Reinvia WA
+                        </button>
+                      )}
+                      {ordine.canale === 'email' && forn?.email && (
+                        <button
+                          onClick={() => {
+                            const sub  = encodeURIComponent('Ordine - Ridentium')
+                            const body = encodeURIComponent(msg)
+                            window.open(`mailto:${forn.email}?subject=${sub}&body=${body}`)
+                          }}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gold/10 border border-gold/30 text-gold hover:bg-gold/20 transition-colors"
+                        >
+                          <Mail size={11} /> Reinvia email
+                        </button>
+                      )}
+                      {ordine.canale === 'eshop' && forn?.sito_eshop && (
+                        <a href={forn.sito_eshop} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors">
+                          <Globe size={11} /> Vai eshop
+                        </a>
+                      )}
+                      {ordine.canale === 'telefono' && forn?.telefono && (
+                        <a href={`tel:${forn.telefono.replace(/\s/g, '')}`}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 transition-colors">
+                          <Phone size={11} /> Chiama
+                        </a>
+                      )}
+                      <div className="flex-1" />
+                      <button onClick={() => apriRicezione(ordine)} disabled={isLoading}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50">
+                        <Check size={11} /> Ricevuto
+                      </button>
+                      <button onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote('') }} disabled={isLoading}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50">
+                        <X size={11} /> Annulla
+                      </button>
+                    </div>
+                  )
+                })()}                {/* Azione annulla ricezione (solo ordini già totalmente ricevuti) */}
                 {ordine.stato === 'ricevuto' && (
                   <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
                     <button
