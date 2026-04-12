@@ -26,8 +26,7 @@ export default async function OrdiniPage() {
       .single(),
     adminDb
       .from('fornitori')
-      .select('*')
-      .order('nome'),
+      .select('*'),
   ])
 
   return (
