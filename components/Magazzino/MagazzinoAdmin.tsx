@@ -4,11 +4,12 @@ import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Fornitore, MagazzinoItem } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, Plus, Minus, Pencil, X, AlertCircle, Clock, ShoppingBag, Download } from 'lucide-react'
+import { AlertTriangle, CheckCircle, Plus, Minus, Pencil, X, AlertCircle, Clock, ShoppingBag } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { logActivity } from '@/lib/registro'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 
+// Helpers per la scadenza
 function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
   if (!scadenza) return 'none'
   const today = new Date()
@@ -19,22 +20,6 @@ function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok
   in30.setDate(in30.getDate() + 30)
   if (expDate <= in30) return 'expiring'
   return 'ok'
-}
-
-function downloadCSV(filename: string, rows: MagazzinoItem[]) {
-  const headers = ['Prodotto','Categoria','Azienda','Qtà','Soglia Min.','Unità','Diametro','Lunghezza','Scadenza','Prezzo Unitario','Cod. Articolo','Note']
-  const escape = (v: unknown) => '"' + String(v ?? '').replace(/"/g, '""') + '"'
-  const lines = rows.map(i => [
-    i.prodotto, i.categoria, i.azienda ?? '', i.quantita, i.soglia_minima,
-    i.unita, i.diametro ?? '', i.lunghezza ?? '', i.scadenza ?? '',
-    i.prezzo_unitario ?? '', i.codice_articolo ?? '', i.note ?? '',
-  ].map(escape).join(','))
-  const csv = [headers.map(escape).join(','), ...lines].join('\n')
-  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url; a.download = filename; a.click()
-  URL.revokeObjectURL(url)
 }
 
 const CATEGORIE = [
@@ -77,12 +62,6 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
     return es === 'expired' || es === 'expiring'
   }).length
 
-  function handleExport() {
-    const today = new Date().toISOString().split('T')[0]
-    const cat = categoria === 'Tutte' ? 'completo' : categoria.replace(/[^a-zA-Z0-9]/g, '_')
-    downloadCSV(`magazzino_${cat}_${today}.csv`, filtered)
-  }
-
   async function saveQuantita(id: string, nuovaQuantita: number, vecchiaQuantita?: number) {
     const { error } = await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
     if (!error) {
@@ -99,14 +78,25 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
     }
   }
 
-  async function evadiRiordine(riordineId: string) {
+  async function evadiRiordine(riordineId: string, prodottoNome?: string, richiedente?: string) {
     const { error } = await supabase.from('riordini').update({ stato: 'evasa' }).eq('id', riordineId)
-    if (!error) startTransition(() => router.refresh())
+    if (!error) {
+      if (userId && userNome) {
+        await logActivity(
+          userId, userNome,
+          `Richiesta riordino evasa: ${prodottoNome ?? riordineId}`,
+          richiedente ? `Richiesta di ${richiedente}` : undefined,
+          'magazzini'
+        )
+      }
+      startTransition(() => router.refresh())
+    }
   }
 
   return (
     <div className="space-y-6">
 
+      {/* Riordini staff aperti */}
       {riordini.length > 0 && (
         <div className="card border-gold/30 bg-gold/5">
           <h3 className="text-xs uppercase tracking-widest text-gold mb-3 flex items-center gap-2">
@@ -128,7 +118,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
                   </p>
                   {r.note && <p className="text-xs text-stone/70 italic mt-0.5">{r.note}</p>}
                 </div>
-                <button onClick={() => evadiRiordine(r.id)}
+                <button onClick={() => evadiRiordine(r.id, (r.magazzino as any)?.prodotto, r.profili ? `${r.profili.nome} ${r.profili.cognome}` : undefined)}
                         className="btn-primary text-xs py-1.5 px-3 shrink-0">
                   Evadi
                 </button>
@@ -138,6 +128,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
         </div>
       )}
 
+      {/* Riordino suggerito — prodotti sotto soglia raggruppati per fornitore */}
       {userId && userNome && fornitori.length > 0 && items.some(i => i.quantita < i.soglia_minima) && (
         <div className="card border-gold/20">
           <h3 className="text-xs uppercase tracking-widest text-gold mb-3 flex items-center gap-2">
@@ -167,7 +158,7 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 ml-auto flex-wrap">
+        <div className="flex items-center gap-2 ml-auto">
           <button onClick={() => { setSoloAlert(!soloAlert); setSoloScadenza(false) }}
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                     soloAlert
@@ -185,10 +176,6 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
                   }`}>
             <Clock size={11} />
             In scadenza ({scadenzaCount})
-          </button>
-          <button onClick={handleExport}
-                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-obsidian-light text-stone hover:border-stone hover:text-cream transition-colors">
-            <Download size={11} /> CSV
           </button>
         </div>
         <button onClick={() => setShowAddForm(true)} className="btn-primary flex items-center gap-1.5 text-xs">
@@ -290,6 +277,8 @@ export default function MagazzinoAdmin({ items, riordini, fornitori = [], userId
         <ItemModal
           item={editItem}
           fornitori={fornitori}
+          userId={userId}
+          userNome={userNome}
           onClose={() => { setEditItem(null); setShowAddForm(false) }}
           onSave={() => {
             setEditItem(null)
@@ -308,6 +297,7 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
 
   return (
     <div className="flex items-center gap-1">
+      {/* Bottone - */}
       <button
         onClick={() => onChange(Math.max(0, value - 1))}
         className="w-6 h-6 rounded border border-obsidian-light/50 text-stone hover:text-cream hover:border-stone flex items-center justify-center transition-colors flex-shrink-0"
@@ -315,6 +305,8 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
       >
         <Minus size={10} />
       </button>
+
+      {/* Valore (cliccabile per modifica diretta) */}
       {editing ? (
         <input
           type="number"
@@ -337,6 +329,8 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
           {value}
         </button>
       )}
+
+      {/* Bottone + */}
       <button
         onClick={() => onChange(value + 1)}
         className="w-6 h-6 rounded border border-obsidian-light/50 text-stone hover:text-cream hover:border-stone flex items-center justify-center transition-colors flex-shrink-0"
@@ -348,9 +342,11 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
   )
 }
 
-function ItemModal({ item, fornitori, onClose, onSave }: {
+function ItemModal({ item, fornitori, userId, userNome, onClose, onSave }: {
   item: MagazzinoItem | null
   fornitori: Fornitore[]
+  userId?: string
+  userNome?: string
   onClose: () => void
   onSave: () => void
 }) {
@@ -364,6 +360,7 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
 
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
+  // Quando si seleziona un fornitore, popola il campo azienda
   function handleFornitoreChange(fornitoreId: string) {
     set('fornitore_id', fornitoreId || null)
     if (fornitoreId) {
@@ -379,6 +376,7 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
     }
     setSaving(true)
     setError(null)
+
     let dbError: any = null
     if (item) {
       const { error } = await supabase.from('magazzino').update(form).eq('id', item.id)
@@ -387,8 +385,23 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
       const { error } = await supabase.from('magazzino').insert(form)
       dbError = error
     }
+
     setSaving(false)
-    if (dbError) { setError(`Errore nel salvataggio: ${dbError.message}`); return }
+
+    if (dbError) {
+      setError(`Errore nel salvataggio: ${dbError.message}`)
+      return
+    }
+
+    if (userId && userNome) {
+      await logActivity(
+        userId, userNome,
+        item ? `Prodotto modificato: ${form.prodotto}` : `Prodotto aggiunto: ${form.prodotto}`,
+        item ? `Categoria: ${form.categoria}` : `Qtà: ${form.quantita}, Soglia: ${form.soglia_minima}`,
+        'magazzino'
+      )
+    }
+
     onSave()
   }
 
@@ -399,17 +412,21 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
           <h3 className="section-title text-lg">{item ? 'Modifica prodotto' : 'Nuovo prodotto'}</h3>
           <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
         </div>
+
+        {/* Errore */}
         {error && (
           <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-400 text-sm">
             <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>
         )}
+
         <div className="grid grid-cols-2 gap-4">
           <div className="col-span-2">
             <label className="label-field block mb-1.5">Prodotto *</label>
             <input className="input" value={form.prodotto ?? ''} onChange={e => set('prodotto', e.target.value)} />
           </div>
+
           <div>
             <label className="label-field block mb-1.5">Categoria</label>
             <select className="input" value={form.categoria ?? ''} onChange={e => set('categoria', e.target.value)}>
@@ -419,12 +436,20 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
               )}
             </select>
           </div>
+
+          {/* Fornitore dropdown (se presenti fornitori in rubrica) */}
           {fornitori.length > 0 ? (
             <div>
               <label className="label-field block mb-1.5">Fornitore</label>
-              <select className="input" value={form.fornitore_id ?? ''} onChange={e => handleFornitoreChange(e.target.value)}>
+              <select
+                className="input"
+                value={form.fornitore_id ?? ''}
+                onChange={e => handleFornitoreChange(e.target.value)}
+              >
                 <option value="">— seleziona —</option>
-                {fornitori.map(f => (<option key={f.id} value={f.id}>{f.nome}</option>))}
+                {fornitori.map(f => (
+                  <option key={f.id} value={f.id}>{f.nome}</option>
+                ))}
               </select>
             </div>
           ) : (
@@ -433,12 +458,20 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
               <input className="input" value={form.azienda ?? ''} onChange={e => set('azienda', e.target.value)} />
             </div>
           )}
+
+          {/* Se è stato scelto un fornitore, mostra comunque il campo azienda (read-only) */}
           {fornitori.length > 0 && (
             <div className="col-span-2">
               <label className="label-field block mb-1.5">Azienda {form.fornitore_id ? '(da fornitore)' : ''}</label>
-              <input className="input" value={form.azienda ?? ''} onChange={e => set('azienda', e.target.value)} placeholder="O scrivi manualmente" />
+              <input
+                className="input"
+                value={form.azienda ?? ''}
+                onChange={e => set('azienda', e.target.value)}
+                placeholder="O scrivi manualmente"
+              />
             </div>
           )}
+
           <div>
             <label className="label-field block mb-1.5">Codice Articolo</label>
             <input className="input" value={form.codice_articolo ?? ''} onChange={e => set('codice_articolo', e.target.value)} />
@@ -478,6 +511,7 @@ function ItemModal({ item, fornitori, onClose, onSave }: {
             <textarea className="input resize-none" rows={2} value={form.note ?? ''} onChange={e => set('note', e.target.value)} />
           </div>
         </div>
+
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="btn-secondary flex-1">Annulla</button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">
