@@ -140,6 +140,21 @@ export interface Ordine {
   righe?: OrdineRiga[]
 }
 
+export type CRMStato = 'nuovo' | 'contattato' | 'appuntamento' | 'cliente' | 'perso'
+
+export interface CRMContatto {
+  id: string
+  nome?: string | null
+  cognome?: string | null
+  email?: string | null
+  telefono?: string | null
+  note?: string | null
+  stato: CRMStato
+  sorgente?: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface KPI {
   id: number
   pazienti_oggi: number
