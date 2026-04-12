@@ -64,6 +64,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   // Modal annulla
   const [annullaModal, setAnnullaModal] = useState<{ ordineId: string } | null>(null)
   const [annullaNote, setAnnullaNote] = useState('')
+  const [annullaError, setAnnullaError] = useState<string | null>(null)
 
   // Modal nuovo ordine
   const [nuovoModal, setNuovoModal] = useState(false)
@@ -178,6 +179,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
   async function cambiaStatoAnnullato(ordineId: string, note?: string) {
     setLoading(ordineId)
+    setAnnullaError(null)
     const ordine = ordini.find(o => o.id === ordineId)
 
     // Delega tutto all'API route (usa admin client server-side, bypassa RLS)
@@ -191,6 +193,13 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
         righe: ordine?.righe ?? [],
       }),
     })
+
+    if (!apiRes.ok) {
+      const body = await apiRes.json().catch(() => ({}))
+      setAnnullaError(body.error ?? 'Errore nel salvataggio. Riprova.')
+      setLoading(null)
+      return
+    }
 
     if (apiRes.ok) {
       const { updates } = await apiRes.json()
@@ -574,7 +583,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                 {ordine.stato === 'ricevuto' && (
                   <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
                     <button
-                      onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote('') }}
+                      onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote(''); setAnnullaError(null) }}
                       disabled={isLoading}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
                     >
@@ -709,12 +718,13 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
       {annullaModal && (() => {
         const ordineTarget = ordini.find(o => o.id === annullaModal.ordineId)
         const isRicezioneAnnullata = ordineTarget?.stato === 'ricevuto' || ordineTarget?.stato === 'parziale'
+        const titleLabel = (ordineTarget?.stato === 'ricevuto' || ordineTarget?.stato === 'parziale')
+          ? 'Annulla ricezione'
+          : 'Annulla ordine'
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">
-              {ordineTarget?.stato === 'ricevuto' ? 'Annulla ricezione' : 'Annulla ordine'}
-            </h2>
+            <h2 className="text-cream font-medium mb-1">{titleLabel}</h2>
             {isRicezioneAnnullata ? (
               <p className="text-orange-400/80 text-xs mb-4">
                 ⚠ Le quantità aggiunte al magazzino verranno scalate. Aggiungi un motivo (opzionale).
@@ -730,9 +740,14 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
               rows={3}
               autoFocus
             />
+            {annullaError && (
+              <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+                <AlertCircle size={12} /> {annullaError}
+              </p>
+            )}
             <div className="flex gap-3 justify-end">
               <button
-                onClick={() => { setAnnullaModal(null); setAnnullaNote('') }}
+                onClick={() => { setAnnullaModal(null); setAnnullaNote(''); setAnnullaError(null) }}
                 className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
               >
                 Annulla
