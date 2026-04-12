@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { Fornitore, Ordine, MagazzinoItem } from '@/types'
+import { Ordine, MagazzinoItem, Fornitore } from '@/types'
 import { logActivity } from '@/lib/registro'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
   Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone,
-  Plus, Trash2, History, Clock
+  Plus, Trash2
 } from 'lucide-react'
 
 interface Props {
@@ -33,6 +34,7 @@ const STATO_COLOR: Record<string, string> = {
   annullato: 'text-stone border-stone/30 bg-stone/10',
 }
 
+// Estende OrdineRiga con il campo quantita_ricevuta salvato durante la ricezione
 interface OrdineRigaConRicevuta {
   quantita_ricevuta?: number | null
 }
@@ -46,11 +48,11 @@ interface NuovaRiga {
 
 export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, fornitori = [] }: Props) {
   const supabase = createClient()
+  const router = useRouter()
   const [ordini, setOrdini] = useState(initialOrdini)
   const [filtro, setFiltro] = useState<Filtro>('tutti')
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
-  const [showStoricoFornitore, setShowStoricoFornitore] = useState(false)
 
   // Modal ricezione (totale o parziale)
   const [ricezioneModal, setRicezioneModal] = useState<{ ordine: Ordine } | null>(null)
@@ -68,7 +70,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
   // Modal nuovo ordine
   const [nuovoModal, setNuovoModal] = useState(false)
-  const [selectedFornitoreId, setSelectedFornitoreId] = useState('')
   const [nuovoFornitore, setNuovoFornitore] = useState('')
   const [nuovoCanale, setNuovoCanale] = useState<'whatsapp' | 'email' | 'eshop' | 'telefono'>('whatsapp')
   const [nuovoRighe, setNuovoRighe] = useState<NuovaRiga[]>([
@@ -87,18 +88,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     : filtro === 'aperti'   ? aperti
     : filtro === 'ricevuti' ? ricevuti
     : annullati
-
-  // Storico fornitore: ultimo ordine per ciascun fornitore unico
-  const ultimiPerFornitore: Record<string, Ordine> = {}
-  ordini.forEach(o => {
-    const key = o.fornitore_nome.toLowerCase()
-    if (!ultimiPerFornitore[key] || new Date(o.data_invio) > new Date(ultimiPerFornitore[key].data_invio)) {
-      ultimiPerFornitore[key] = o
-    }
-  })
-  const storicoFornitore = Object.values(ultimiPerFornitore).sort(
-    (a, b) => new Date(b.data_invio).getTime() - new Date(a.data_invio).getTime()
-  )
 
   function apriRicezione(ordine: Ordine) {
     setRicezioneModal({ ordine })
@@ -130,7 +119,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     setLoading(ordineId)
 
     // Delega tutto all'API route (usa admin client server-side, bypassa RLS)
-    const apiRes = await fetch(`/api/ordini/${ordineId}`, {
+    const res = await fetch(`/api/ordini/${ordineId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -142,16 +131,17 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
       }),
     })
 
-    if (!apiRes.ok) {
-      const errBody = await apiRes.json().catch(() => ({}))
-      setRicezioneError(errBody.error ?? 'Errore nel salvataggio. Riprova.')
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
+      setRicezioneError(body.error ?? 'Errore nel salvataggio. Riprova.')
       setLoading(null)
       setRicezioneSaving(false)
       return
     }
 
-    const { updates } = await apiRes.json()
+    const { updates } = await res.json()
 
+    // Aggiorna stato locale incluse le quantita_ricevute
     const righeAggiornate = righe.map(r => ({
       ...r,
       quantita_ricevuta: quantitaRicevute[r.id] ?? null,
@@ -174,6 +164,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     )
     setLoading(null)
     setRicezioneModal(null)
+    router.refresh()
     setRicezioneSaving(false)
   }
 
@@ -183,7 +174,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     const ordine = ordini.find(o => o.id === ordineId)
 
     // Delega tutto all'API route (usa admin client server-side, bypassa RLS)
-    const apiRes = await fetch(`/api/ordini/${ordineId}`, {
+    const res = await fetch(`/api/ordini/${ordineId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -194,15 +185,15 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
       }),
     })
 
-    if (!apiRes.ok) {
-      const body = await apiRes.json().catch(() => ({}))
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}))
       setAnnullaError(body.error ?? 'Errore nel salvataggio. Riprova.')
       setLoading(null)
       return
     }
 
-    if (apiRes.ok) {
-      const { updates } = await apiRes.json()
+    if (res.ok) {
+      const { updates } = await res.json()
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
 
       const prodottiScalati = (ordine?.righe ?? [])
@@ -235,11 +226,11 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     setLoading(null)
     setAnnullaModal(null)
     setAnnullaNote('')
+    router.refresh()
   }
 
   async function apriNuovoOrdine() {
     setNuovoModal(true)
-    setSelectedFornitoreId('')
     setNuovoFornitore('')
     setNuovoCanale('whatsapp')
     setNuovoRighe([{ magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }])
@@ -253,19 +244,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
         setMagazzino(data as MagazzinoItem[])
         setMagazzinoLoaded(true)
       }
-    }
-  }
-
-  function handleSelectFornitore(fornitoreId: string) {
-    setSelectedFornitoreId(fornitoreId)
-    if (fornitoreId) {
-      const f = fornitori.find(x => x.id === fornitoreId)
-      if (f) {
-        setNuovoFornitore(f.nome)
-        setNuovoCanale(f.canale_ordine)
-      }
-    } else {
-      setNuovoFornitore('')
     }
   }
 
@@ -300,6 +278,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
     setNuovoSaving(true)
 
+    // Usa API route (admin client server-side, bypassa RLS)
     const res = await fetch('/api/ordini', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -322,30 +301,34 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     }
 
     const { ordine: nuovoOrdine } = await res.json()
+
     setOrdini(prev => [nuovoOrdine, ...prev])
 
     const prodottiOrdinati = righeValide.map(r => `${r.prodotto_nome}: ${r.quantita} ${r.unita}`).join(', ')
-    await logActivity(userId, userNome, `Nuovo ordine creato: ${nuovoFornitore.trim()}`, prodottiOrdinati, 'magazzino')
+    await logActivity(
+      userId, userNome,
+      `Nuovo ordine creato: ${nuovoFornitore.trim()}`,
+      prodottiOrdinati,
+      'magazzino'
+    )
 
     setNuovoSaving(false)
     setNuovoModal(false)
   }
 
+  // Messaggio di reinvio per un ordine già creato
   function buildReinvioMsg(ordine: Ordine) {
     const lista = (ordine.righe ?? [])
       .map(r => `- ${r.prodotto_nome} (${r.quantita_ordinata} ${r.unita ?? 'pz'})`)
       .join('\n')
     return `Buongiorno,\n\nvorrei ordinare:\n${lista}\n\nGrazie,\nRidentium`
   }
+
   function formatData(iso: string) {
     return new Date(iso).toLocaleDateString('it-IT', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit'
     })
-  }
-
-  function formatDataBreve(iso: string) {
-    return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: '2-digit' })
   }
 
   const tabs: { id: Filtro; label: string; count: number }[] = [
@@ -364,42 +347,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
   return (
     <div>
-
-      {/* Storico per fornitore */}
-      {storicoFornitore.length > 0 && (
-        <div className="card mb-6">
-          <button
-            onClick={() => setShowStoricoFornitore(v => !v)}
-            className="flex items-center justify-between w-full"
-          >
-            <span className="flex items-center gap-2 text-xs uppercase tracking-widest text-stone">
-              <History size={12} /> Storico per fornitore ({storicoFornitore.length})
-            </span>
-            {showStoricoFornitore ? <ChevronUp size={13} className="text-stone" /> : <ChevronDown size={13} className="text-stone" />}
-          </button>
-          {showStoricoFornitore && (
-            <div className="mt-3 pt-3 border-t border-obsidian-light/30 grid gap-2 sm:grid-cols-2">
-              {storicoFornitore.map(o => {
-                const totalOrdini = ordini.filter(x => x.fornitore_nome.toLowerCase() === o.fornitore_nome.toLowerCase()).length
-                return (
-                  <div key={o.id} className="flex items-center justify-between gap-3 py-2 px-3 rounded bg-obsidian-light/30">
-                    <div>
-                      <p className="text-sm text-cream font-medium">{o.fornitore_nome}</p>
-                      <p className="text-[11px] text-stone mt-0.5">
-                        {totalOrdini} ordini · ultimo {formatDataBreve(o.data_invio)}
-                      </p>
-                    </div>
-                    <span className={`text-[10px] px-2 py-0.5 rounded border ${STATO_COLOR[o.stato]}`}>
-                      {STATO_LABEL[o.stato]}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Header: filtri + pulsante nuovo ordine */}
       <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
         <div className="flex gap-2 flex-wrap">
@@ -445,7 +392,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
             const isExpanded = expandedId === ordine.id
             const isLoading  = loading === ordine.id
             const aperto     = ordine.stato === 'inviato' || ordine.stato === 'parziale'
-            const mostraRicevute = ordine.stato === 'parziale' || ordine.stato === 'ricevuto'
 
             return (
               <div key={ordine.id} className="card">
@@ -464,12 +410,10 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                         {ordine.canale === 'telefono' && <><Phone size={9} /> Telefono</>}
                       </span>
                     </div>
-                    <p className="text-xs text-stone flex items-center gap-1">
-                      <Clock size={10} /> {formatData(ordine.data_invio)}
-                    </p>
+                    <p className="text-xs text-stone">{formatData(ordine.data_invio)}</p>
                     {ordine.data_ricezione && (
-                      <p className="text-xs text-green-400/70 mt-0.5 flex items-center gap-1">
-                        <Check size={10} /> Ricevuto: {formatData(ordine.data_ricezione)}
+                      <p className="text-xs text-stone/60 mt-0.5">
+                        Ricevuto: {formatData(ordine.data_ricezione)}
                       </p>
                     )}
                     {ordine.note && (
@@ -491,39 +435,15 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
                 {/* Righe prodotti (espandibile) */}
                 {isExpanded && ordine.righe && ordine.righe.length > 0 && (
-                  <div className="mt-3 pt-3 border-t border-obsidian-light/30">
-                    {/* Header colonne */}
-                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-stone/50 mb-2 px-1">
-                      <span>Prodotto</span>
-                      <div className="flex gap-4">
-                        <span>Ordinato</span>
-                        {mostraRicevute && <span>Ricevuto</span>}
+                  <div className="mt-3 pt-3 border-t border-obsidian-light/30 space-y-1.5">
+                    {ordine.righe.map(r => (
+                      <div key={r.id} className="flex items-center justify-between text-sm">
+                        <span className="text-cream/80">{r.prodotto_nome}</span>
+                        <span className="text-stone text-xs">
+                          {r.quantita_ordinata} {r.unita ?? 'pz'}
+                        </span>
                       </div>
-                    </div>
-                    <div className="space-y-1.5">
-                      {ordine.righe.map(r => {
-                        const ricevuta = (r as OrdineRigaConRicevuta).quantita_ricevuta
-                        const mancante = mostraRicevute && ricevuta != null && ricevuta < r.quantita_ordinata
-                        return (
-                          <div key={r.id} className="flex items-center justify-between text-sm px-1">
-                            <span className={mancante ? 'text-amber-400/80' : 'text-cream/80'}>{r.prodotto_nome}</span>
-                            <div className="flex gap-4 items-center">
-                              <span className="text-stone text-xs">{r.quantita_ordinata} {r.unita ?? 'pz'}</span>
-                              {mostraRicevute && (
-                                <span className={`text-xs font-medium ${
-                                  ricevuta == null ? 'text-stone/40' :
-                                  ricevuta === 0 ? 'text-red-400' :
-                                  ricevuta < r.quantita_ordinata ? 'text-amber-400' :
-                                  'text-green-400'
-                                }`}>
-                                  {ricevuta == null ? '—' : `${ricevuta} ${r.unita ?? 'pz'}`}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                    ))}
                   </div>
                 )}
 
@@ -533,6 +453,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                   const msg  = buildReinvioMsg(ordine)
                   return (
                     <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
+                      {/* Reinvio tramite canale originale */}
                       {ordine.canale === 'whatsapp' && forn?.telefono && (
                         <button
                           onClick={() => {
@@ -557,29 +478,45 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                         </button>
                       )}
                       {ordine.canale === 'eshop' && forn?.sito_eshop && (
-                        <a href={forn.sito_eshop} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors">
+                        <a
+                          href={forn.sito_eshop}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                        >
                           <Globe size={11} /> Vai eshop
                         </a>
                       )}
                       {ordine.canale === 'telefono' && forn?.telefono && (
-                        <a href={`tel:${forn.telefono.replace(/\s/g, '')}`}
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 transition-colors">
+                        <a
+                          href={`tel:${forn.telefono.replace(/\s/g, '')}`}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 transition-colors"
+                        >
                           <Phone size={11} /> Chiama
                         </a>
                       )}
+
                       <div className="flex-1" />
-                      <button onClick={() => apriRicezione(ordine)} disabled={isLoading}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50">
+
+                      <button
+                        onClick={() => apriRicezione(ordine)}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                      >
                         <Check size={11} /> Ricevuto
                       </button>
-                      <button onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote('') }} disabled={isLoading}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50">
+                      <button
+                        onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote(''); setAnnullaError(null) }}
+                        disabled={isLoading}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                      >
                         <X size={11} /> Annulla
                       </button>
                     </div>
                   )
-                })()}                {/* Azione annulla ricezione (solo ordini già totalmente ricevuti) */}
+                })()}
+
+                {/* Azione annulla ricezione (solo ordini già totalmente ricevuti) */}
                 {ordine.stato === 'ricevuto' && (
                   <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
                     <button
@@ -782,39 +719,17 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
               </button>
             </div>
 
-            {/* Fornitore: dropdown se presenti, altrimenti testo libero */}
+            {/* Fornitore */}
             <div className="mb-4">
               <label className="block text-xs text-stone mb-1.5">Fornitore</label>
-              {fornitori.length > 0 ? (
-                <>
-                  <select
-                    value={selectedFornitoreId}
-                    onChange={e => handleSelectFornitore(e.target.value)}
-                    className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 mb-2"
-                  >
-                    <option value="">— Seleziona dalla rubrica —</option>
-                    {fornitori.map(f => (
-                      <option key={f.id} value={f.id}>{f.nome}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="text"
-                    value={nuovoFornitore}
-                    onChange={e => { setNuovoFornitore(e.target.value); setSelectedFornitoreId('') }}
-                    placeholder="O scrivi nome fornitore manualmente..."
-                    className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
-                  />
-                </>
-              ) : (
-                <input
-                  type="text"
-                  value={nuovoFornitore}
-                  onChange={e => setNuovoFornitore(e.target.value)}
-                  placeholder="Es. Neodent, Nobel Biocare..."
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
-                  autoFocus
-                />
-              )}
+              <input
+                type="text"
+                value={nuovoFornitore}
+                onChange={e => setNuovoFornitore(e.target.value)}
+                placeholder="Es. Neodent, Nobel Biocare..."
+                className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                autoFocus
+              />
             </div>
 
             {/* Canale */}
@@ -844,6 +759,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
               <div className="space-y-2">
                 {nuovoRighe.map((riga, idx) => (
                   <div key={idx} className="flex items-center gap-2">
+                    {/* Selettore prodotto */}
                     <div className="flex-1 min-w-0">
                       {magazzino.length > 0 ? (
                         <select
@@ -866,6 +782,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                         />
                       )}
                     </div>
+                    {/* Quantità */}
                     <input
                       type="number"
                       min={1}
@@ -874,6 +791,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                       className="w-16 text-center bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
                     />
                     <span className="text-stone text-xs w-6 flex-shrink-0">{riga.unita}</span>
+                    {/* Rimuovi riga */}
                     {nuovoRighe.length > 1 && (
                       <button
                         onClick={() => rimuoviRiga(idx)}
