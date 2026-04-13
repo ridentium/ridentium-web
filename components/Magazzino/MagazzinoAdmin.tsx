@@ -24,7 +24,9 @@ interface Props {
   riordini: any[]
 }
 
-export default function MagazzinoAdmin({ items, riordini }: Props) {
+export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
+  // Stato locale per aggiornamenti ottimistici — UI reagisce istantaneamente
+  const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
   const [soloAlert, setSoloAlert] = useState(false)
   const [cerca, setCerca] = useState('')
@@ -86,8 +88,10 @@ export default function MagazzinoAdmin({ items, riordini }: Props) {
   const alertCount = items.filter(i => i.quantita < i.soglia_minima).length
 
   async function saveQuantita(id: string, nuovaQuantita: number) {
+    // Aggiornamento ottimistico: UI reagisce immediatamente, senza aspettare il server
+    setItems(prev => prev.map(i => i.id === id ? { ...i, quantita: nuovaQuantita } : i))
+    // Salvataggio in background — nessun router.refresh() = nessun re-render del layout
     await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
-    startTransition(() => router.refresh())
   }
 
   async function evadiRiordine(riordineId: string) {
@@ -279,9 +283,19 @@ export default function MagazzinoAdmin({ items, riordini }: Props) {
         <ItemModal
           item={editItem}
           onClose={() => { setEditItem(null); setShowAddForm(false) }}
-          onSave={() => {
+          onSave={(updated?: MagazzinoItem) => {
             setEditItem(null)
             setShowAddForm(false)
+            if (updated) {
+              // Aggiornamento ottimistico anche dal modal
+              setItems(prev => {
+                const exists = prev.find(i => i.id === updated.id)
+                return exists
+                  ? prev.map(i => i.id === updated.id ? updated : i)
+                  : [...prev, updated]
+              })
+            }
+            // Refresh in background per mantenere sidebar badge e dati freschi
             startTransition(() => router.refresh())
           }}
         />
@@ -318,7 +332,7 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
 function ItemModal({ item, onClose, onSave }: {
   item: MagazzinoItem | null
   onClose: () => void
-  onSave: () => void
+  onSave: (updated?: MagazzinoItem) => void
 }) {
   const supabase = createClient()
   const [form, setForm] = useState<Partial<MagazzinoItem>>(item ?? {
@@ -332,12 +346,14 @@ function ItemModal({ item, onClose, onSave }: {
   async function handleSave() {
     setSaving(true)
     if (item) {
-      await supabase.from('magazzino').update(form).eq('id', item.id)
+      const { data } = await supabase.from('magazzino').update(form).eq('id', item.id).select().single()
+      setSaving(false)
+      onSave(data ?? undefined)
     } else {
-      await supabase.from('magazzino').insert(form)
+      const { data } = await supabase.from('magazzino').insert(form).select().single()
+      setSaving(false)
+      onSave(data ?? undefined)
     }
-    setSaving(false)
-    onSave()
   }
 
   return (
