@@ -183,6 +183,13 @@ export default function ChatWidget({ userName, userRole, alertCount = 0, tasksCo
   const [isListening, setIsListening] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [proactiveMsg, setProactiveMsg] = useState<string | null>(null)
+
+  // Carica preferenza voce da localStorage al mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setVoiceEnabled(localStorage.getItem('lina-voice') === 'true')
+    }
+  }, [])
   const [proactiveVisible, setProactiveVisible] = useState(false)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -433,7 +440,12 @@ export default function ChatWidget({ userName, userRole, alertCount = 0, tasksCo
             </div>
             {/* Toggle voce */}
             <button
-              onClick={() => { setVoiceEnabled(v => !v); window.speechSynthesis?.cancel() }}
+              onClick={() => {
+                const next = !voiceEnabled
+                setVoiceEnabled(next)
+                localStorage.setItem('lina-voice', String(next))
+                if (!next) window.speechSynthesis?.cancel()
+              }}
               title={voiceEnabled ? 'Disattiva voce' : 'Attiva voce'}
               style={{
                 background: voiceEnabled ? 'rgba(201,168,76,0.15)' : 'transparent',
