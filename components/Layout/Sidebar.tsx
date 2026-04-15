@@ -119,17 +119,18 @@ export default function Sidebar({ profilo, alertCount = 0, onClose }: SidebarPro
   }
 
   return (
-    <aside className="w-56 h-full bg-obsidian border-r border-obsidian-light flex flex-col">
+    {/* #665647 = bruno scuro brand ufficiale */}
+    <aside className="w-56 h-full flex flex-col" style={{ background: '#665647', borderRight: '1px solid rgba(87,72,57,0.6)' }}>
 
       {/* Brand */}
-      <div className="px-6 py-6 border-b border-obsidian-light flex items-start justify-between">
+      <div className="px-6 py-6 flex items-start justify-between" style={{ borderBottom: '1px solid rgba(210,198,182,0.15)' }}>
         <div>
-          <h1 className="font-serif text-xl text-cream tracking-[0.2em] font-light">RIDENTIUM</h1>
-          <p className="text-stone/50 text-[10px] tracking-[0.3em] uppercase mt-0.5">
+          <h1 className="font-serif text-xl tracking-[0.2em] font-light" style={{ color: '#F7F4EF' }}>RIDENTIUM</h1>
+          <p className="text-[10px] tracking-[0.3em] uppercase mt-0.5" style={{ color: 'rgba(210,198,182,0.6)' }}>
             {isAdmin ? 'Admin' : 'Staff'}
           </p>
         </div>
-        <button onClick={onClose} className="md:hidden p-1 text-stone hover:text-cream transition-colors -mr-1">
+        <button onClick={onClose} className="md:hidden p-1 transition-colors -mr-1" style={{ color: 'rgba(210,198,182,0.5)' }}>
           <X size={16} />
         </button>
       </div>
@@ -166,17 +167,21 @@ export default function Sidebar({ profilo, alertCount = 0, onClose }: SidebarPro
       )}
 
       {/* Profilo + logout */}
-      <div className="border-t border-obsidian-light px-4 py-4 flex-shrink-0">
+      <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: '1px solid rgba(210,198,182,0.15)' }}>
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-7 h-7 rounded-full bg-gold/20 border border-gold/30 flex items-center justify-center text-gold text-xs font-medium flex-shrink-0">
+          <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
+               style={{ background: 'rgba(201,168,76,0.2)', border: '1px solid rgba(201,168,76,0.4)', color: '#C9A84C' }}>
             {profilo.nome[0]}{profilo.cognome[0]}
           </div>
           <div className="min-w-0">
-            <p className="text-cream text-sm font-medium truncate">{profilo.nome} {profilo.cognome}</p>
-            <p className={cn('text-xs', roleColor(profilo.ruolo))}>{roleLabel(profilo.ruolo)}</p>
+            <p className="text-sm font-medium truncate" style={{ color: '#F7F4EF' }}>{profilo.nome} {profilo.cognome}</p>
+            <p className="text-xs" style={{ color: 'rgba(210,198,182,0.6)' }}>{roleLabel(profilo.ruolo)}</p>
           </div>
         </div>
-        <button onClick={handleLogout} className="btn-ghost w-full flex items-center gap-2 text-stone/60 hover:text-red-400">
+        <button onClick={handleLogout} className="w-full flex items-center gap-2 text-xs px-2 py-1.5 rounded transition-colors"
+                style={{ color: 'rgba(210,198,182,0.5)' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#ef4444')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'rgba(210,198,182,0.5)')}>
           <LogOut size={13} />
           Esci
         </button>
