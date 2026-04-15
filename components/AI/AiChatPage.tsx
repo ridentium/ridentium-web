@@ -162,7 +162,7 @@ export default function AiChatPage({ userName, userRole, userId, storico }: Prop
                 <Sparkles size={28} className="text-gold" />
               </div>
               <div>
-                <p className="text-cream font-medium mb-1">Ciao {userName.split(' ')[0]}, sono RIDA</p>
+                <p className="text-cream font-medium mb-1">Ciao {userName.split(' ')[0]}, sono Lina</p>
                 <p className="text-stone text-sm">Il tuo assistente AI per il gestionale RIDENTIUM.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
@@ -206,7 +206,7 @@ export default function AiChatPage({ userName, userRole, userId, storico }: Prop
               <div className="px-4 py-3 rounded-xl text-sm flex items-center gap-2 text-stone"
                    style={{ background: '#1A1714', border: '1px solid rgba(255,255,255,0.06)' }}>
                 <Loader2 size={14} className="animate-spin" />
-                RIDA sta elaborando…
+                Lina sta elaborando…
               </div>
             </div>
           )}
@@ -222,7 +222,7 @@ export default function AiChatPage({ userName, userRole, userId, storico }: Prop
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder={`Chiedi a RIDA qualcosa sul gestionale…`}
+              placeholder={`Chiedi a Lina qualcosa sul gestionale…`}
               rows={1}
               disabled={loading}
               className="flex-1 bg-transparent text-cream text-sm resize-none outline-none placeholder-stone/40 max-h-36"
