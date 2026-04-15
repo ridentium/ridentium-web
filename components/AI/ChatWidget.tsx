@@ -220,19 +220,17 @@ export default function ChatWidget({ userName, userRole, alertCount = 0, tasksCo
     }
   }, [open])
 
-  // Notifica proattiva — una volta per sessione
+  // Notifica proattiva — compare ad ogni mount (ogni volta che si torna sulla pagina)
+  // così riflette sempre la situazione corrente (scorte, task, ricorrenti aggiornati)
   useEffect(() => {
     if (!config.proactive) return
-    const key = `lina-proactive-${new Date().toDateString()}-${userRole}`
-    if (sessionStorage.getItem(key)) return
-
     const t = setTimeout(() => {
       setProactiveMsg(config.proactive)
       setProactiveVisible(true)
-      sessionStorage.setItem(key, '1')
     }, 4000)
     return () => clearTimeout(t)
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [alertCount, tasksCount]) // ricalcola se cambiano i dati
 
   // Nasconde proattiva quando si apre la chat
   useEffect(() => { if (open) setProactiveVisible(false) }, [open])
