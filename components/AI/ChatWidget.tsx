@@ -193,6 +193,13 @@ export default function ChatWidget({ userName, userRole, alertCount = 0, tasksCo
   const voiceSupported = typeof window !== 'undefined' &&
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
 
+  // Ascolta evento globale lina:open dalla LinaBriefingCard
+  useEffect(() => {
+    const handler = () => setOpen(true)
+    document.addEventListener('lina:open', handler)
+    return () => document.removeEventListener('lina:open', handler)
+  }, [])
+
   // Auto-scroll
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
