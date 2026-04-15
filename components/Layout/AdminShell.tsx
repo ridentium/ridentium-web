@@ -19,17 +19,18 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#0D0D0B' }}>
+    /* Sfondo avorio caldo — contenuto chiaro, sidebar rimane scura */
+    <div className="flex h-screen overflow-hidden" style={{ background: '#F5F0E8' }}>
 
       {/* Overlay mobile */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 md:hidden"
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar — resta scura */}
       <div
         className={`
           fixed inset-y-0 left-0 z-50 md:relative md:z-auto
@@ -47,18 +48,22 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
       {/* Colonna principale */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-        {/* Top bar mobile */}
-        <div className="md:hidden flex items-center gap-3 px-4 h-14 border-b border-obsidian-light flex-shrink-0 bg-obsidian">
+        {/* Top bar mobile — avorio/bianco */}
+        <div
+          className="md:hidden flex items-center gap-3 px-4 h-14 flex-shrink-0"
+          style={{ background: '#FDFAF6', borderBottom: '1px solid rgba(140,128,112,0.18)' }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 -ml-1 text-stone hover:text-cream transition-colors rounded"
+            className="p-2 -ml-1 transition-colors rounded"
+            style={{ color: '#8C8070' }}
             aria-label="Apri menu"
           >
             <Menu size={20} />
           </button>
           <span
-            className="text-cream text-sm tracking-[0.3em] font-light"
-            style={{ fontFamily: '"Cormorant Garamond", Georgia, serif' }}
+            className="text-sm tracking-[0.3em] font-light"
+            style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', color: '#1A1714' }}
           >
             RIDENTIUM
           </span>
@@ -72,7 +77,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
         </main>
       </div>
 
-      {/* Lina */}
+      {/* Lina — panel scuro su sfondo chiaro, ottimo contrasto */}
       <ChatWidget
         userName={userName}
         userRole={userRole}
