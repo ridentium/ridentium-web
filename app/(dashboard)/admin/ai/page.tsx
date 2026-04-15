@@ -23,7 +23,7 @@ export default async function AIPage() {
   return (
     <div className="h-[calc(100vh-theme(spacing.24))] flex flex-col">
       <PageHeader
-        title="RIDA — Assistente AI"
+        title="Lina — Assistente AI"
         subtitle="Chiedi qualsiasi cosa sul gestionale. Crea task, consulta scorte, gestisci riordini."
       />
       <AiChatPage
