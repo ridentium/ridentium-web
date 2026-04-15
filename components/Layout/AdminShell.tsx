@@ -19,7 +19,6 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    {/* #F7F4EF = crema avorio brand ufficiale */}
     <div className="flex h-screen overflow-hidden" style={{ background: '#F7F4EF' }}>
 
       {/* Overlay mobile */}
