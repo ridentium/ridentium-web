@@ -1,12 +1,34 @@
-import { ReactNode } from 'react'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
+import { UserProfile } from '@/types'
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const supabase = createClient()
+  const adminDb = createAdminClient()
+
+  // 1. Auth — deve precedere le altre query (serve user.id)
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect('/login')
+
+  // 2. Profilo + scorte in parallelo
+  const [{ data: profilo }, { data: scoreRaw }] = await Promise.all([
+    adminDb.from('profili').select('*').eq('id', user.id).single(),
+    supabase.from('magazzino').select('quantita, soglia_minima'),
+  ])
+
+  if (profilo?.ruolo !== 'admin') redirect('/staff')
+
+  const alertCount = (scoreRaw ?? []).filter(
+    (i: any) => i.quantita < i.soglia_minima
+  ).length
+
   return (
-    <div className="flex h-screen bg-obsidian">
-      <Sidebar />
+    <div className="flex min-h-screen">
+      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} />
       <main className="flex-1 overflow-auto">
-        <div className="px-4 sm:px-8 py-6 sm:py-8 max-w-7xl mx-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
           {children}
         </div>
       </main>
