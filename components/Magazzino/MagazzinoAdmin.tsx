@@ -197,29 +197,34 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         </button>
       </div>
 
-      {/* Filtri categoria */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2 flex-wrap flex-1">
-          {CATEGORIE.map(cat => (
-            <button key={cat}
-                    onClick={() => setCategoria(cat)}
-                    className={`text-xs px-3 py-1.5 rounded border transition-colors ${
-                      categoria === cat
-                        ? 'bg-gold text-obsidian border-gold'
-                        : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
-                    }`}>
-              {cat}
-            </button>
-          ))}
+      {/* Filtri categoria — scroll orizzontale su mobile (monofila) */}
+      <div className="flex items-center gap-2">
+        {/* Pillole in scroll orizzontale — non wrappano mai */}
+        <div className="flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <div className="flex items-center gap-2" style={{ width: 'max-content' }}>
+            {CATEGORIE.map(cat => (
+              <button key={cat}
+                      onClick={() => setCategoria(cat)}
+                      className={`text-xs px-3 py-1.5 rounded border transition-colors whitespace-nowrap ${
+                        categoria === cat
+                          ? 'bg-gold text-obsidian border-gold'
+                          : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                      }`}>
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
+        {/* Bottone alert — fisso a destra */}
         <button onClick={() => setSoloAlert(!soloAlert)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+                className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                   soloAlert
                     ? 'bg-red-400/10 text-red-400 border-red-400/30'
                     : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
                 }`}>
           <AlertTriangle size={11} />
-          Sotto soglia ({alertCount})
+          <span className="hidden sm:inline">Sotto soglia</span>
+          <span className="text-xs">({alertCount})</span>
         </button>
       </div>
 
