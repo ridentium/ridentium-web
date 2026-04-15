@@ -2,9 +2,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
-// Usa OpenAI gpt-4o-mini — economico (~0.15$/1M token input)
-const OPENAI_API = 'https://api.openai.com/v1/chat/completions'
-const MODEL = 'gpt-4o-mini'
+// Usa Groq llama-3.3-70b-versatile — completamente gratuito
+const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions'
+const MODEL = 'llama-3.3-70b-versatile'
 
 // ── Tool definitions (formato OpenAI) ─────────────────────────────────────────
 
@@ -212,10 +212,10 @@ export async function POST(req: NextRequest) {
   const { data: profilo } = await adminDb.from('profili').select('nome, cognome, ruolo').eq('id', user.id).single()
   if (!profilo) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 403 })
 
-  const apiKey = process.env.OPENAI_API_KEY
+  const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     return NextResponse.json({
-      error: 'OPENAI_API_KEY non configurata. Vai su Vercel → Settings → Environment Variables e aggiungila.',
+      error: 'GROQ_API_KEY non configurata. Vai su Vercel → Settings → Environment Variables e aggiungila.',
     }, { status: 500 })
   }
 
@@ -259,7 +259,7 @@ ID utente: ${user.id}`,
   const MAX_ITERATIONS = 6
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const resp = await fetch(OPENAI_API, {
+    const resp = await fetch(GROQ_API, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -277,7 +277,7 @@ ID utente: ${user.id}`,
 
     if (!resp.ok) {
       const errText = await resp.text()
-      return NextResponse.json({ error: `Errore OpenAI (${resp.status}): ${errText.substring(0, 200)}` }, { status: 500 })
+      return NextResponse.json({ error: `Errore Groq (${resp.status}): ${errText.substring(0, 200)}` }, { status: 500 })
     }
 
     const result = await resp.json()
