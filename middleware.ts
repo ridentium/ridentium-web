@@ -27,13 +27,30 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
+  // ── Rotte pubbliche: login ──────────────────────────────────────────────────
   if (pathname.startsWith('/login')) {
-    if (user) return NextResponse.redirect(new URL('/dashboard', request.url))
+    if (user) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
+    }
     return supabaseResponse
   }
 
-  if (!user) return NextResponse.redirect(new URL('/login', request.url))
+  // ── API pubblica: ricezione lead da landing page esterne ────────────────────
+  // POST /api/crm/contatti  →  non richiede autenticazione
+  // OPTIONS                 →  preflight CORS
+  if (
+    pathname === '/api/crm/contatti' &&
+    (request.method === 'POST' || request.method === 'OPTIONS')
+  ) {
+    return supabaseResponse
+  }
 
+  // ── Rotte protette: richiede autenticazione ─────────────────────────────────
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // ── Protezione rotte admin ──────────────────────────────────────────────────
   if (pathname.startsWith('/admin')) {
     const adminDb = createAdminSupabase(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -44,6 +61,7 @@ export async function middleware(request: NextRequest) {
       .select('ruolo')
       .eq('id', user.id)
       .single()
+
     if (profile?.ruolo !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
