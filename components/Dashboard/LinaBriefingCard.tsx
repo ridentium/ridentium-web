@@ -67,15 +67,15 @@ export default function LinaBriefingCard({
     <div
       className="card lg:col-span-2 relative overflow-hidden"
       style={{
-        background: 'linear-gradient(135deg, #1A1714 0%, #1E1A16 100%)',
-        borderColor: 'rgba(201,168,76,0.2)',
+        background: 'linear-gradient(135deg, #FDF7EE 0%, #F8F0E0 100%)',
+        borderColor: 'rgba(201,168,76,0.3)',
       }}
     >
       {/* Glow */}
       <div style={{
         position: 'absolute', top: -60, right: -60,
         width: 200, height: 200, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(201,168,76,0.07), transparent 70%)',
+        background: 'radial-gradient(circle, rgba(201,168,76,0.15), transparent 70%)',
         pointerEvents: 'none',
       }} />
 
@@ -95,13 +95,13 @@ export default function LinaBriefingCard({
 
         {/* Testo */}
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] text-gold/60 uppercase tracking-[0.2em] mb-2 font-medium">
+          <p className="text-[10px] uppercase tracking-[0.2em] mb-2 font-medium" style={{ color: 'rgba(160,120,40,0.8)' }}>
             Lina · Briefing del giorno
           </p>
 
           <div className="min-h-[2.5rem] flex items-center gap-2">
-            {loading && <Loader2 size={13} className="text-stone/40 animate-spin flex-shrink-0" />}
-            <p className={`text-cream text-sm leading-relaxed transition-opacity duration-300 ${loading ? 'opacity-60' : 'opacity-100'}`}>
+            {loading && <Loader2 size={13} className="animate-spin flex-shrink-0" style={{ color: '#C9A84C' }} />}
+            <p className={`text-sm leading-relaxed transition-opacity duration-300 ${loading ? 'opacity-60' : 'opacity-100'}`} style={{ color: '#1A1714' }}>
               {briefing}
             </p>
           </div>
