@@ -19,7 +19,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: '#F7F4EF' }}>
+    <div className="flex h-screen overflow-hidden" style={{ background: '#E5DDD2' }}>
 
       {/* Overlay mobile */}
       {sidebarOpen && (
@@ -50,7 +50,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
         {/* Top bar mobile — avorio/bianco */}
         <div
           className="md:hidden flex items-center gap-3 px-4 h-14 flex-shrink-0"
-          style={{ background: '#F7F4EF', borderBottom: '1px solid rgba(210,198,182,0.5)' }}
+          style={{ background: '#F7F4EF', borderBottom: '1px solid #D2C6B6' }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
