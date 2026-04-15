@@ -7,12 +7,6 @@
 :root {
   --font-inter: 'Inter', system-ui, sans-serif;
   --font-cormorant: 'Cormorant Garamond', Georgia, serif;
-
-  /* Palette brand ufficiale */
-  --brand-cream:  #F7F4EF;   /* crema avorio */
-  --brand-taupe:  #D2C6B6;   /* taupe caldo  */
-  --brand-brown:  #665647;   /* bruno scuro  */
-  --brand-gold:   #C9A84C;   /* accento CTA  */
 }
 
 @layer base {
@@ -24,119 +18,106 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* bg-ivory (#F7F4EF) text-obsidian (#665647) — palette brand ufficiale */
   body {
-    background-color: var(--brand-cream);   /* #F7F4EF */
-    color: var(--brand-brown);              /* #665647 */
+    @apply bg-ivory text-obsidian;
     min-height: 100vh;
   }
 
-  /* Scrollbar — toni caldi brand */
+  /* Scrollbar brand */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #EDE8DF; }
-  ::-webkit-scrollbar-thumb { background: var(--brand-taupe); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: var(--brand-gold); }
+  ::-webkit-scrollbar-track { @apply bg-ivory-dark; }
+  ::-webkit-scrollbar-thumb { background: #D2C6B6; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { @apply bg-gold; }
 }
 
 @layer components {
 
-  /* ── Card ── */
+  /* Card — sfondo bianco caldo, bordo taupe brand */
   .card {
     background-color: #FDFCFA;
-    border: 1px solid rgba(210, 198, 182, 0.5);   /* brand taupe */
-    border-radius: 6px;
-    padding: 20px;
-    box-shadow: 0 1px 3px rgba(102, 86, 71, 0.07), 0 1px 2px rgba(102, 86, 71, 0.05);
+    border: 1px solid #D2C6B6;
+    border-opacity: 0.5;
+    @apply rounded-md p-5;
+    box-shadow: 0 1px 3px rgba(102,86,71,0.07);
   }
 
-  /* ── Bottoni ── */
+  /* Bottoni */
   .btn-primary {
-    background-color: var(--brand-gold);
-    color: #FFFFFF;
-    @apply font-medium text-sm px-5 py-2.5 rounded transition-colors duration-150;
+    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded
+           hover:bg-gold-light transition-colors duration-150;
   }
-  .btn-primary:hover { background-color: #E2C97E; color: var(--brand-brown); }
 
   .btn-secondary {
-    border: 1px solid rgba(102, 86, 71, 0.3);
-    color: var(--brand-brown);
-    @apply text-sm px-5 py-2.5 rounded transition-colors duration-150;
+    @apply border border-obsidian/30 text-obsidian text-sm px-5 py-2.5 rounded
+           hover:border-gold hover:text-gold transition-colors duration-150;
   }
-  .btn-secondary:hover { border-color: var(--brand-gold); color: var(--brand-gold); }
 
   .btn-ghost {
-    color: rgba(102, 86, 71, 0.6);
-    @apply text-sm px-3 py-2 rounded transition-colors duration-150;
-  }
-  .btn-ghost:hover {
-    color: var(--brand-brown);
-    background-color: rgba(210, 198, 182, 0.2);
+    @apply text-obsidian/60 text-sm px-3 py-2 rounded
+           hover:text-obsidian hover:bg-stone/20 transition-colors duration-150;
   }
 
-  /* ── Input ── */
+  /* Input */
   .input {
     background-color: #FFFFFF;
-    border: 1px solid rgba(210, 198, 182, 0.7);
-    color: var(--brand-brown);
-    @apply rounded px-4 py-2.5 text-sm w-full focus:outline-none transition-colors duration-150;
+    @apply border border-stone/40 text-obsidian placeholder-stone/60
+           rounded px-4 py-2.5 text-sm w-full
+           focus:outline-none focus:border-gold transition-colors duration-150;
   }
-  .input::placeholder { color: rgba(210, 198, 182, 0.9); }
-  .input:focus { border-color: var(--brand-gold); }
 
-  /* ── Badge ── */
+  /* Badge */
   .badge-alert {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
-    background-color: rgba(192, 57, 43, 0.1);
-    color: #B03020;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
+           bg-alert/10 text-red-700 font-medium;
   }
   .badge-ok {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
-    background-color: rgba(39, 174, 96, 0.1);
-    color: #1A7A40;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
+           bg-ok/10 text-green-800 font-medium;
   }
   .badge-role {
     @apply text-xs px-2 py-0.5 rounded-sm border font-medium;
   }
 
-  /* ── Tabella ── */
-  .table-ridentium { @apply w-full text-sm; }
-
+  /* Tabella */
+  .table-ridentium {
+    @apply w-full text-sm;
+  }
   .table-ridentium th {
-    @apply text-left text-xs uppercase tracking-widest py-3 px-4 font-medium;
-    color: rgba(102, 86, 71, 0.55);
-    border-bottom: 1px solid rgba(210, 198, 182, 0.5);
-    background-color: rgba(237, 232, 223, 0.4);
+    @apply text-left text-xs uppercase tracking-widest text-obsidian/50
+           py-3 px-4 border-b font-medium;
+    border-color: #D2C6B6;
+    background-color: rgba(237,232,223,0.4);
   }
   .table-ridentium td {
-    @apply py-3 px-4;
-    color: rgba(102, 86, 71, 0.82);
-    border-bottom: 1px solid rgba(210, 198, 182, 0.3);
+    @apply py-3 px-4 text-obsidian/80;
+    border-bottom: 1px solid rgba(210,198,182,0.4);
   }
   .table-ridentium tr:hover td {
-    background-color: rgba(210, 198, 182, 0.12);
+    background-color: rgba(210,198,182,0.12);
   }
 
-  /* ── Navigazione sidebar (rimane scura — sfondo brand bruno) ── */
+  /* Navigazione sidebar — rimane su sfondo brand bruno (#665647) */
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm cursor-pointer transition-colors duration-150;
-    color: rgba(247, 244, 239, 0.6);   /* cream a 60% su fondo bruno */
+    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm
+           transition-colors duration-150 cursor-pointer;
+    color: rgba(247,244,239,0.6);
   }
   .nav-item:hover {
     color: #F7F4EF;
-    background-color: rgba(247, 244, 239, 0.08);
+    background-color: rgba(247,244,239,0.08);
   }
   .nav-item.active {
-    color: var(--brand-gold);
-    background-color: rgba(201, 168, 76, 0.15);
-    border-left: 2px solid var(--brand-gold);
+    @apply border-l-2 border-gold;
+    color: #C9A84C;
+    background-color: rgba(201,168,76,0.15);
   }
 
-  /* ── Tipografia ── */
+  /* Tipografia */
   .section-title {
-    @apply font-serif text-2xl font-light tracking-wide;
-    color: var(--brand-brown);
+    @apply font-serif text-2xl text-obsidian font-light tracking-wide;
   }
   .label-field {
-    @apply text-xs uppercase tracking-widest font-medium;
-    color: rgba(102, 86, 71, 0.55);
+    @apply text-xs uppercase tracking-widest text-obsidian/50 font-medium;
   }
 }
