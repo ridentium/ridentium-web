@@ -59,26 +59,30 @@ const staffNav: NavItem[] = [
 interface SidebarProps {
   profilo: UserProfile
   alertCount?: number
+  tasksCount?: number
   onClose?: () => void
 }
 
 // ── Helper render ──────────────────────────────────────────────────────────────
 
-function NavGroup({ label, items, pathname, onClose }: {
+function NavGroup({ label, items, pathname, onClose, badges }: {
   label?: string
   items: NavItem[]
   pathname: string
   onClose?: () => void
+  badges?: Record<string, number>
 }) {
   return (
     <div>
       {label && (
-        <p className="px-3 mb-1 text-[9px] text-stone/40 uppercase tracking-[0.2em] font-medium select-none">
+        <p className="px-3 mb-1 text-[9px] uppercase tracking-[0.2em] font-medium select-none"
+           style={{ color: 'rgba(210,198,182,0.4)' }}>
           {label}
         </p>
       )}
       {items.map(({ href, label: itemLabel, icon: Icon, highlight }) => {
         const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
+        const badge = badges?.[href]
         return (
           <Link
             key={href}
@@ -92,7 +96,14 @@ function NavGroup({ label, items, pathname, onClose }: {
           >
             <Icon size={15} className={active ? 'text-gold' : highlight ? 'text-gold/60' : ''} />
             <span>{itemLabel}</span>
-            {highlight && !active && (
+            {/* Badge numerico per scorte/task urgenti */}
+            {badge && badge > 0 && !active && (
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
+                    style={{ background: 'rgba(192,57,43,0.85)', color: '#FFF5F5', minWidth: 18, textAlign: 'center' }}>
+                {badge > 99 ? '99+' : badge}
+              </span>
+            )}
+            {highlight && !active && !badge && (
               <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-sm bg-gold/10 text-gold/70 border border-gold/20">
                 AI
               </span>
@@ -106,7 +117,7 @@ function NavGroup({ label, items, pathname, onClose }: {
 
 // ── Sidebar ────────────────────────────────────────────────────────────────────
 
-export default function Sidebar({ profilo, alertCount = 0, onClose }: SidebarProps) {
+export default function Sidebar({ profilo, alertCount = 0, tasksCount = 0, onClose }: SidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
@@ -150,12 +161,19 @@ export default function Sidebar({ profilo, alertCount = 0, onClose }: SidebarPro
       {/* Navigazione */}
       {isAdmin ? (
         <nav className="flex-1 px-3 py-4 space-y-4 overflow-y-auto">
-          <NavGroup items={adminHome}       pathname={pathname} onClose={onClose} />
-          <NavGroup label="Operazioni" items={adminOperazioni} pathname={pathname} onClose={onClose} />
-          <NavGroup label="Team"       items={adminTeam}       pathname={pathname} onClose={onClose} />
-          <NavGroup label="Sistema"    items={adminSistema}    pathname={pathname} onClose={onClose} />
-          {/* Lina AI — separata con bordo */}
-          <div className="border-t border-obsidian-light/40 pt-3">
+          <NavGroup items={adminHome} pathname={pathname} onClose={onClose} />
+          <NavGroup label="Operazioni" items={adminOperazioni} pathname={pathname} onClose={onClose}
+            badges={{
+              '/admin/magazzino': alertCount,   // badge rosso se scorte sotto soglia
+            }}
+          />
+          <NavGroup label="Team" items={adminTeam} pathname={pathname} onClose={onClose}
+            badges={{
+              '/admin/tasks': tasksCount,       // badge se ci sono task aperti
+            }}
+          />
+          <NavGroup label="Sistema" items={adminSistema} pathname={pathname} onClose={onClose} />
+          <div style={{ borderTop: '1px solid rgba(210,198,182,0.12)' }} className="pt-3">
             <NavGroup items={adminAI} pathname={pathname} onClose={onClose} />
           </div>
         </nav>
