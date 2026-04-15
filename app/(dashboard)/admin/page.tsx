@@ -124,7 +124,8 @@ export default async function AdminHome() {
 
         {/* ── Lina briefing card ── */}
         <LinaBriefingCard
-          briefing={briefing}
+          briefingFallback={briefing}
+          firstName={firstName}
           alertCount={alertCount}
           tasksCount={tasksCount}
           riordiniCount={riordiniCount}
