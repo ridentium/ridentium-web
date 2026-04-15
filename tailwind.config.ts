@@ -9,50 +9,32 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ── Palette brand RIDENTIUM (da immagine coordinata Emagraphic) ──────
-        //
-        //  Crema avorio originale:  #F7F4EF  (usato per le card)
-        //  Taupe caldo:             #D2C6B6  (bordi, toni medi)
-        //  Bruno scuro:             #665647  (sidebar, testo primario)
-        //
-        // Aggiunte per accessibilità e leggibilità:
-        //  Greige (body):           #E5DDD2  — meno abbagliante del puro avorio
-        //  Testo scuro:             #3D2F24  — quasi-espresso, contrasto elevato
-        //  Testo medio:             #7A6858  — secondario leggibile
-
-        ivory:    {
-          DEFAULT: '#F7F4EF',   // card background (brand cream)
-          dark:    '#E5DDD2',   // body background (greige caldo, non abbaglia)
-        },
-        stone:    {
-          DEFAULT: '#D2C6B6',   // brand taupe
-          light:   '#E4DDD4',
-          dark:    '#7A6858',   // testo secondario leggibile
-        },
+        // Palette brand RIDENTIUM (Emagraphic, marzo 2026)
+        // #F7F4EF crema avorio  #D2C6B6 taupe  #665647 bruno
+        // Modifiche per accessibilità: testo primario portato a quasi-nero caldo
+        ivory:    { DEFAULT: '#F7F4EF', dark: '#E5DDD2' },
+        stone:    { DEFAULT: '#D2C6B6', light: '#E4DDD4', dark: '#8C7D6C' },
         obsidian: {
-          DEFAULT: '#3D2F24',   // testo primario (quasi-espresso, molto leggibile)
-          mid:     '#665647',   // brand brown (sidebar, accenti)
-          light:   '#7A6858',   // testo secondario
+          DEFAULT: '#1E1408',   // quasi-nero caldo — testo primario (ratio 14:1 su ivory)
+          mid:     '#3D2F24',   // espresso — testo corpo (ratio 9:1)
+          light:   '#665647',   // brand brown — testo secondario (ratio 5:1)
         },
-        gold:     { DEFAULT: '#C9A84C', light: '#E2C97E', dim: '#8C6F2C' },
-        cream:    '#F7F4EF',
-        muted:    '#7A6858',
-        alert:    '#C0392B',
-        ok:       '#27AE60',
+        gold:  { DEFAULT: '#C9A84C', light: '#E2C97E', dim: '#8C6F2C' },
+        cream: '#F7F4EF',
+        muted: '#7A6858',
+        alert: '#C0392B',
+        ok:    '#27AE60',
       },
       fontFamily: {
         sans:  ['var(--font-inter)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-cormorant)', 'Georgia', 'serif'],
       },
       boxShadow: {
-        luxury: '0 1px 3px rgba(61,47,36,0.10), 0 4px 16px rgba(61,47,36,0.06)',
-        card:   '0 1px 3px rgba(61,47,36,0.08), 0 1px 2px rgba(61,47,36,0.04)',
+        luxury: '0 1px 3px rgba(30,20,8,0.12), 0 4px 16px rgba(30,20,8,0.07)',
+        card:   '0 1px 4px rgba(30,20,8,0.09), 0 1px 2px rgba(30,20,8,0.05)',
       },
       borderRadius: {
-        sm:      '3px',
-        DEFAULT: '6px',
-        md:      '8px',
-        lg:      '12px',
+        sm: '3px', DEFAULT: '6px', md: '8px', lg: '12px',
       },
     },
   },
