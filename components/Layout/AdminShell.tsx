@@ -40,6 +40,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
         <Sidebar
           profilo={profilo}
           alertCount={alertCount}
+          tasksCount={tasksCount}
           onClose={() => setSidebarOpen(false)}
         />
       </div>
