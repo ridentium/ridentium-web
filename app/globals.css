@@ -16,10 +16,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  body {
-    @apply bg-ivory-dark text-obsidian;
-    min-height: 100vh;
-  }
+  /* body: greige #E5DDD2 + quasi-nero #1E1408 — ratio 9:1 (WCAG AAA) */
+  body { @apply bg-ivory-dark text-obsidian; min-height: 100vh; }
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: #CEC5B8; }
   ::-webkit-scrollbar-thumb { background: #A89880; border-radius: 2px; }
@@ -27,73 +25,79 @@
 }
 
 @layer components {
+  /* Card: ivory #F7F4EF su greige #E5DDD2 — contrasto netto */
   .card {
     @apply bg-ivory rounded-md p-5;
-    border: 1.5px solid #D2C6B6;
-    box-shadow: 0 1px 4px rgba(61,47,36,0.09), 0 1px 2px rgba(61,47,36,0.05);
+    border: 1.5px solid #C8BDB0;
+    box-shadow: 0 1px 4px rgba(30,20,8,0.09), 0 1px 2px rgba(30,20,8,0.05);
   }
+
   .btn-primary {
     @apply bg-gold font-medium text-sm px-5 py-2.5 rounded hover:bg-gold-light transition-colors duration-150;
     color: #FFFFFF;
   }
   .btn-secondary {
     @apply text-sm px-5 py-2.5 rounded transition-colors duration-150;
-    border: 1.5px solid #B0A090;
+    border: 1.5px solid #A89880;
+    color: #1E1408;
+  }
+  .btn-secondary:hover { border-color: #C9A84C; color: #8C6F2C; }
+
+  .btn-ghost {
+    @apply text-sm px-3 py-2 rounded transition-colors duration-150;
     color: #3D2F24;
   }
-  .btn-secondary:hover { border-color: #C9A84C; color: #C9A84C; }
-  .btn-ghost {
-    @apply text-obsidian-mid text-sm px-3 py-2 rounded transition-colors duration-150;
-  }
-  .btn-ghost:hover { @apply text-obsidian bg-stone/20; }
+  .btn-ghost:hover { color: #1E1408; background-color: rgba(210,198,182,0.28); }
+
   .input {
     @apply text-sm w-full rounded px-4 py-2.5 focus:outline-none transition-colors duration-150;
     background-color: #FFFFFF;
-    border: 1.5px solid #C0B5A8;
-    color: #3D2F24;
+    border: 1.5px solid #B8AD9E;
+    color: #1E1408;
   }
-  .input::placeholder { color: #A89880; }
+  .input::placeholder { color: #9A8878; }
   .input:focus { border-color: #C9A84C; }
+
   .badge-alert {
     @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
-    background-color: rgba(192,57,43,0.12);
-    color: #A0291C;
+    background-color: rgba(192,57,43,0.13);
+    color: #8B2015;
   }
   .badge-ok {
     @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
-    background-color: rgba(39,174,96,0.12);
-    color: #186030;
+    background-color: rgba(39,174,96,0.13);
+    color: #145227;
   }
   .badge-role { @apply text-xs px-2 py-0.5 rounded-sm border font-medium; }
+
+  /* Tabella: header grigio scuro, testo espresso su bianco — nitidissimo */
   .table-ridentium { @apply w-full text-sm; }
   .table-ridentium th {
     @apply text-left text-xs uppercase tracking-widest py-3 px-4 font-semibold;
-    color: #665647;
-    border-bottom: 2px solid #D2C6B6;
-    background-color: #DDD6CC;
+    color: #3D2F24;
+    border-bottom: 2px solid #C8BDB0;
+    background-color: #D8D0C6;
   }
   .table-ridentium td {
     @apply py-3 px-4;
-    color: #3D2F24;
-    border-bottom: 1px solid #D2C6B6;
+    color: #1E1408;
+    border-bottom: 1px solid #C8BDB0;
   }
-  .table-ridentium tr:hover td { background-color: rgba(210,198,182,0.22); }
+  .table-ridentium tr:hover td { background-color: rgba(200,189,176,0.22); }
+
+  /* Nav sidebar — sfondo brand brown #665647, testo avorio chiaro */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm transition-colors duration-150 cursor-pointer;
-    color: rgba(247,244,239,0.68);
+    color: rgba(247,244,239,0.72);
   }
-  .nav-item:hover { color: #F7F4EF; background-color: rgba(247,244,239,0.10); }
+  .nav-item:hover { color: #F7F4EF; background-color: rgba(247,244,239,0.11); }
   .nav-item.active {
     color: #C9A84C;
-    background-color: rgba(201,168,76,0.18);
+    background-color: rgba(201,168,76,0.2);
     border-left: 2px solid #C9A84C;
   }
-  .section-title {
-    @apply font-serif text-2xl font-light tracking-wide;
-    color: #3D2F24;
-  }
-  .label-field {
-    @apply text-xs uppercase tracking-widest font-semibold;
-    color: #665647;
-  }
+
+  /* Tipografia */
+  .section-title { @apply font-serif text-2xl font-light tracking-wide; color: #1E1408; }
+  .label-field { @apply text-xs uppercase tracking-widest font-semibold; color: #3D2F24; }
 }
