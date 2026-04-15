@@ -9,21 +9,34 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // ── RIDENTIUM Palette Ufficiale Brand ──────────────────────────────
-        // Fonte: Immagine Coordinata, marzo 2026 (Emagraphic)
+        // ── Palette brand RIDENTIUM (da immagine coordinata Emagraphic) ──────
         //
-        //  #F7F4EF  Crema avorio   — sfondo principale, superfici chiare
-        //  #D2C6B6  Taupe caldo    — bordi, toni medi, testo secondario
-        //  #665647  Bruno scuro    — sidebar, testo primario, accenti scuri
+        //  Crema avorio originale:  #F7F4EF  (usato per le card)
+        //  Taupe caldo:             #D2C6B6  (bordi, toni medi)
+        //  Bruno scuro:             #665647  (sidebar, testo primario)
         //
-        // Il gold (#C9A84C) viene mantenuto solo per CTA/accenti interattivi
+        // Aggiunte per accessibilità e leggibilità:
+        //  Greige (body):           #E5DDD2  — meno abbagliante del puro avorio
+        //  Testo scuro:             #3D2F24  — quasi-espresso, contrasto elevato
+        //  Testo medio:             #7A6858  — secondario leggibile
 
-        ivory:    { DEFAULT: '#F7F4EF', dark: '#EDE8DF' },   // crema avorio brand
-        stone:    { DEFAULT: '#D2C6B6', light: '#E4DDD4', dark: '#8C7D6C' }, // taupe brand
-        obsidian: { DEFAULT: '#665647', mid: '#574839', light: '#7A6858' },  // bruno brand
-        gold:     { DEFAULT: '#C9A84C', light: '#E2C97E', dim: '#8C6F2C' },  // accento CTA
-        cream:    '#F7F4EF',   // alias per ivory
-        muted:    '#8C7D6C',   // testo secondario (tra taupe e bruno)
+        ivory:    {
+          DEFAULT: '#F7F4EF',   // card background (brand cream)
+          dark:    '#E5DDD2',   // body background (greige caldo, non abbaglia)
+        },
+        stone:    {
+          DEFAULT: '#D2C6B6',   // brand taupe
+          light:   '#E4DDD4',
+          dark:    '#7A6858',   // testo secondario leggibile
+        },
+        obsidian: {
+          DEFAULT: '#3D2F24',   // testo primario (quasi-espresso, molto leggibile)
+          mid:     '#665647',   // brand brown (sidebar, accenti)
+          light:   '#7A6858',   // testo secondario
+        },
+        gold:     { DEFAULT: '#C9A84C', light: '#E2C97E', dim: '#8C6F2C' },
+        cream:    '#F7F4EF',
+        muted:    '#7A6858',
         alert:    '#C0392B',
         ok:       '#27AE60',
       },
@@ -32,8 +45,8 @@ const config: Config = {
         serif: ['var(--font-cormorant)', 'Georgia', 'serif'],
       },
       boxShadow: {
-        luxury: '0 1px 3px rgba(102,86,71,0.12), 0 4px 16px rgba(102,86,71,0.08)',
-        card:   '0 1px 3px rgba(102,86,71,0.07), 0 1px 2px rgba(102,86,71,0.05)',
+        luxury: '0 1px 3px rgba(61,47,36,0.10), 0 4px 16px rgba(61,47,36,0.06)',
+        card:   '0 1px 3px rgba(61,47,36,0.08), 0 1px 2px rgba(61,47,36,0.04)',
       },
       borderRadius: {
         sm:      '3px',
