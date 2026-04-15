@@ -119,7 +119,6 @@ export default function Sidebar({ profilo, alertCount = 0, onClose }: SidebarPro
   }
 
   return (
-    {/* #665647 = bruno scuro brand ufficiale */}
     <aside className="w-56 h-full flex flex-col" style={{ background: '#665647', borderRight: '1px solid rgba(87,72,57,0.6)' }}>
 
       {/* Brand */}
