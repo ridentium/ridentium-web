@@ -1,17 +1,64 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowRight, Package, CheckSquare, RefreshCw, ShoppingCart } from 'lucide-react'
+import { ArrowRight, Package, CheckSquare, RefreshCw, ShoppingCart, Loader2 } from 'lucide-react'
 
 interface Props {
-  briefing: string
+  briefingFallback: string   // testo deterministico generato server-side (istantaneo)
+  firstName: string
   alertCount: number
   tasksCount: number
   riordiniCount: number
   ricorrentiCount: number
 }
 
-export default function LinaBriefingCard({ briefing, alertCount, tasksCount, riordiniCount, ricorrentiCount }: Props) {
+export default function LinaBriefingCard({
+  briefingFallback, firstName, alertCount, tasksCount, riordiniCount, ricorrentiCount,
+}: Props) {
+  const [briefing, setBriefing] = useState(briefingFallback)
+  const [loading, setLoading] = useState(false)
+
+  // Genera briefing con Lina (Groq) — cache per giornata in sessionStorage
+  useEffect(() => {
+    const key = `lina-briefing-${new Date().toDateString()}-${firstName}`
+    const cached = sessionStorage.getItem(key)
+
+    if (cached) {
+      setBriefing(cached)
+      return
+    }
+
+    setLoading(true)
+    const ctx = [
+      alertCount > 0   ? `${alertCount} prodotti sotto soglia` : 'magazzino in ordine',
+      tasksCount > 0   ? `${tasksCount} task aperti` : null,
+      riordiniCount > 0 ? `${riordiniCount} riordini da evadere` : null,
+      ricorrentiCount > 0 ? `${ricorrentiCount} azioni ricorrenti in sospeso` : null,
+    ].filter(Boolean).join(', ')
+
+    fetch('/api/ai/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages: [{
+          role: 'user',
+          content: `Briefing del giorno per ${firstName}. Situazione: ${ctx}. Scrivi UNA frase di massimo 25 parole, tono caldo e diretto come una brava segretaria. Nessun prefisso, nessun elenco.`,
+        }],
+      }),
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.risposta && d.risposta.length < 200) {
+          const text = d.risposta.trim()
+          setBriefing(text)
+          sessionStorage.setItem(key, text)
+        }
+      })
+      .catch(() => { /* fallback statico rimane */ })
+      .finally(() => setLoading(false))
+  }, [])
+
   function openLina() {
     document.dispatchEvent(new CustomEvent('lina:open'))
   }
@@ -24,93 +71,83 @@ export default function LinaBriefingCard({ briefing, alertCount, tasksCount, rio
         borderColor: 'rgba(201,168,76,0.2)',
       }}
     >
-      {/* Glow sottile in background */}
+      {/* Glow */}
       <div style={{
         position: 'absolute', top: -60, right: -60,
         width: 200, height: 200, borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(201,168,76,0.08), transparent 70%)',
+        background: 'radial-gradient(circle, rgba(201,168,76,0.07), transparent 70%)',
         pointerEvents: 'none',
       }} />
 
       <div className="flex items-start gap-4 relative">
-        {/* Avatar Lina statico */}
-        <div
-          style={{
-            width: 52, height: 52,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle at 38% 38%, #E8C566, #9A7220)',
-            border: '2px solid rgba(201,168,76,0.7)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0,
-            boxShadow: '0 0 20px rgba(201,168,76,0.2)',
-          }}
-        >
-          <span style={{
-            fontFamily: '"Cormorant Garamond", Georgia, serif',
-            fontSize: '1.3rem', fontWeight: 600, color: '#0D0D0B',
-          }}>L</span>
+        {/* Avatar Lina */}
+        <div style={{
+          width: 52, height: 52, borderRadius: '50%',
+          background: 'radial-gradient(circle at 38% 38%, #E8C566, #9A7220)',
+          border: '2px solid rgba(201,168,76,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, boxShadow: '0 0 20px rgba(201,168,76,0.2)',
+        }}>
+          <span style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: '1.3rem', fontWeight: 600, color: '#0D0D0B' }}>
+            L
+          </span>
         </div>
 
-        {/* Contenuto */}
+        {/* Testo */}
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-gold/60 uppercase tracking-[0.2em] mb-2 font-medium">
             Lina · Briefing del giorno
           </p>
-          <p className="text-cream text-sm leading-relaxed mb-4">
-            {briefing}
-          </p>
 
-          {/* Azioni rapide contestuali */}
-          <div className="flex flex-wrap gap-2">
+          <div className="min-h-[2.5rem] flex items-center gap-2">
+            {loading && <Loader2 size={13} className="text-stone/40 animate-spin flex-shrink-0" />}
+            <p className={`text-cream text-sm leading-relaxed transition-opacity duration-300 ${loading ? 'opacity-60' : 'opacity-100'}`}>
+              {briefing}
+            </p>
+          </div>
+
+          {/* Chip azioni contestuali */}
+          <div className="flex flex-wrap gap-2 mt-4">
             {alertCount > 0 && (
-              <Link
-                href="/admin/magazzino"
+              <Link href="/admin/magazzino"
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors"
-                style={{ borderColor: 'rgba(239,68,68,0.3)', color: '#f87171', background: 'rgba(239,68,68,0.06)' }}
-              >
+                style={{ borderColor: 'rgba(239,68,68,0.3)', color: '#f87171', background: 'rgba(239,68,68,0.06)' }}>
                 <Package size={11} />
                 {alertCount} sotto soglia
                 <ArrowRight size={10} />
               </Link>
             )}
             {tasksCount > 0 && (
-              <Link
-                href="/admin/tasks"
+              <Link href="/admin/tasks"
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors"
-                style={{ borderColor: 'rgba(201,168,76,0.25)', color: 'rgba(201,168,76,0.8)', background: 'rgba(201,168,76,0.06)' }}
-              >
+                style={{ borderColor: 'rgba(201,168,76,0.25)', color: 'rgba(201,168,76,0.8)', background: 'rgba(201,168,76,0.06)' }}>
                 <CheckSquare size={11} />
-                {tasksCount} task apert{tasksCount === 1 ? 'o' : 'i'}
+                {tasksCount} task
                 <ArrowRight size={10} />
               </Link>
             )}
             {riordiniCount > 0 && (
-              <Link
-                href="/admin/magazzino"
+              <Link href="/admin/magazzino"
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors"
-                style={{ borderColor: 'rgba(201,168,76,0.25)', color: 'rgba(201,168,76,0.8)', background: 'rgba(201,168,76,0.06)' }}
-              >
+                style={{ borderColor: 'rgba(201,168,76,0.25)', color: 'rgba(201,168,76,0.8)', background: 'rgba(201,168,76,0.06)' }}>
                 <ShoppingCart size={11} />
-                {riordiniCount} riordine{riordiniCount === 1 ? '' : 'i'}
+                {riordiniCount} riordini
                 <ArrowRight size={10} />
               </Link>
             )}
             {ricorrentiCount > 0 && (
-              <Link
-                href="/admin/ricorrenti"
+              <Link href="/admin/ricorrenti"
                 className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors"
-                style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.03)' }}
-              >
+                style={{ borderColor: 'rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.35)', background: 'rgba(255,255,255,0.03)' }}>
                 <RefreshCw size={11} />
-                {ricorrentiCount} ricorrent{ricorrentiCount === 1 ? 'e' : 'i'}
+                {ricorrentiCount} ricorrenti
                 <ArrowRight size={10} />
               </Link>
             )}
             <button
               onClick={openLina}
               className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors"
-              style={{ borderColor: 'rgba(201,168,76,0.4)', color: '#C9A84C', background: 'rgba(201,168,76,0.08)' }}
-            >
+              style={{ borderColor: 'rgba(201,168,76,0.4)', color: '#C9A84C', background: 'rgba(201,168,76,0.08)' }}>
               Chiedi a Lina →
             </button>
           </div>
