@@ -1,103 +1,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-:root {
-  --font-inter: 'Inter', system-ui, sans-serif;
-  --font-cormorant: 'Cormorant Garamond', Georgia, serif;
-}
-
+:root { --font-inter:'Inter',system-ui,sans-serif; --font-cormorant:'Cormorant Garamond',Georgia,serif; }
 @layer base {
-  * { box-sizing: border-box; }
-  html {
-    font-family: var(--font-inter);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  /* body: greige #E5DDD2 + quasi-nero #1E1408 — ratio 9:1 (WCAG AAA) */
-  body { @apply bg-ivory-dark text-obsidian; min-height: 100vh; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #CEC5B8; }
-  ::-webkit-scrollbar-thumb { background: #A89880; border-radius: 2px; }
+  * { box-sizing:border-box; }
+  html { font-family:var(--font-inter); -webkit-font-smoothing:antialiased; }
+  body { @apply bg-ivory-dark text-obsidian; min-height:100vh; }
+  ::-webkit-scrollbar { width:4px; height:4px; }
+  ::-webkit-scrollbar-track { background:#1A1009; }
+  ::-webkit-scrollbar-thumb { background:#7A6858; border-radius:2px; }
   ::-webkit-scrollbar-thumb:hover { @apply bg-gold; }
 }
-
 @layer components {
-  /* Card: ivory #F7F4EF su greige #E5DDD2 — contrasto netto */
-  .card {
-    @apply bg-ivory rounded-md p-5;
-    border: 1.5px solid #C8BDB0;
-    box-shadow: 0 1px 4px rgba(30,20,8,0.09), 0 1px 2px rgba(30,20,8,0.05);
-  }
-
-  .btn-primary {
-    @apply bg-gold font-medium text-sm px-5 py-2.5 rounded hover:bg-gold-light transition-colors duration-150;
-    color: #FFFFFF;
-  }
-  .btn-secondary {
-    @apply text-sm px-5 py-2.5 rounded transition-colors duration-150;
-    border: 1.5px solid #A89880;
-    color: #1E1408;
-  }
-  .btn-secondary:hover { border-color: #C9A84C; color: #8C6F2C; }
-
-  .btn-ghost {
-    @apply text-sm px-3 py-2 rounded transition-colors duration-150;
-    color: #3D2F24;
-  }
-  .btn-ghost:hover { color: #1E1408; background-color: rgba(210,198,182,0.28); }
-
-  .input {
-    @apply text-sm w-full rounded px-4 py-2.5 focus:outline-none transition-colors duration-150;
-    background-color: #FFFFFF;
-    border: 1.5px solid #B8AD9E;
-    color: #1E1408;
-  }
-  .input::placeholder { color: #9A8878; }
-  .input:focus { border-color: #C9A84C; }
-
-  .badge-alert {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
-    background-color: rgba(192,57,43,0.13);
-    color: #8B2015;
-  }
-  .badge-ok {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
-    background-color: rgba(39,174,96,0.13);
-    color: #145227;
-  }
+  .card { @apply bg-ivory rounded-md p-5; border:1px solid #6A5642; box-shadow:0 1px 4px rgba(0,0,0,0.35); }
+  .btn-primary { @apply bg-gold font-medium text-sm px-5 py-2.5 rounded hover:bg-gold-light transition-colors duration-150; color:#1A0E04; }
+  .btn-secondary { @apply text-sm px-5 py-2.5 rounded transition-colors duration-150; border:1px solid #7A6858; color:#D2C6B6; }
+  .btn-secondary:hover { border-color:#C9A84C; color:#C9A84C; }
+  .btn-ghost { @apply text-obsidian-mid text-sm px-3 py-2 rounded transition-colors duration-150; }
+  .btn-ghost:hover { color:#F2EDE4; background-color:rgba(242,237,228,0.08); }
+  .input { @apply text-sm w-full rounded px-4 py-2.5 focus:outline-none transition-colors duration-150; background-color:#3A2E22; border:1px solid #7A6858; color:#F2EDE4; }
+  .input::placeholder { color:#A0907E; }
+  .input:focus { border-color:#C9A84C; }
+  .badge-alert { @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium; background-color:rgba(224,85,69,0.2); color:#F87171; }
+  .badge-ok { @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium; background-color:rgba(61,184,122,0.2); color:#4ADE80; }
   .badge-role { @apply text-xs px-2 py-0.5 rounded-sm border font-medium; }
-
-  /* Tabella: header grigio scuro, testo espresso su bianco — nitidissimo */
   .table-ridentium { @apply w-full text-sm; }
-  .table-ridentium th {
-    @apply text-left text-xs uppercase tracking-widest py-3 px-4 font-semibold;
-    color: #3D2F24;
-    border-bottom: 2px solid #C8BDB0;
-    background-color: #D8D0C6;
-  }
-  .table-ridentium td {
-    @apply py-3 px-4;
-    color: #1E1408;
-    border-bottom: 1px solid #C8BDB0;
-  }
-  .table-ridentium tr:hover td { background-color: rgba(200,189,176,0.22); }
-
-  /* Nav sidebar — sfondo brand brown #665647, testo avorio chiaro */
-  .nav-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm transition-colors duration-150 cursor-pointer;
-    color: rgba(247,244,239,0.72);
-  }
-  .nav-item:hover { color: #F7F4EF; background-color: rgba(247,244,239,0.11); }
-  .nav-item.active {
-    color: #C9A84C;
-    background-color: rgba(201,168,76,0.2);
-    border-left: 2px solid #C9A84C;
-  }
-
-  /* Tipografia */
-  .section-title { @apply font-serif text-2xl font-light tracking-wide; color: #1E1408; }
-  .label-field { @apply text-xs uppercase tracking-widest font-semibold; color: #3D2F24; }
+  .table-ridentium th { @apply text-left text-xs uppercase tracking-widest py-3 px-4 font-semibold; color:#D2C6B6; border-bottom:1px solid #6A5642; background-color:#221A12; }
+  .table-ridentium td { @apply py-3 px-4; color:#F2EDE4; border-bottom:1px solid #5A4838; }
+  .table-ridentium tr:hover td { background-color:rgba(122,104,88,0.15); }
+  .nav-item { @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm transition-colors duration-150 cursor-pointer; color:rgba(242,237,228,0.55); }
+  .nav-item:hover { color:#F2EDE4; background-color:rgba(242,237,228,0.08); }
+  .nav-item.active { color:#C9A84C; background-color:rgba(201,168,76,0.18); border-left:2px solid #C9A84C; }
+  .section-title { @apply font-serif text-2xl font-light tracking-wide; color:#F2EDE4; }
+  .label-field { @apply text-xs uppercase tracking-widest font-semibold; color:#D2C6B6; }
 }
