@@ -28,7 +28,7 @@ export default function ChatWidget({ userName, userRole }: Props) {
       // Messaggio di benvenuto
       setMessages([{
         role: 'assistant',
-        content: `Ciao ${userName.split(' ')[0]}! 👋 Sono **RIDA**, il tuo assistente per il gestionale RIDENTIUM.\n\nPosso aiutarti a:\n• Consultare le scorte del magazzino\n• Creare e gestire task\n• Verificare riordini e fornitori\n• ${['admin', 'manager'].includes(userRole) ? 'Creare ordini e riordini' : 'Richiedere riordini'}`,
+        content: `Ciao ${userName.split(' ')[0]}! 👋 Sono **Lina**, la tua assistente per il gestionale RIDENTIUM.\n\nPosso aiutarti a:\n• Consultare le scorte del magazzino\n• Creare e gestire task\n• Verificare riordini e fornitori\n• ${['admin', 'manager'].includes(userRole) ? 'Creare ordini e riordini' : 'Richiedere riordini'}`,
       }])
     }
   }, [open, userName, userRole, messages.length])
@@ -96,7 +96,7 @@ export default function ChatWidget({ userName, userRole }: Props) {
         onClick={() => setOpen(v => !v)}
         className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all duration-200"
         style={{ background: open ? '#1A1714' : '#C9A84C', border: '1px solid rgba(201,168,76,0.4)' }}
-        title="RIDA — Assistente AI"
+        title="Lina — Assistente AI"
       >
         {open
           ? <ChevronDown size={20} className="text-cream" />
@@ -122,7 +122,7 @@ export default function ChatWidget({ userName, userRole }: Props) {
               <Bot size={15} className="text-gold" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-cream">RIDA</p>
+              <p className="text-sm font-medium text-cream">Lina</p>
               <p className="text-xs text-stone/70">Assistente RIDENTIUM</p>
             </div>
             <button onClick={() => setOpen(false)} className="p-1 text-stone hover:text-cream transition-colors">
@@ -151,7 +151,7 @@ export default function ChatWidget({ userName, userRole }: Props) {
                 <div className="px-3 py-2 rounded-xl text-sm" style={{ background: '#1A1714', border: '1px solid rgba(255,255,255,0.06)' }}>
                   <div className="flex items-center gap-2 text-stone">
                     <Loader2 size={13} className="animate-spin" />
-                    <span className="text-xs">RIDA sta elaborando…</span>
+                    <span className="text-xs">Lina sta elaborando…</span>
                   </div>
                 </div>
               </div>
