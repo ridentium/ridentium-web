@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -10,100 +10,131 @@
 }
 
 @layer base {
-  * {
-    box-sizing: border-box;
-  }
+  * { box-sizing: border-box; }
 
   html {
     font-family: var(--font-inter);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Disabilita doppio tap zoom */
-    touch-action: manipulation;
-    /* Niente highlight blu/grigio al tap */
-    -webkit-tap-highlight-color: transparent;
   }
 
+  /* Sfondo avorio caldo — più leggero, meno cupo */
   body {
-    @apply bg-obsidian text-cream;
+    background-color: #F5F0E8;
+    color: #1A1714;
     min-height: 100vh;
-    /* Niente bounce/pull-to-refresh */
-    overscroll-behavior: none;
-    /* Evita selezione testo accidentale */
-    -webkit-user-select: none;
-    user-select: none;
   }
 
-  /* Input e textarea: testo selezionabile normalmente */
-  input, textarea, [contenteditable] {
-    -webkit-user-select: text;
-    user-select: text;
-  }
-
-  /* Niente menu contestuale su long-press (iOS) */
-  button, a, img, .nav-item {
-    -webkit-touch-callout: none;
-  }
-
-  /* Scrollbar — brand palette */
+  /* Scrollbar — toni caldi chiari */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { background: #18130E; }
-  ::-webkit-scrollbar-thumb { background: #665647; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: #D2C6B6; }
+  ::-webkit-scrollbar-track { background: #EDE7DC; }
+  ::-webkit-scrollbar-thumb { background: #C4B8A6; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #C9A84C; }
 }
 
 @layer components {
+
+  /* ── Card ── */
   .card {
-    @apply bg-obsidian-mid border border-obsidian-light rounded-md p-5 shadow-card;
+    background-color: #FDFAF6;
+    border: 1px solid rgba(140, 128, 112, 0.18);
+    border-radius: 6px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(60, 40, 20, 0.06), 0 1px 2px rgba(60, 40, 20, 0.04);
   }
 
+  /* ── Bottoni ── */
   .btn-primary {
-    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded hover:bg-gold-light transition-colors duration-150;
+    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded
+           hover:bg-gold-light transition-colors duration-150;
   }
+
   .btn-secondary {
-    @apply border border-stone text-stone-light text-sm px-5 py-2.5 rounded hover:border-gold hover:text-gold transition-colors duration-150;
+    border: 1px solid rgba(140, 128, 112, 0.4);
+    color: #5C5248;
+    @apply text-sm px-5 py-2.5 rounded transition-colors duration-150;
   }
+  .btn-secondary:hover {
+    border-color: #C9A84C;
+    color: #C9A84C;
+  }
+
   .btn-ghost {
-    @apply text-stone-light text-sm px-3 py-2 rounded hover:text-cream hover:bg-obsidian-light transition-colors duration-150;
+    color: rgba(92, 82, 72, 0.75);
+    @apply text-sm px-3 py-2 rounded transition-colors duration-150;
+  }
+  .btn-ghost:hover {
+    color: #1A1714;
+    background-color: rgba(140, 128, 112, 0.1);
   }
 
+  /* ── Input ── */
   .input {
-    @apply bg-obsidian-light border border-obsidian-light text-cream placeholder-stone rounded px-4 py-2.5 text-sm w-full focus:outline-none focus:border-gold transition-colors duration-150;
+    background-color: #FFFFFF;
+    border: 1px solid rgba(140, 128, 112, 0.25);
+    color: #1A1714;
+    @apply rounded px-4 py-2.5 text-sm w-full
+           focus:outline-none transition-colors duration-150;
   }
+  .input::placeholder { color: rgba(140, 128, 112, 0.6); }
+  .input:focus { border-color: #C9A84C; }
 
+  /* ── Badge ── */
   .badge-alert {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-alert/15 text-red-400 font-medium;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
+    background-color: rgba(192, 57, 43, 0.1);
+    color: #C0392B;
   }
   .badge-ok {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm bg-ok/15 text-green-400 font-medium;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
+    background-color: rgba(39, 174, 96, 0.1);
+    color: #1E8449;
   }
   .badge-role {
     @apply text-xs px-2 py-0.5 rounded-sm border font-medium;
   }
 
-  .table-ridentium { @apply w-full text-sm; }
+  /* ── Tabella ── */
+  .table-ridentium {
+    @apply w-full text-sm;
+  }
   .table-ridentium th {
-    @apply text-left text-xs uppercase tracking-widest text-stone py-3 px-4 border-b border-obsidian-light font-medium;
+    @apply text-left text-xs uppercase tracking-widest py-3 px-4 font-medium;
+    color: #8C8070;
+    border-bottom: 1px solid rgba(140, 128, 112, 0.18);
+    background-color: rgba(240, 234, 224, 0.5);
   }
   .table-ridentium td {
-    @apply py-3 px-4 border-b border-obsidian-light/50 text-cream/80;
+    @apply py-3 px-4;
+    color: rgba(26, 23, 20, 0.78);
+    border-bottom: 1px solid rgba(140, 128, 112, 0.12);
   }
-  .table-ridentium tr:hover td { @apply bg-obsidian-light/30; }
+  .table-ridentium tr:hover td {
+    background-color: rgba(232, 224, 212, 0.35);
+  }
 
+  /* ── Navigazione sidebar (rimane scura) ── */
   .nav-item {
-    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm text-stone-light hover:text-cream hover:bg-obsidian-light/50 transition-colors duration-150 cursor-pointer;
+    @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm cursor-pointer transition-colors duration-150;
+    color: #B0A898;
+  }
+  .nav-item:hover {
+    color: #F9F6F0;
+    background-color: rgba(255, 255, 255, 0.07);
   }
   .nav-item.active {
-    @apply text-gold bg-stone-dark/20 border-l-2 border-gold;
+    color: #C9A84C;
+    background-color: rgba(201, 168, 76, 0.12);
+    border-left: 2px solid #C9A84C;
   }
 
+  /* ── Tipografia ── */
   .section-title {
-    @apply font-serif text-2xl text-cream font-light tracking-wide;
+    @apply font-serif text-2xl font-light tracking-wide;
+    color: #1A1714;
   }
   .label-field {
-    @apply text-xs uppercase tracking-widest text-stone font-medium;
-  }
-  .divider-luxury {
-    @apply border-t border-obsidian-light/60;
+    @apply text-xs uppercase tracking-widest font-medium;
+    color: #8C8070;
   }
 }
