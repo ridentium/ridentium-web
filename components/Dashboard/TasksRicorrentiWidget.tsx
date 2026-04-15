@@ -26,6 +26,7 @@ interface CompletableRicorrente {
   titolo: string
   frequenza: string
   assegnato_a?: string | null
+  attiva?: boolean
   completamenti: Completamento[]
 }
 
