@@ -10,17 +10,18 @@ interface Props {
   children: React.ReactNode
   profilo: UserProfile
   alertCount: number
+  tasksCount: number
   userName: string
   userRole: string
 }
 
-export default function AdminShell({ children, profilo, alertCount, userName, userRole }: Props) {
+export default function AdminShell({ children, profilo, alertCount, tasksCount, userName, userRole }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#0D0D0B' }}>
 
-      {/* Overlay mobile — chiude la sidebar cliccando fuori */}
+      {/* Overlay mobile */}
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-40 md:hidden"
@@ -28,7 +29,7 @@ export default function AdminShell({ children, profilo, alertCount, userName, us
         />
       )}
 
-      {/* Sidebar — si nasconde su mobile, slide-in quando aperta */}
+      {/* Sidebar */}
       <div
         className={`
           fixed inset-y-0 left-0 z-50 md:relative md:z-auto
@@ -46,7 +47,7 @@ export default function AdminShell({ children, profilo, alertCount, userName, us
       {/* Colonna principale */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-        {/* Top bar mobile — visibile solo su schermi piccoli */}
+        {/* Top bar mobile */}
         <div className="md:hidden flex items-center gap-3 px-4 h-14 border-b border-obsidian-light flex-shrink-0 bg-obsidian">
           <button
             onClick={() => setSidebarOpen(true)}
@@ -63,7 +64,7 @@ export default function AdminShell({ children, profilo, alertCount, userName, us
           </span>
         </div>
 
-        {/* Area contenuto — scorre verticalmente, non orizzontalmente */}
+        {/* Contenuto */}
         <main className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">
             {children}
@@ -71,8 +72,13 @@ export default function AdminShell({ children, profilo, alertCount, userName, us
         </main>
       </div>
 
-      {/* Lina — widget AI flottante */}
-      <ChatWidget userName={userName} userRole={userRole} />
+      {/* Lina */}
+      <ChatWidget
+        userName={userName}
+        userRole={userRole}
+        alertCount={alertCount}
+        tasksCount={tasksCount}
+      />
     </div>
   )
 }
