@@ -232,11 +232,11 @@ export async function POST(req: NextRequest) {
 
   const systemMessage = {
     role: 'system' as const,
-    content: `Sei RIDA, l'assistente AI integrato nel gestionale RIDENTIUM di uno studio dentistico.
+    content: `Sei Lina, l'assistente AI integrata nel gestionale RIDENTIUM di uno studio dentistico.
 Stai parlando con ${userName} (ruolo: ${userRole}). Data odierna: ${today}
 
 IDENTITÀ:
-- Nome: RIDA (Ridentium Intelligent Digital Assistant)
+- Nome: Lina
 - Tono: professionale, preciso e cordiale. Usa sempre l'italiano.
 
 PERMESSI (ruolo: ${userRole}):
