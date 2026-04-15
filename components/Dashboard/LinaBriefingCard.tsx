@@ -19,22 +19,15 @@ export default function LinaBriefingCard({
   const [briefing, setBriefing] = useState(briefingFallback)
   const [loading, setLoading] = useState(false)
 
-  // Genera briefing con Lina (Groq) — cache per giornata in sessionStorage
+  // Genera briefing con Lina ad ogni mount — nessuna cache così riflette
+  // sempre la situazione corrente (se cambiano task/scorte, aggiorna subito)
   useEffect(() => {
-    const key = `lina-briefing-${new Date().toDateString()}-${firstName}`
-    const cached = sessionStorage.getItem(key)
-
-    if (cached) {
-      setBriefing(cached)
-      return
-    }
-
     setLoading(true)
     const ctx = [
-      alertCount > 0   ? `${alertCount} prodotti sotto soglia` : 'magazzino in ordine',
-      tasksCount > 0   ? `${tasksCount} task aperti` : null,
-      riordiniCount > 0 ? `${riordiniCount} riordini da evadere` : null,
-      ricorrentiCount > 0 ? `${ricorrentiCount} azioni ricorrenti in sospeso` : null,
+      alertCount > 0    ? `${alertCount} prodott${alertCount === 1 ? 'o' : 'i'} sotto soglia` : 'magazzino in ordine',
+      tasksCount > 0    ? `${tasksCount} task apert${tasksCount === 1 ? 'o' : 'i'}` : null,
+      riordiniCount > 0 ? `${riordiniCount} riordine${riordiniCount === 1 ? '' : 'i'} da evadere` : null,
+      ricorrentiCount > 0 ? `${ricorrentiCount} azion${ricorrentiCount === 1 ? 'e' : 'i'} ricorrenti in sospeso` : null,
     ].filter(Boolean).join(', ')
 
     fetch('/api/ai/chat', {
@@ -43,7 +36,7 @@ export default function LinaBriefingCard({
       body: JSON.stringify({
         messages: [{
           role: 'user',
-          content: `Briefing del giorno per ${firstName}. Situazione: ${ctx}. Scrivi UNA frase di massimo 25 parole, tono caldo e diretto come una brava segretaria. Nessun prefisso, nessun elenco.`,
+          content: `Briefing del giorno per ${firstName}. Situazione attuale: ${ctx}. Scrivi UNA frase di massimo 25 parole, tono caldo e diretto come una brava segretaria. Nessun prefisso, nessun elenco.`,
         }],
       }),
     })
@@ -52,7 +45,7 @@ export default function LinaBriefingCard({
         if (d.risposta && d.risposta.length < 200) {
           const text = d.risposta.trim()
           setBriefing(text)
-          sessionStorage.setItem(key, text)
+          // Nessuna cache — ogni mount genera un briefing fresco
         }
       })
       .catch(() => { /* fallback statico rimane */ })
