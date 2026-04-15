@@ -8,14 +8,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const supabase = createClient()
   const adminDb = createAdminClient()
 
-  // 1. Auth
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  // 2. Profilo + scorte in parallelo
-  const [{ data: profilo }, { data: scoreRaw }] = await Promise.all([
+  // Dati paralleli per layout + contesto Lina
+  const [{ data: profilo }, { data: scoreRaw }, { data: tasksRaw }] = await Promise.all([
     adminDb.from('profili').select('*').eq('id', user.id).single(),
     supabase.from('magazzino').select('quantita, soglia_minima'),
+    supabase.from('tasks').select('id').neq('stato', 'completato'),
   ])
 
   if (profilo?.ruolo !== 'admin') redirect('/staff')
@@ -24,12 +24,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     (i: any) => i.quantita < i.soglia_minima
   ).length
 
+  const tasksCount = tasksRaw?.length ?? 0
   const userName = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
 
   return (
     <AdminShell
       profilo={profilo as UserProfile}
       alertCount={alertCount}
+      tasksCount={tasksCount}
       userName={userName}
       userRole={profilo?.ruolo ?? 'admin'}
     >
