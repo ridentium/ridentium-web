@@ -238,7 +238,7 @@ export default function AiChatPage({ userName, userRole, userId, storico }: Prop
             </button>
           </div>
           <p className="text-xs text-stone/30 mt-2 text-center">
-            Enter per inviare · Shift+Enter per andare a capo · Modello: GPT-4o mini
+            Enter per inviare · Shift+Enter per andare a capo · Modello: Llama 3.3 70B (Groq)
           </p>
         </div>
       </div>
