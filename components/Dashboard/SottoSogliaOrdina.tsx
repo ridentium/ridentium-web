@@ -1,12 +1,12 @@
 'use client'
 
-import { MagazzinoItem, Fornitore } from '@/types'
+import { MagazzinoItem, Fornitore, FornitoreContatto, CanaleOrdine } from '@/types'
 import { MessageCircle, Mail, AlertTriangle, Globe, Phone } from 'lucide-react'
 import { logActivity } from '@/lib/registro'
 
 interface Props {
   alertItems: MagazzinoItem[]
-  fornitori: Fornitore[]
+  fornitori: (Fornitore & { fornitore_contatti?: FornitoreContatto[] })[]
   userId: string
   userNome: string
 }
@@ -17,9 +17,10 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
   const senzaFornitore: MagazzinoItem[] = []
 
   for (const item of alertItems) {
-    if (item.fornitore_id) {
-      if (!grouped[item.fornitore_id]) grouped[item.fornitore_id] = []
-      grouped[item.fornitore_id].push(item)
+    const fid = (item as any).fornitore_id
+    if (fid) {
+      if (!grouped[fid]) grouped[fid] = []
+      grouped[fid].push(item)
     } else {
       senzaFornitore.push(item)
     }
@@ -32,7 +33,33 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
     return `Buongiorno,\n\nvorrei ordinare:\n${lista}\n\nGrazie,\nRidentium`
   }
 
-  async function salvaCreaOrdine(fornitore: Fornitore, prodotti: MagazzinoItem[], canale: Fornitore['canale_ordine']) {
+  // Risolve il contatto e il canale da usare
+  // Priorità: contatto predefinito → legacy canale_ordine su fornitore
+  function resolveContact(fornitore: Fornitore & { fornitore_contatti?: FornitoreContatto[] }) {
+    const contatti = fornitore.fornitore_contatti ?? []
+    const defaultContact = contatti.find(c => c.is_predefinito) ?? contatti[0]
+
+    if (defaultContact) {
+      return {
+        canale: (defaultContact.metodo_predefinito ?? 'whatsapp') as CanaleOrdine,
+        telefono: defaultContact.whatsapp ?? defaultContact.telefono ?? null,
+        email: defaultContact.email ?? null,
+        sitoEshop: fornitore.sito_eshop ?? null,
+        nomeContatto: defaultContact.nome,
+      }
+    }
+
+    // Fallback ai campi legacy del fornitore
+    return {
+      canale: (fornitore.canale_ordine ?? 'whatsapp') as CanaleOrdine,
+      telefono: fornitore.telefono ?? null,
+      email: fornitore.email ?? null,
+      sitoEshop: fornitore.sito_eshop ?? null,
+      nomeContatto: null,
+    }
+  }
+
+  async function salvaCreaOrdine(fornitore: Fornitore, prodotti: MagazzinoItem[], canale: CanaleOrdine) {
     try {
       await fetch('/api/ordini', {
         method: 'POST',
@@ -52,35 +79,38 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
     } catch { /* best-effort */ }
   }
 
-  // IMPORTANTE: window.open va prima di qualsiasi await
-  function handleWhatsApp(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    const msg   = buildMessage(fornitore, prodotti)
-    const phone = (fornitore.telefono ?? '').replace(/\D/g, '')
+  function handleWhatsApp(fornitore: Fornitore & { fornitore_contatti?: FornitoreContatto[] }, prodotti: MagazzinoItem[]) {
+    const { telefono, canale } = resolveContact(fornitore)
+    const msg = buildMessage(fornitore, prodotti)
+    const phone = (telefono ?? '').replace(/\D/g, '')
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
     salvaCreaOrdine(fornitore, prodotti, 'whatsapp').catch(() => {})
     logActivity(userId, userNome, 'Ordine inviato via WhatsApp',
       `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
-  function handleEmail(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    const msg     = buildMessage(fornitore, prodotti)
+  function handleEmail(fornitore: Fornitore & { fornitore_contatti?: FornitoreContatto[] }, prodotti: MagazzinoItem[]) {
+    const { email, canale } = resolveContact(fornitore)
+    const msg = buildMessage(fornitore, prodotti)
     const subject = encodeURIComponent('Ordine - Ridentium')
-    const body    = encodeURIComponent(msg)
-    window.open(`mailto:${fornitore.email}?subject=${subject}&body=${body}`)
+    const body = encodeURIComponent(msg)
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`)
     salvaCreaOrdine(fornitore, prodotti, 'email').catch(() => {})
     logActivity(userId, userNome, 'Ordine inviato via email',
       `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
-  function handleEshop(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    window.open(fornitore.sito_eshop ?? '#', '_blank')
+  function handleEshop(fornitore: Fornitore & { fornitore_contatti?: FornitoreContatto[] }, prodotti: MagazzinoItem[]) {
+    const { sitoEshop } = resolveContact(fornitore)
+    window.open(sitoEshop ?? '#', '_blank')
     salvaCreaOrdine(fornitore, prodotti, 'eshop').catch(() => {})
     logActivity(userId, userNome, 'Ordine avviato via eshop',
       `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
   }
 
-  function handleTelefono(fornitore: Fornitore, prodotti: MagazzinoItem[]) {
-    window.open(`tel:${(fornitore.telefono ?? '').replace(/\s/g, '')}`)
+  function handleTelefono(fornitore: Fornitore & { fornitore_contatti?: FornitoreContatto[] }, prodotti: MagazzinoItem[]) {
+    const { telefono } = resolveContact(fornitore)
+    window.open(`tel:${(telefono ?? '').replace(/\s/g, '')}`)
     salvaCreaOrdine(fornitore, prodotti, 'telefono').catch(() => {})
     logActivity(userId, userNome, 'Ordine avviato via telefono',
       `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
@@ -95,14 +125,18 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
       {Object.entries(grouped).map(([fornitoreId, prodotti]) => {
         const fornitore = fornitori.find(f => f.id === fornitoreId)
         if (!fornitore) return null
-        const canale = fornitore.canale_ordine ?? 'whatsapp'
+
+        const { canale, telefono, email, sitoEshop, nomeContatto } = resolveContact(fornitore)
 
         return (
           <div key={fornitoreId} className="rounded border border-obsidian-light/40 p-3 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
-              <p className="text-xs font-medium text-gold uppercase tracking-wider">{fornitore.nome}</p>
+              <div>
+                <p className="text-xs font-medium text-gold uppercase tracking-wider">{fornitore.nome}</p>
+                {nomeContatto && <p className="text-xs text-stone/70">{nomeContatto}</p>}
+              </div>
 
-              {canale === 'whatsapp' && fornitore.telefono && (
+              {canale === 'whatsapp' && telefono && (
                 <button
                   onClick={() => handleWhatsApp(fornitore, prodotti)}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors">
@@ -110,7 +144,7 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
                 </button>
               )}
 
-              {canale === 'email' && fornitore.email && (
+              {canale === 'email' && email && (
                 <button
                   onClick={() => handleEmail(fornitore, prodotti)}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-gold/10 border border-gold/30 text-gold hover:bg-gold/20 transition-colors">
@@ -118,7 +152,7 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
                 </button>
               )}
 
-              {canale === 'eshop' && fornitore.sito_eshop && (
+              {canale === 'eshop' && sitoEshop && (
                 <button
                   onClick={() => handleEshop(fornitore, prodotti)}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors">
@@ -126,19 +160,20 @@ export default function SottoSogliaOrdina({ alertItems, fornitori, userId, userN
                 </button>
               )}
 
-              {canale === 'telefono' && fornitore.telefono && (
+              {canale === 'telefono' && telefono && (
                 <button
                   onClick={() => handleTelefono(fornitore, prodotti)}
                   className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 transition-colors">
-                  <Phone size={11} /> {fornitore.telefono}
+                  <Phone size={11} /> {telefono}
                 </button>
               )}
 
-              {((canale === 'whatsapp' && !fornitore.telefono) ||
-                (canale === 'email' && !fornitore.email) ||
-                (canale === 'eshop' && !fornitore.sito_eshop) ||
-                (canale === 'telefono' && !fornitore.telefono)) && (
-                <span className="text-xs text-stone italic">Contatto mancante nel profilo fornitore</span>
+              {/* Fallback se mancano i dati di contatto */}
+              {((canale === 'whatsapp' && !telefono) ||
+                (canale === 'email' && !email) ||
+                (canale === 'eshop' && !sitoEshop) ||
+                (canale === 'telefono' && !telefono)) && (
+                <span className="text-xs text-stone italic">Contatto mancante — aggiungilo in Fornitori</span>
               )}
             </div>
 
