@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { MagazzinoItem } from '@/types'
+import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
 import {
   AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
-  ChevronsUpDown, Filter, Plus, Pencil, Search, X
+  ChevronsUpDown, Plus, Pencil, Search, X, Zap
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 
 const CATEGORIE = [
   'Tutte', 'Impianti', 'Componentistica Protesica', 'Materiali Chirurgici',
@@ -22,10 +23,12 @@ type SortDir = 'asc' | 'desc'
 interface Props {
   items: MagazzinoItem[]
   riordini: any[]
+  fornitori?: Fornitore[]
+  userId?: string
+  userNome?: string
 }
 
-export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
-  // Stato locale per aggiornamenti ottimistici — UI reagisce istantaneamente
+export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '' }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
   const [soloAlert, setSoloAlert] = useState(false)
@@ -34,9 +37,10 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [editItem, setEditItem] = useState<MagazzinoItem | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
+  const [showOrdineRapido, setShowOrdineRapido] = useState(false)
   const router = useRouter()
   const supabase = createClient()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
 
   function toggleSort(field: SortField) {
     if (sortField === field) {
@@ -69,6 +73,13 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
       return true
     })
     .sort((a, b) => {
+      // Impianti con sort default → ordina per diametro poi lunghezza
+      if (categoria === 'Impianti' && sortField === 'prodotto') {
+        const dA = a.diametro ?? 0, dB = b.diametro ?? 0
+        if (dA !== dB) return sortDir === 'asc' ? dA - dB : dB - dA
+        const lA = a.lunghezza ?? 0, lB = b.lunghezza ?? 0
+        return sortDir === 'asc' ? lA - lB : lB - lA
+      }
       let av: any, bv: any
       switch (sortField) {
         case 'prodotto':   av = a.prodotto ?? '';   bv = b.prodotto ?? '';   break
@@ -85,12 +96,13 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
       return 0
     })
 
-  const alertCount = items.filter(i => i.quantita < i.soglia_minima).length
+  // Alert items per ordine rapido: solo quelli con fornitore assegnato
+  const alertItems = items.filter(i => i.quantita < i.soglia_minima)
+  const alertCount = alertItems.length
+  const alertItemsConFornitore = alertItems.filter(i => (i as any).fornitore_id)
 
   async function saveQuantita(id: string, nuovaQuantita: number) {
-    // Aggiornamento ottimistico: UI reagisce immediatamente, senza aspettare il server
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantita: nuovaQuantita } : i))
-    // Salvataggio in background — nessun router.refresh() = nessun re-render del layout
     await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
   }
 
@@ -129,6 +141,37 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
         </div>
       )}
 
+      {/* Ordine Rapido (collassabile) */}
+      {fornitori.length > 0 && alertItemsConFornitore.length > 0 && (
+        <div className="card border-gold/20">
+          <button
+            onClick={() => setShowOrdineRapido(v => !v)}
+            className="flex items-center justify-between w-full"
+          >
+            <div className="flex items-center gap-2">
+              <Zap size={13} className="text-gold" />
+              <h3 className="text-xs uppercase tracking-widest text-gold">
+                Ordine Rapido — {alertItemsConFornitore.length} prodott{alertItemsConFornitore.length === 1 ? 'o' : 'i'} da riordinare
+              </h3>
+            </div>
+            {showOrdineRapido
+              ? <ChevronUp size={14} className="text-stone" />
+              : <ChevronDown size={14} className="text-stone" />
+            }
+          </button>
+          {showOrdineRapido && (
+            <div className="mt-4">
+              <SottoSogliaOrdina
+                alertItems={alertItemsConFornitore}
+                fornitori={fornitori}
+                userId={userId}
+                userNome={userNome}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Barra cerca + azioni */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -155,8 +198,8 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
       </div>
 
       {/* Filtri categoria */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap flex-1">
           {CATEGORIE.map(cat => (
             <button key={cat}
                     onClick={() => setCategoria(cat)}
@@ -170,7 +213,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
           ))}
         </div>
         <button onClick={() => setSoloAlert(!soloAlert)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ml-auto ${
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                   soloAlert
                     ? 'bg-red-400/10 text-red-400 border-red-400/30'
                     : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
@@ -185,97 +228,99 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
         <p className="text-xs text-stone">
           {filtered.length} risultat{filtered.length === 1 ? 'o' : 'i'}
           {categoria !== 'Tutte' ? ` in ${categoria}` : ''}
-          {' '}per <span className="text-cream">"{cerca}"</span>
+          {' '}per <span className="text-cream">&ldquo;{cerca}&rdquo;</span>
         </p>
       )}
 
-      {/* Tabella */}
+      {/* Tabella — scrollabile orizzontalmente su mobile/tablet */}
       <div className="card p-0 overflow-hidden">
-        <table className="table-ridentium">
-          <thead>
-            <tr>
-              <th>
-                <button onClick={() => toggleSort('prodotto')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Prodotto <SortIcon field="prodotto" />
-                </button>
-              </th>
-              <th>
-                <button onClick={() => toggleSort('categoria')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Categoria <SortIcon field="categoria" />
-                </button>
-              </th>
-              <th>
-                <button onClick={() => toggleSort('azienda')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Azienda <SortIcon field="azienda" />
-                </button>
-              </th>
-              <th>
-                <button onClick={() => toggleSort('diametro')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Diametro <SortIcon field="diametro" />
-                </button>
-              </th>
-              <th>
-                <button onClick={() => toggleSort('lunghezza')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Lunghezza <SortIcon field="lunghezza" />
-                </button>
-              </th>
-              <th>
-                <button onClick={() => toggleSort('quantita')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Qtà <SortIcon field="quantita" />
-                </button>
-              </th>
-              <th>Min.</th>
-              <th>Stato</th>
-              <th>
-                <button onClick={() => toggleSort('scadenza')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
-                  Scadenza <SortIcon field="scadenza" />
-                </button>
-              </th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.length === 0 ? (
+        <div className="overflow-x-auto">
+          <table className="table-ridentium" style={{ minWidth: '860px' }}>
+            <thead>
               <tr>
-                <td colSpan={10} className="text-center text-stone py-8">
-                  {cerca ? `Nessun prodotto trovato per "${cerca}"` : 'Nessun prodotto trovato'}
-                </td>
+                <th>
+                  <button onClick={() => toggleSort('prodotto')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    Prodotto <SortIcon field="prodotto" />
+                  </button>
+                </th>
+                <th>
+                  <button onClick={() => toggleSort('categoria')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    Categoria <SortIcon field="categoria" />
+                  </button>
+                </th>
+                <th>
+                  <button onClick={() => toggleSort('azienda')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    Azienda <SortIcon field="azienda" />
+                  </button>
+                </th>
+                <th>
+                  <button onClick={() => toggleSort('diametro')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    Ø <SortIcon field="diametro" />
+                  </button>
+                </th>
+                <th>
+                  <button onClick={() => toggleSort('lunghezza')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    L (mm) <SortIcon field="lunghezza" />
+                  </button>
+                </th>
+                <th>
+                  <button onClick={() => toggleSort('quantita')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    Qtà <SortIcon field="quantita" />
+                  </button>
+                </th>
+                <th>Min.</th>
+                <th>Stato</th>
+                <th>
+                  <button onClick={() => toggleSort('scadenza')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                    Scadenza <SortIcon field="scadenza" />
+                  </button>
+                </th>
+                <th></th>
               </tr>
-            ) : filtered.map(item => {
-              const isAlert = item.quantita < item.soglia_minima
-              return (
-                <tr key={item.id} className={isAlert ? 'bg-red-400/5' : ''}>
-                  <td className="font-medium text-cream">{item.prodotto}</td>
-                  <td>{item.categoria}</td>
-                  <td>{item.azienda ?? '—'}</td>
-                  <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
-                  <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
-                  <td>
-                    <QuantitaEditor
-                      value={item.quantita}
-                      onChange={val => saveQuantita(item.id, val)}
-                    />
-                  </td>
-                  <td className="text-stone">{item.soglia_minima}</td>
-                  <td>
-                    {isAlert
-                      ? <span className="badge-alert"><AlertTriangle size={10} /> Sotto soglia</span>
-                      : <span className="badge-ok"><CheckCircle size={10} /> OK</span>
-                    }
-                  </td>
-                  <td className={item.scadenza && new Date(item.scadenza) < new Date() ? 'text-red-400' : ''}>
-                    {formatDate(item.scadenza)}
-                  </td>
-                  <td>
-                    <button onClick={() => setEditItem(item)} className="btn-ghost p-1.5">
-                      <Pencil size={13} />
-                    </button>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={10} className="text-center text-stone py-8">
+                    {cerca ? `Nessun prodotto trovato per "${cerca}"` : 'Nessun prodotto trovato'}
                   </td>
                 </tr>
-              )
-            })}
-          </tbody>
-        </table>
+              ) : filtered.map(item => {
+                const isAlert = item.quantita < item.soglia_minima
+                return (
+                  <tr key={item.id} className={isAlert ? 'bg-red-400/5' : ''}>
+                    <td className="font-medium text-cream">{item.prodotto}</td>
+                    <td>{item.categoria}</td>
+                    <td>{item.azienda ?? '—'}</td>
+                    <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
+                    <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
+                    <td>
+                      <QuantitaEditor
+                        value={item.quantita}
+                        onChange={val => saveQuantita(item.id, val)}
+                      />
+                    </td>
+                    <td className="text-stone">{item.soglia_minima}</td>
+                    <td>
+                      {isAlert
+                        ? <span className="badge-alert"><AlertTriangle size={10} /> Sotto soglia</span>
+                        : <span className="badge-ok"><CheckCircle size={10} /> OK</span>
+                      }
+                    </td>
+                    <td className={item.scadenza && new Date(item.scadenza) < new Date() ? 'text-red-400' : ''}>
+                      {formatDate(item.scadenza)}
+                    </td>
+                    <td>
+                      <button onClick={() => setEditItem(item)} className="btn-ghost p-1.5">
+                        <Pencil size={13} />
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Modal modifica/aggiunta */}
@@ -287,7 +332,6 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
             setEditItem(null)
             setShowAddForm(false)
             if (updated) {
-              // Aggiornamento ottimistico anche dal modal
               setItems(prev => {
                 const exists = prev.find(i => i.id === updated.id)
                 return exists
@@ -295,7 +339,6 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini }: Props) {
                   : [...prev, updated]
               })
             }
-            // Refresh in background per mantenere sidebar badge e dati freschi
             startTransition(() => router.refresh())
           }}
         />
