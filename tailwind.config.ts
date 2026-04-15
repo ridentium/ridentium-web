@@ -9,30 +9,37 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // RIDENTIUM brand palette — quiet luxury
-        // Source: brand identity by Emagraphic (Feb 2026)
-        ivory:   { DEFAULT: '#F5F0E8', dark: '#E8E0D0' },
-        stone:   { DEFAULT: '#8C7B6B', light: '#A89888', dark: '#665647' },
-        obsidian:{ DEFAULT: '#18130E', mid: '#231A13', light: '#332518' },
-        gold:    { DEFAULT: '#D2C6B6', light: '#E8E0D4', dim: '#9E8E7E' },
-        cream:   '#F7F4EF',
-        muted:   '#6B6058',
-        alert:   '#C0392B',
-        ok:      '#27AE60',
+        // ── RIDENTIUM Palette Ufficiale Brand ──────────────────────────────
+        // Fonte: Immagine Coordinata, marzo 2026 (Emagraphic)
+        //
+        //  #F7F4EF  Crema avorio   — sfondo principale, superfici chiare
+        //  #D2C6B6  Taupe caldo    — bordi, toni medi, testo secondario
+        //  #665647  Bruno scuro    — sidebar, testo primario, accenti scuri
+        //
+        // Il gold (#C9A84C) viene mantenuto solo per CTA/accenti interattivi
+
+        ivory:    { DEFAULT: '#F7F4EF', dark: '#EDE8DF' },   // crema avorio brand
+        stone:    { DEFAULT: '#D2C6B6', light: '#E4DDD4', dark: '#8C7D6C' }, // taupe brand
+        obsidian: { DEFAULT: '#665647', mid: '#574839', light: '#7A6858' },  // bruno brand
+        gold:     { DEFAULT: '#C9A84C', light: '#E2C97E', dim: '#8C6F2C' },  // accento CTA
+        cream:    '#F7F4EF',   // alias per ivory
+        muted:    '#8C7D6C',   // testo secondario (tra taupe e bruno)
+        alert:    '#C0392B',
+        ok:       '#27AE60',
       },
       fontFamily: {
-        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        sans:  ['var(--font-inter)', 'system-ui', 'sans-serif'],
         serif: ['var(--font-cormorant)', 'Georgia', 'serif'],
       },
       boxShadow: {
-        'luxury': '0 1px 3px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3)',
-        'card': '0 1px 2px rgba(0,0,0,0.4)',
+        luxury: '0 1px 3px rgba(102,86,71,0.12), 0 4px 16px rgba(102,86,71,0.08)',
+        card:   '0 1px 3px rgba(102,86,71,0.07), 0 1px 2px rgba(102,86,71,0.05)',
       },
       borderRadius: {
-        'sm': '3px',
+        sm:      '3px',
         DEFAULT: '6px',
-        'md': '8px',
-        'lg': '12px',
+        md:      '8px',
+        lg:      '12px',
       },
     },
   },
