@@ -1,3 +1,15 @@
+export type UserRole = 'admin' | 'aso' | 'segretaria' | 'manager'
+
+export interface UserProfile {
+  id: string
+  email: string
+  nome: string
+  cognome: string
+  ruolo: UserRole
+  avatar_url?: string
+  created_at: string
+}
+
 export interface MagazzinoItem {
   id: string
   prodotto: string
@@ -9,14 +21,71 @@ export interface MagazzinoItem {
   unita: string
   diametro?: number | null
   lunghezza?: number | null
-  scadenza?: string | null
   prezzo_unitario?: number | null
+  lotto?: string | null
+  scadenza?: string | null
+  ultimo_riordino?: string | null
   note?: string | null
   fornitore_id?: string | null
   created_at: string
+  updated_at?: string
+}
+
+export interface Task {
+  id: string
+  titolo: string
+  descrizione?: string
+  assegnato_a: string
+  assegnato_a_profilo?: UserProfile
+  creato_da: string
+  stato: 'da_fare' | 'in_corso' | 'completato'
+  priorita: 'bassa' | 'media' | 'alta'
+  scadenza?: string
+  created_at: string
+  updated_at?: string
+}
+
+export interface SOP {
+  id: string
+  titolo: string
+  categoria: string
+  contenuto: string
+  versione: string
+  autore: string
+  ruoli_visibili: UserRole[]
+  created_at: string
+  updated_at?: string
+}
+
+export interface RiordineRequest {
+  id: string
+  magazzino_item_id: string
+  magazzino_item?: MagazzinoItem
+  richiesto_da: string
+  note?: string
+  stato: 'aperta' | 'evasa' | 'annullata'
+  created_at: string
+}
+
+export interface StatoScorta {
+  item: MagazzinoItem
+  alert: boolean
 }
 
 export type CanaleOrdine = 'whatsapp' | 'email' | 'eshop' | 'telefono'
+
+export interface FornitoreContatto {
+  id: string
+  fornitore_id: string
+  nome: string
+  ruolo?: string | null
+  telefono?: string | null
+  whatsapp?: string | null
+  email?: string | null
+  metodo_predefinito: CanaleOrdine
+  is_predefinito: boolean
+  created_at: string
+}
 
 export interface Fornitore {
   id: string
@@ -27,6 +96,7 @@ export interface Fornitore {
   canale_ordine?: CanaleOrdine | null
   note?: string | null
   created_at: string
+  fornitore_contatti?: FornitoreContatto[]
 }
 
 export interface Completamento {
