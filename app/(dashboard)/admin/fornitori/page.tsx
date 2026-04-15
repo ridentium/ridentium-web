@@ -13,22 +13,27 @@ export default async function FornitoriAdminPage() {
     { data: magazzino },
     { data: profilo },
   ] = await Promise.all([
-    supabase.from('fornitori').select('*').order('nome', { ascending: true }),
+    // JOIN con i contatti per ogni fornitore
+    supabase
+      .from('fornitori')
+      .select('*, fornitore_contatti(*)')
+      .order('nome', { ascending: true }),
     supabase.from('magazzino').select('id, prodotto, azienda, quantita, soglia_minima, unita'),
-    adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
+    adminDb.from('profili').select('nome, cognome, ruolo').eq('id', user!.id).single(),
   ])
 
   return (
     <div>
       <PageHeader
-        title="Fornitori & WhatsApp"
-        subtitle="Rubrica fornitori e ordini via WhatsApp per prodotti in esaurimento"
+        title="Fornitori"
+        subtitle="Rubrica fornitori, contatti e canali di ordine"
       />
       <FornitoriAdmin
         fornitori={fornitori ?? []}
         magazzino={magazzino ?? []}
         currentUserId={user!.id}
         currentUserNome={`${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()}
+        userRole={profilo?.ruolo ?? 'admin'}
       />
     </div>
   )
