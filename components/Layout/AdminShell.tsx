@@ -19,8 +19,8 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    /* Sfondo avorio caldo — contenuto chiaro, sidebar rimane scura */
-    <div className="flex h-screen overflow-hidden" style={{ background: '#F5F0E8' }}>
+    {/* #F7F4EF = crema avorio brand ufficiale */}
+    <div className="flex h-screen overflow-hidden" style={{ background: '#F7F4EF' }}>
 
       {/* Overlay mobile */}
       {sidebarOpen && (
@@ -51,12 +51,12 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
         {/* Top bar mobile — avorio/bianco */}
         <div
           className="md:hidden flex items-center gap-3 px-4 h-14 flex-shrink-0"
-          style={{ background: '#FDFAF6', borderBottom: '1px solid rgba(140,128,112,0.18)' }}
+          style={{ background: '#F7F4EF', borderBottom: '1px solid rgba(210,198,182,0.5)' }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
             className="p-2 -ml-1 transition-colors rounded"
-            style={{ color: '#8C8070' }}
+            style={{ color: '#8C7D6C' }}
             aria-label="Apri menu"
           >
             <Menu size={20} />
