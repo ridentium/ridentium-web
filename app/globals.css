@@ -7,6 +7,16 @@
 :root {
   --font-inter: 'Inter', system-ui, sans-serif;
   --font-cormorant: 'Cormorant Garamond', Georgia, serif;
+
+  /* Colori espliciti per componenti che usano inline style */
+  --col-body:       #E5DDD2;   /* greige caldo — corpo pagina */
+  --col-card:       #F7F4EF;   /* crema avorio brand — card */
+  --col-text:       #3D2F24;   /* quasi-espresso — testo primario */
+  --col-text-mid:   #665647;   /* brand brown — testo secondario */
+  --col-text-muted: #7A6858;   /* testo terziario */
+  --col-taupe:      #D2C6B6;   /* brand taupe — bordi */
+  --col-gold:       #C9A84C;   /* accento CTA */
+  --col-sidebar:    #665647;   /* brand brown sidebar */
 }
 
 @layer base {
@@ -18,106 +28,124 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* bg-ivory (#F7F4EF) text-obsidian (#665647) — palette brand ufficiale */
+  /* Greige caldo — non abbaglia, ottimo per uso prolungato */
   body {
-    @apply bg-ivory text-obsidian;
+    background-color: var(--col-body);
+    color: var(--col-text);
     min-height: 100vh;
   }
 
-  /* Scrollbar brand */
+  /* Scrollbar */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
-  ::-webkit-scrollbar-track { @apply bg-ivory-dark; }
-  ::-webkit-scrollbar-thumb { background: #D2C6B6; border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { @apply bg-gold; }
+  ::-webkit-scrollbar-track { background: #D5CDBF; }
+  ::-webkit-scrollbar-thumb { background: #B0A090; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--col-gold); }
 }
 
 @layer components {
 
-  /* Card — sfondo bianco caldo, bordo taupe brand */
+  /* ── Card ──
+     Crema avorio brand (#F7F4EF) su sfondo greige (#E5DDD2)
+     → elevazione netta, bordo taupe brand, leggero shadow caldo */
   .card {
-    background-color: #FDFCFA;
-    border: 1px solid #D2C6B6;
-    border-opacity: 0.5;
+    background-color: var(--col-card);
+    border: 1px solid var(--col-taupe);
     @apply rounded-md p-5;
-    box-shadow: 0 1px 3px rgba(102,86,71,0.07);
+    box-shadow: 0 1px 3px rgba(61,47,36,0.08), 0 1px 2px rgba(61,47,36,0.04);
   }
 
-  /* Bottoni */
+  /* ── Bottoni ── */
   .btn-primary {
-    @apply bg-gold text-obsidian font-medium text-sm px-5 py-2.5 rounded
+    @apply bg-gold font-medium text-sm px-5 py-2.5 rounded
            hover:bg-gold-light transition-colors duration-150;
+    color: #FFFFFF;
   }
 
   .btn-secondary {
-    @apply border border-obsidian/30 text-obsidian text-sm px-5 py-2.5 rounded
-           hover:border-gold hover:text-gold transition-colors duration-150;
+    border: 1px solid #B0A090;
+    color: var(--col-text);
+    @apply text-sm px-5 py-2.5 rounded transition-colors duration-150;
   }
+  .btn-secondary:hover { border-color: var(--col-gold); color: var(--col-gold); }
 
   .btn-ghost {
-    @apply text-obsidian/60 text-sm px-3 py-2 rounded
-           hover:text-obsidian hover:bg-stone/20 transition-colors duration-150;
+    color: var(--col-text-mid);
+    @apply text-sm px-3 py-2 rounded transition-colors duration-150;
   }
+  .btn-ghost:hover { color: var(--col-text); background-color: rgba(210,198,182,0.25); }
 
-  /* Input */
+  /* ── Input ── */
   .input {
     background-color: #FFFFFF;
-    @apply border border-stone/40 text-obsidian placeholder-stone/60
-           rounded px-4 py-2.5 text-sm w-full
-           focus:outline-none focus:border-gold transition-colors duration-150;
+    border: 1px solid #B8ADA0;
+    color: var(--col-text);
+    @apply rounded px-4 py-2.5 text-sm w-full
+           focus:outline-none transition-colors duration-150;
   }
+  .input::placeholder { color: #A89880; }
+  .input:focus { border-color: var(--col-gold); }
 
-  /* Badge */
+  /* ── Badge ── */
   .badge-alert {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
-           bg-alert/10 text-red-700 font-medium;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
+    background-color: rgba(192,57,43,0.12);
+    color: #A32B1E;
   }
   .badge-ok {
-    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm
-           bg-ok/10 text-green-800 font-medium;
+    @apply inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-sm font-medium;
+    background-color: rgba(39,174,96,0.12);
+    color: #1A6934;
   }
   .badge-role {
     @apply text-xs px-2 py-0.5 rounded-sm border font-medium;
   }
 
-  /* Tabella */
-  .table-ridentium {
-    @apply w-full text-sm;
-  }
+  /* ── Tabella ──
+     Header: greige scuro, testo medio leggibile
+     Righe: card bianca avorio, testo primario scuro */
+  .table-ridentium { @apply w-full text-sm; }
+
   .table-ridentium th {
-    @apply text-left text-xs uppercase tracking-widest text-obsidian/50
-           py-3 px-4 border-b font-medium;
-    border-color: #D2C6B6;
-    background-color: rgba(237,232,223,0.4);
-  }
-  .table-ridentium td {
-    @apply py-3 px-4 text-obsidian/80;
-    border-bottom: 1px solid rgba(210,198,182,0.4);
-  }
-  .table-ridentium tr:hover td {
-    background-color: rgba(210,198,182,0.12);
+    @apply text-left text-xs uppercase tracking-widest py-3 px-4 font-semibold;
+    color: var(--col-text-mid);          /* #665647 — leggibile */
+    border-bottom: 2px solid var(--col-taupe);
+    background-color: #EDE6DA;          /* leggermente scuro del body */
   }
 
-  /* Navigazione sidebar — rimane su sfondo brand bruno (#665647) */
+  .table-ridentium td {
+    @apply py-3 px-4;
+    color: var(--col-text);             /* #3D2F24 — piena leggibilità */
+    border-bottom: 1px solid #D2C6B6;
+  }
+
+  .table-ridentium tr:hover td {
+    background-color: rgba(210,198,182,0.18);
+  }
+
+  /* ── Navigazione sidebar (sfondo brand brown #665647) ── */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm
            transition-colors duration-150 cursor-pointer;
-    color: rgba(247,244,239,0.6);
+    color: rgba(247,244,239,0.65);       /* crema attenuata — leggibile su scuro */
   }
   .nav-item:hover {
     color: #F7F4EF;
-    background-color: rgba(247,244,239,0.08);
+    background-color: rgba(247,244,239,0.10);
   }
   .nav-item.active {
-    @apply border-l-2 border-gold;
     color: #C9A84C;
-    background-color: rgba(201,168,76,0.15);
+    background-color: rgba(201,168,76,0.18);
+    border-left: 2px solid #C9A84C;
   }
 
-  /* Tipografia */
+  /* ── Tipografia ── */
   .section-title {
-    @apply font-serif text-2xl text-obsidian font-light tracking-wide;
+    @apply font-serif text-2xl font-light tracking-wide;
+    color: var(--col-text);
   }
+
   .label-field {
-    @apply text-xs uppercase tracking-widest text-obsidian/50 font-medium;
+    @apply text-xs uppercase tracking-widest font-semibold;
+    color: var(--col-text-mid);         /* #665647 — ben leggibile */
   }
 }
