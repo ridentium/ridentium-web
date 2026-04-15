@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
-import OnboardingWizard from '@/components/Onboarding/OnboardingWizard'
 import Link from 'next/link'
-import { Package, CheckSquare, Users, AlertTriangle, TrendingUp, Calendar, Euro, Activity, RefreshCw } from 'lucide-react'
+import { Package, CheckSquare, Users, AlertTriangle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
+import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 
 export default async function AdminHome() {
   const supabase = createClient()
@@ -14,84 +15,38 @@ export default async function AdminHome() {
   const [
     { data: magazzinoAll },
     { data: tasksOpen },
-    { data: tasksCompleted },
     { data: staffAll },
     { data: riordiniAperti },
-    { data: kpi },
+    { data: fornitori },
     { data: ricorrenti },
     { data: profilo },
   ] = await Promise.all([
-    supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, azienda, prezzo_unitario'),
-    supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a').neq('stato', 'completato'),
-    supabase.from('tasks').select('id').eq('stato', 'completato'),
-    adminDb.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true),
+    supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, fornitore_id, unita'),
+    supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a, stato').neq('stato', 'completato'),
+    supabase.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true),
     supabase.from('riordini').select('id, created_at, magazzino_id, magazzino(prodotto)').eq('stato', 'aperta'),
-    supabase.from('kpi').select('*').single(),
-    supabase.from('ricorrenti').select('*').eq('attiva', true),
-    adminDb.from('profili').select('nome, cognome, onboarding_completato').eq('id', user!.id).single(),
+    supabase.from('fornitori').select('*'),
+    supabase.from('ricorrenti').select('*').eq('attiva', true).order('created_at', { ascending: true }),
+    adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
   ])
 
   const alertItems = (magazzinoAll ?? []).filter(
     (item: any) => item.quantita < item.soglia_minima
   )
-  const taskUrgenti = (tasksOpen ?? []).filter((t: any) => t.priorita === 'alta')
-
-  // Valore magazzino
-  const valoreMagazzino = (magazzinoAll ?? []).reduce((s: number, i: any) =>
-    s + (i.quantita ?? 0) * (i.prezzo_unitario ?? 0), 0
-  )
-
-  // Ricorrenti pendenti dell'admin
-  function getPeriodoKey(frequenza: string): string {
-    const now = new Date()
-    if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
-    if (frequenza === 'settimanale') {
-      const d = new Date(now); d.setDate(d.getDate() - d.getDay() + 1)
-      return 'W' + d.toISOString().split('T')[0]
-    }
-    if (frequenza === 'mensile') return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-    return now.toISOString().split('T')[0]
-  }
-
-  const ricorrentiPendenti = (ricorrenti ?? []).filter((az: any) => {
-    if (!az.attiva) return false
-    if (az.assegnato_a && az.assegnato_a !== user!.id) return false
-    const key = getPeriodoKey(az.frequenza)
-    const completamenti = Array.isArray(az.completamenti) ? az.completamenti : []
-    return !completamenti.some((c: any) => c.userId === user!.id && c.periodoKey === key)
-  })
+  const userNome = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
 
   const oggi = new Date().toLocaleDateString('it-IT', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   })
 
-  const nomeAdmin = profilo?.nome ?? 'Mariano'
-
   return (
     <div>
-      {/* Onboarding wizard — shown once on first login */}
-      {profilo && !profilo.onboarding_completato && (
-        <OnboardingWizard userId={user!.id} isAdmin={true} />
-      )}
-
       <PageHeader
-        title={`Buongiorno, ${nomeAdmin}.`}
+        title="Buongiorno, Mariano."
         subtitle={oggi.charAt(0).toUpperCase() + oggi.slice(1)}
       />
 
-      {/* KPI clinici (se configurati) */}
-      {kpi && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <KpiCard label="Pazienti oggi" value={kpi.pazienti_oggi} icon={Calendar} color="text-cream" />
-          <KpiCard label="Pazienti sett." value={kpi.pazienti_settimana} icon={Calendar} color="text-cream" />
-          <KpiCard label="Pazienti mese" value={kpi.pazienti_mese} icon={Activity} color="text-cream" />
-          <KpiCard label="Appuntamenti" value={kpi.appuntamenti_oggi} icon={Calendar} color="text-cream" />
-          <KpiCard label="Fatturato mese" value={`€${kpi.fatturato_mese.toLocaleString('it-IT')}`} icon={Euro} color="text-gold" />
-          <KpiCard label="Tasso presenze" value={`${kpi.tasso_presenze}%`} icon={TrendingUp} color={kpi.tasso_presenze >= 90 ? 'text-green-400' : 'text-gold'} />
-        </div>
-      )}
-
-      {/* KPI operativi */}
+      {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard
           label="Prodotti sotto soglia"
@@ -114,125 +69,89 @@ export default async function AdminHome() {
           alert={(riordiniAperti?.length ?? 0) > 0}
         />
         <StatCard
-          label="Valore magazzino"
-          value={`€${Math.round(valoreMagazzino).toLocaleString('it-IT')}`}
-          icon={Package}
-          href="/admin/magazzino"
-          asText
+          label="Membri staff attivi"
+          value={staffAll?.length ?? 0}
+          icon={Users}
+          href="/admin/staff"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Alert magazzino */}
-        <div className="card">
+        {/* Ordine rapido */}
+        <div className="card lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
-              Magazzino — Sotto Soglia
+              Ordine Rapido — Sotto Soglia
             </h3>
             <Link href="/admin/magazzino" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Vedi tutto →
+              Vai al magazzino →
             </Link>
           </div>
-          {alertItems.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">✓ Tutto in ordine</p>
-          ) : (
-            <div className="space-y-2">
-              {alertItems.slice(0, 5).map((item: any) => (
-                <div key={item.id} className="flex items-center justify-between py-2
-                                               border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-sm text-cream/80">{item.prodotto}</span>
-                  <span className="badge-alert">
-                    <AlertTriangle size={10} />
-                    {item.quantita}/{item.soglia_minima}
-                  </span>
-                </div>
-              ))}
-              {alertItems.length > 5 && (
-                <p className="text-stone text-xs text-center pt-1">
-                  +{alertItems.length - 5} altri prodotti
-                </p>
-              )}
-            </div>
-          )}
+          <SottoSogliaOrdina
+            alertItems={alertItems as any}
+            fornitori={fornitori ?? []}
+            userId={user!.id}
+            userNome={userNome}
+          />
         </div>
 
-        {/* Task urgenti */}
-        <div className="card">
+        {/* Task + Azioni Ricorrenti — spuntabili */}
+        <div className="card lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
-              Task ad alta priorità
+              Task & Azioni Ricorrenti
             </h3>
-            <Link href="/admin/tasks" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Vedi tutto →
-            </Link>
-          </div>
-          {taskUrgenti.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">Nessun task urgente</p>
-          ) : (
-            <div className="space-y-2">
-              {taskUrgenti.slice(0, 5).map((task: any) => (
-                <div key={task.id} className="flex items-start justify-between py-2
-                                               border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-sm text-cream/80">{task.titolo}</span>
-                  {task.scadenza && (
-                    <span className="text-xs text-stone ml-3 shrink-0">
-                      {formatDate(task.scadenza)}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div className="flex items-center gap-3">
+              <Link href="/admin/ricorrenti" className="text-xs text-stone hover:text-gold transition-colors">
+                Ricorrenti →
+              </Link>
+              <Link href="/admin/tasks" className="text-xs text-gold hover:text-gold-light transition-colors">
+                Task →
+              </Link>
             </div>
-          )}
-        </div>
-
-        {/* Azioni ricorrenti pendenti */}
-        <div className="card">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-cream uppercase tracking-widest flex items-center gap-2">
-              <RefreshCw size={13} /> Azioni Ricorrenti
-            </h3>
-            <Link href="/admin/ricorrenti" className="text-xs text-gold hover:text-gold-light transition-colors">
-              Gestisci →
-            </Link>
           </div>
-          {ricorrentiPendenti.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">✓ Tutte completate per questo periodo</p>
-          ) : (
-            <div className="space-y-1">
-              {ricorrentiPendenti.slice(0, 5).map((az: any) => (
-                <div key={az.id} className="flex items-center gap-3 py-2 border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-stone text-sm">○</span>
-                  <span className="text-sm text-cream/80 flex-1">{az.titolo}</span>
-                  <span className="text-xs text-stone capitalize">{az.frequenza}</span>
-                </div>
-              ))}
-              {ricorrentiPendenti.length > 5 && (
-                <p className="text-stone text-xs text-center pt-1">+{ricorrentiPendenti.length - 5} altre</p>
-              )}
-            </div>
-          )}
+          <TasksRicorrentiWidget
+            tasks={(tasksOpen ?? []) as any}
+            ricorrenti={(ricorrenti ?? []).map((r: any) => ({
+              ...r,
+              completamenti: Array.isArray(r.completamenti) ? r.completamenti : [],
+            }))}
+            currentUserId={user!.id}
+            currentUserNome={userNome}
+          />
         </div>
 
         {/* Riordini aperti */}
         {(riordiniAperti?.length ?? 0) > 0 && (
-          <div className="card">
+          <div className="card lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-cream uppercase tracking-widest">
-                Richieste Riordino
+                Richieste Riordino da Evadere
               </h3>
               <Link href="/admin/magazzino" className="text-xs text-gold hover:text-gold-light transition-colors">
                 Gestisci →
               </Link>
             </div>
-            <div className="space-y-2">
-              {riordiniAperti?.slice(0, 4).map((r: any) => (
-                <div key={r.id} className="flex items-center justify-between py-2
-                                            border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-sm text-cream/80">{(r.magazzino as any)?.prodotto ?? '—'}</span>
-                  <span className="badge-alert">Aperta</span>
-                </div>
-              ))}
+            <div className="overflow-x-auto">
+              <table className="table-ridentium" style={{ minWidth: '480px' }}>
+                <thead>
+                  <tr>
+                    <th>Prodotto</th>
+                    <th>Richiesta il</th>
+                    <th>Stato</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {riordiniAperti?.map((r: any) => (
+                    <tr key={r.id}>
+                      <td>{(r.magazzino as any)?.prodotto ?? '—'}</td>
+                      <td>{formatDate(r.created_at)}</td>
+                      <td><span className="badge-alert">Aperta</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -241,37 +160,22 @@ export default async function AdminHome() {
   )
 }
 
-function KpiCard({ label, value, icon: Icon, color }: {
-  label: string; value: string | number; icon: React.ElementType; color: string
-}) {
-  return (
-    <div className="card py-3 px-4">
-      <p className="text-[10px] uppercase tracking-widest text-stone mb-1">{label}</p>
-      <div className="flex items-end gap-1.5">
-        <Icon size={12} className={color} />
-        <p className={`text-xl font-serif font-light ${color}`}>{value}</p>
-      </div>
-    </div>
-  )
-}
-
 function StatCard({
-  label, value, icon: Icon, href, alert = false, asText = false
+  label, value, icon: Icon, href, alert = false
 }: {
   label: string
-  value: number | string
+  value: number
   icon: React.ElementType
   href: string
   alert?: boolean
-  asText?: boolean
 }) {
   return (
     <Link href={href} className="card hover:border-gold/30 transition-colors group block">
       <div className="flex items-start justify-between mb-3">
-        <Icon size={16} className={alert && typeof value === 'number' && value > 0 ? 'text-red-400' : 'text-stone'} />
+        <Icon size={16} className={alert && value > 0 ? 'text-red-400' : 'text-stone'} />
         <span className="text-[10px] text-stone group-hover:text-gold transition-colors">→</span>
       </div>
-      <p className={`text-3xl font-light font-serif mb-1 ${alert && typeof value === 'number' && value > 0 ? 'text-red-400' : asText ? 'text-gold' : 'text-cream'}`}>
+      <p className={`text-3xl font-light font-serif mb-1 ${alert && value > 0 ? 'text-red-400' : 'text-cream'}`}>
         {value}
       </p>
       <p className="text-xs text-stone uppercase tracking-wider">{label}</p>
