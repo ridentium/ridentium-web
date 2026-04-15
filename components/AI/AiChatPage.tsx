@@ -16,23 +16,41 @@ interface Sessione {
   updated_at: string
 }
 
+interface BachecaItem {
+  tipo: 'scorta' | 'task' | 'riordine' | 'ricorrente'
+  priorita: number
+  titolo: string
+  dettaglio: string
+}
+
 interface Props {
   userName: string
   userRole: string
   userId: string
   storico: Sessione[]
+  bacheca?: BachecaItem[]
 }
 
-const SUGGESTIONS = [
-  'Cosa è sotto soglia nel magazzino?',
-  'Mostrami i task aperti urgenti',
-  'Quanti impianti Neodent ø4 abbiamo?',
-  'Crea un task: sterilizzazione strumenti — priorità alta, scadenza domani',
-  'Quali riordini sono aperti?',
-  'Elenca il personale attivo',
-]
+const TIPO_COLOR: Record<string, string> = {
+  scorta:     'rgba(192,57,43,0.15)',
+  task:       'rgba(201,168,76,0.12)',
+  riordine:   'rgba(201,168,76,0.12)',
+  ricorrente: 'rgba(255,255,255,0.06)',
+}
+const TIPO_TEXT: Record<string, string> = {
+  scorta:     '#ef4444',
+  task:       '#C9A84C',
+  riordine:   '#C9A84C',
+  ricorrente: 'rgba(255,255,255,0.5)',
+}
+const TIPO_LABEL: Record<string, string> = {
+  scorta:     'Magazzino',
+  task:       'Task',
+  riordine:   'Riordine',
+  ricorrente: 'Ricorrente',
+}
 
-export default function AiChatPage({ userName, userRole, userId, storico }: Props) {
+export default function AiChatPage({ userName, userRole, userId, storico, bacheca = [] }: Props) {
   const [sessioni, setSessioni] = useState<Sessione[]>(storico)
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -157,24 +175,78 @@ export default function AiChatPage({ userName, userRole, userId, storico }: Prop
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
 
           {isEmpty && (
-            <div className="flex flex-col items-center justify-center h-full text-center gap-6">
-              <div className="w-16 h-16 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center">
-                <Sparkles size={28} className="text-gold" />
+            <div className="flex flex-col h-full gap-5 overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="w-10 h-10 rounded-full bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                  <Sparkles size={18} className="text-gold" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium" style={{ color: '#E8DCC8' }}>Ciao {userName.split(' ')[0]}, sono Lina</p>
+                  <p className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>Il tuo assistente per il gestionale RIDENTIUM.</p>
+                </div>
               </div>
+
+              {/* Bacheca del giorno — ordinata per priorità */}
+              {bacheca.length > 0 && (
+                <div>
+                  <p className="text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'rgba(201,168,76,0.7)' }}>
+                    Priorità del giorno
+                  </p>
+                  <div className="space-y-1.5">
+                    {bacheca.map((item, i) => (
+                      <button
+                        key={i}
+                        onClick={() => sendMessage(`Dimmi di più su: ${item.titolo}. ${item.dettaglio}`)}
+                        className="w-full text-left px-3 py-2.5 rounded-lg flex items-center gap-3 transition-all hover:opacity-90"
+                        style={{ background: TIPO_COLOR[item.tipo], border: `1px solid ${TIPO_TEXT[item.tipo]}22` }}
+                      >
+                        <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded uppercase"
+                              style={{ background: `${TIPO_TEXT[item.tipo]}20`, color: TIPO_TEXT[item.tipo] }}>
+                          {TIPO_LABEL[item.tipo]}
+                        </span>
+                        <span className="flex-1 text-xs font-medium truncate" style={{ color: '#E8DCC8' }}>
+                          {item.titolo}
+                        </span>
+                        <span className="text-[10px] flex-shrink-0" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                          {item.dettaglio}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {bacheca.length === 0 && (
+                <div className="text-center py-4">
+                  <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>✓ Tutto in ordine oggi — nessuna urgenza!</p>
+                </div>
+              )}
+
+              {/* Suggerimenti rapidi */}
               <div>
-                <p className="text-cream font-medium mb-1">Ciao {userName.split(' ')[0]}, sono Lina</p>
-                <p className="text-stone text-sm">Il tuo assistente AI per il gestionale RIDENTIUM.</p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl">
-                {SUGGESTIONS.map((s, i) => (
-                  <button
-                    key={i}
-                    onClick={() => sendMessage(s)}
-                    className="text-left text-xs px-3 py-2.5 rounded border border-obsidian-light/40 text-stone hover:text-cream hover:border-stone transition-colors"
-                  >
-                    {s}
-                  </button>
-                ))}
+                <p className="text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                  Domande rapide
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                  {[
+                    'Cosa è sotto soglia nel magazzino?',
+                    'Mostrami i task aperti urgenti',
+                    'Quanti impianti Neodent ø4 abbiamo?',
+                    'Quali riordini sono aperti?',
+                  ].map((s, i) => (
+                    <button
+                      key={i}
+                      onClick={() => sendMessage(s)}
+                      className="text-left text-xs px-3 py-2 rounded transition-colors"
+                      style={{ border: '1px solid rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)' }}
+                      onMouseEnter={e => { e.currentTarget.style.color = '#E8DCC8'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)' }}
+                      onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)' }}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
