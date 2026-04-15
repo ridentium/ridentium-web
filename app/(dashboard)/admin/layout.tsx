@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
+import ChatWidget from '@/components/AI/ChatWidget'
 import { UserProfile } from '@/types'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +25,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     (i: any) => i.quantita < i.soglia_minima
   ).length
 
+  const userName = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
+
   return (
     <div className="flex min-h-screen">
       <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} />
@@ -32,6 +35,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           {children}
         </div>
       </main>
+      {/* Widget AI flottante — visibile su tutte le pagine admin */}
+      <ChatWidget userName={userName} userRole={profilo?.ruolo ?? 'admin'} />
     </div>
   )
 }
