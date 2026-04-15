@@ -51,7 +51,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Stili dello splash iniettati subito nell'<head> */}
         <style dangerouslySetInnerHTML={{ __html: SPLASH_STYLES }} />
       </head>
-      <body className="bg-obsidian text-cream antialiased">
+      {/* bg-ivory = #F7F4EF (crema brand) | text-obsidian = #665647 (bruno brand) */}
+      <body className="bg-ivory text-obsidian antialiased">
 
         {/* ── Splash screen ─────────────────────────────────────────────────
             Viene renderizzato dal server nel primo HTML inviato al browser.
