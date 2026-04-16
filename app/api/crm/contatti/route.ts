@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendConfermaIscrizione } from '@/lib/mailer'
+import { sendConfermaIscrizione } from '@/lib/mailer'
 
 function corsHeaders() {
   return {
@@ -55,6 +57,11 @@ export async function POST(req: NextRequest) {
   if (error) {
     console.error('[CRM] INSERT error:', error)
     return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500, headers: corsHeaders() })
+  }
+
+    // Email di conferma al lead (fire & forget)
+  if (data?.email) {
+    sendConfermaIscrizione({ nome: data.nome || '', email: data.email }).catch(() => {})
   }
 
   return NextResponse.json({ success: true, id: data.id }, { status: 201, headers: corsHeaders() })
