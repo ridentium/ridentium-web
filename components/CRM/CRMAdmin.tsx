@@ -381,6 +381,18 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                         </button>
                       )}
                     </div>
+                    {/* ── Consensi GDPR ── */}
+                    {(c.consenso_privacy != null || c.consenso_marketing != null) && (
+                      <div className="flex gap-2 flex-wrap mt-3 pt-2 border-t border-obsidian-light/20 items-center">
+                        <span className="text-[10px] text-stone/40 uppercase tracking-wide mr-1">GDPR</span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${c.consenso_privacy ? 'border-green-600/30 bg-green-900/20 text-green-400' : 'border-red-600/30 text-red-400'}`}>
+                          <CheckCircle2 size={9} /> Privacy
+                        </span>
+                        <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${c.consenso_marketing ? 'border-gold/30 bg-gold/10 text-gold' : 'border-obsidian-light/40 text-stone/50'}`}>
+                          {c.consenso_marketing ? <><Mail size={9}/> Comunicazioni marketing</> : 'Solo dati personali'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
