@@ -1,5 +1,7 @@
 import { createTransport } from 'nodemailer'
 
+// ─── Transporter ──────────────────────────────────────────────────────────────
+
 const transporter = createTransport({
   service: 'gmail',
   auth: {
@@ -8,127 +10,192 @@ const transporter = createTransport({
   },
 })
 
-interface ConfermaParams {
+// ─── Tipi ─────────────────────────────────────────────────────────────────────
+
+export type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata'
+
+export interface SendEmailParams {
+  to: string
+  nome: string
+  template: EmailTemplate
+  customSubject?: string
+  customBody?: string
+}
+
+export interface SendEmailResult {
+  success: boolean
+  error?: string
+}
+
+// ─── Entry point principale ───────────────────────────────────────────────────
+
+export async function sendEmail({
+  to,
+  nome,
+  template,
+  customSubject,
+  customBody,
+}: SendEmailParams): Promise<SendEmailResult> {
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    return { success: false, error: 'Credenziali email non configurate' }
+  }
+
+  try {
+    const { subject, html } = buildEmail(nome, template, customBody)
+
+    await transporter.sendMail({
+      from: `RIDENTIUM <${process.env.GMAIL_USER}>`,
+      to,
+      subject: customSubject || subject,
+      html,
+    })
+
+    return { success: true }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Errore sconosciuto'
+    return { success: false, error: message }
+  }
+}
+
+// Compat backward con il vecchio codice
+export async function sendConfermaIscrizione({
+  nome,
+  email,
+}: {
   nome: string
   email: string
+}): Promise<void> {
+  await sendEmail({ to: email, nome, template: 'box-conferma' })
 }
 
-export async function sendConfermaIscrizione({ nome, email }: ConfermaParams) {
-  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) return
-  const html = buildEmailHtml(nome)
-  await transporter.sendMail({
-    from: `RIDENTIUM <${process.env.GMAIL_USER}>`,
-    to: email,
-    subject: 'La tua richiesta è stata ricevuta — RIDENTIUM Gift Box',
-    html,
-  })
-}
+// ─── Router template ─────────────────────────────────────────────────────────
 
-function buildEmailHtml(nome: string): string {
+function buildEmail(
+  nome: string,
+  template: EmailTemplate,
+  customBody?: string,
+): { subject: string; html: string } {
   const n = nome ? nome.charAt(0).toUpperCase() + nome.slice(1) : 'Paziente'
+
+  switch (template) {
+    case 'box-conferma':
+      return {
+        subject: 'La tua richiesta è stata ricevuta — RIDENTIUM Gift Box',
+        html: tplBoxConferma(n),
+      }
+    case 'benvenuto':
+      return {
+        subject: 'Benvenuto in RIDENTIUM',
+        html: tplBenvenuto(n),
+      }
+    case 'personalizzata':
+      return {
+        subject: 'Messaggio da RIDENTIUM',
+        html: tplPersonalizzata(n, customBody ?? ''),
+      }
+  }
+}
+
+// ─── HTML condiviso ───────────────────────────────────────────────────────────
+
+function wrap(nome: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>RIDENTIUM — Conferma richiesta</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
 </head>
-<body style="margin:0;padding:0;background-color:#f5f2ec;font-family:Georgia,serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f2ec;padding:48px 20px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+<body style="margin:0;padding:0;background:#0c0c0c;font-family:Georgia,serif;">
+  <div style="max-width:560px;margin:0 auto;padding:48px 28px;">
 
-          <!-- Header -->
-          <tr>
-            <td style="background-color:#0c0c0c;padding:40px 48px 32px;text-align:center;border-radius:4px 4px 0 0;">
-              <p style="margin:0;font-size:10px;letter-spacing:6px;color:#c9a96e;font-family:Georgia,serif;text-transform:uppercase;">Odontoiatria Premium</p>
-              <h1 style="margin:10px 0 0;font-size:30px;letter-spacing:10px;color:#f5f2ec;font-family:Georgia,serif;font-weight:400;text-transform:uppercase;">RIDENTIUM</h1>
-            </td>
-          </tr>
+    <!-- Testata -->
+    <div style="text-align:center;padding-bottom:32px;border-bottom:1px solid #1e1e1e;margin-bottom:40px;">
+      <p style="margin:0 0 6px 0;letter-spacing:.35em;text-transform:uppercase;font-size:11px;color:#c9a96e;font-family:Helvetica,Arial,sans-serif;">RIDENTIUM</p>
+      <p style="margin:0;font-size:11px;color:#555;font-family:Helvetica,Arial,sans-serif;letter-spacing:.08em;">Odontoiatria premium · Aversa</p>
+    </div>
 
-          <!-- Gold line -->
-          <tr><td style="background-color:#c9a96e;height:1px;font-size:0;line-height:0;">&nbsp;</td></tr>
+    <!-- Saluto -->
+    <p style="color:#f5f2ec;font-size:18px;margin:0 0 28px 0;">Caro ${nome},</p>
 
-          <!-- Body -->
-          <tr>
-            <td style="background-color:#ffffff;padding:48px 48px 40px;">
+    ${body}
 
-              <p style="margin:0 0 28px;font-size:11px;letter-spacing:4px;color:#c9a96e;text-transform:uppercase;font-family:Georgia,serif;">Gift Box · Conferma richiesta</p>
+    <!-- Separatore -->
+    <div style="text-align:center;margin:40px 0 32px;"><span style="display:inline-block;width:40px;height:1px;background:#c9a96e;opacity:.5;"></span></div>
 
-              <p style="margin:0 0 24px;font-size:22px;color:#0c0c0c;font-family:Georgia,serif;font-weight:400;line-height:1.4;">Gentile ${n},</p>
+    <!-- Footer -->
+    <p style="color:#555;font-size:11px;text-align:center;font-family:Helvetica,Arial,sans-serif;line-height:1.7;margin:0;">
+      RIDENTIUM · Via Aldo Moro 96, Aversa (CE)<br/>
+      <a href="https://ridentium.it" style="color:#c9a96e;text-decoration:none;">ridentium.it</a>
+    </p>
 
-              <p style="margin:0 0 20px;font-size:15px;color:#3a3a3a;line-height:1.9;font-family:Georgia,serif;">
-                abbiamo ricevuto la tua richiesta per la <strong style="color:#0c0c0c;">RIDENTIUM Gift Box</strong>.
-                Siamo lieti che tu abbia scelto di regalare — o regalarti — un'esperienza
-                di cura dentale di qualità superiore.
-              </p>
-
-              <p style="margin:0 0 20px;font-size:15px;color:#3a3a3a;line-height:1.9;font-family:Georgia,serif;">
-                Uno dei nostri collaboratori ti contatterà entro <strong style="color:#0c0c0c;">24–48 ore</strong>
-                per definire insieme tutti i dettagli e rispondere a qualsiasi domanda.
-              </p>
-
-              <!-- Divider -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin:32px 0;">
-                <tr>
-                  <td width="40%" style="border-top:1px solid #e8e0d0;">&nbsp;</td>
-                  <td width="20%" style="text-align:center;color:#c9a96e;font-size:14px;padding:0 8px;">✦</td>
-                  <td width="40%" style="border-top:1px solid #e8e0d0;">&nbsp;</td>
-                </tr>
-              </table>
-
-              <!-- Chi siamo -->
-              <p style="margin:0 0 10px;font-size:10px;letter-spacing:4px;color:#c9a96e;text-transform:uppercase;font-family:Georgia,serif;">Chi siamo</p>
-
-              <p style="margin:0 0 32px;font-size:14px;color:#555;line-height:1.9;font-family:Georgia,serif;">
-                RIDENTIUM è uno studio di odontoiatria premium con sede ad Aversa, fondato
-                dal Dr. Mariano Di Paola — specializzato in chirurgia orale, implantologia
-                e riabilitazioni estetiche full arch. Un luogo progettato per offrire cura
-                autentica, tecnologia avanzata e un'esperienza che mette il paziente
-                al centro di ogni scelta.
-              </p>
-
-              <!-- CTA -->
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:32px;">
-                <tr>
-                  <td align="center">
-                    <a href="https://ridentium-web.vercel.app"
-                       style="display:inline-block;background-color:#0c0c0c;color:#f5f2ec;text-decoration:none;
-                              font-size:10px;letter-spacing:4px;text-transform:uppercase;
-                              padding:16px 44px;font-family:Georgia,serif;border:1px solid #0c0c0c;">
-                      Scopri RIDENTIUM
-                    </a>
-                  </td>
-                </tr>
-              </table>
-
-              <p style="margin:0;font-size:13px;color:#888;line-height:1.8;font-family:Georgia,serif;">
-                Per qualsiasi esigenza puoi rispondere direttamente a questa email oppure
-                scriverci a
-                <a href="mailto:ridentium@gmail.com" style="color:#c9a96e;text-decoration:none;">ridentium@gmail.com</a>.
-              </p>
-
-            </td>
-          </tr>
-
-          <!-- Footer -->
-          <tr>
-            <td style="background-color:#0c0c0c;padding:28px 48px;text-align:center;border-radius:0 0 4px 4px;">
-              <p style="margin:0 0 4px;font-size:10px;letter-spacing:5px;color:#c9a96e;text-transform:uppercase;font-family:Georgia,serif;">RIDENTIUM</p>
-              <p style="margin:0 0 14px;font-size:11px;color:#555;font-family:Georgia,serif;">Odontoiatria Premium · Aversa</p>
-              <p style="margin:0;font-size:10px;color:#3a3a3a;font-family:Georgia,serif;line-height:1.7;">
-                Hai ricevuto questa email perché hai compilato il modulo sul sito RIDENTIUM.<br>
-                <a href="mailto:ridentium@gmail.com?subject=Rimozione%20dati%20RIDENTIUM"
-                   style="color:#555;text-decoration:underline;">Richiedi rimozione dati</a>
-              </p>
-            </td>
-          </tr>
-
-        </table>
-      </td>
-    </tr>
-  </table>
+  </div>
 </body>
 </html>`
+}
+
+// ─── Template 1: Gift Box conferma ────────────────────────────────────────────
+
+function tplBoxConferma(nome: string): string {
+  const body = `
+    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 20px 0;">
+      abbiamo ricevuto la tua richiesta per la <strong style="color:#c9a96e;">RIDENTIUM Gift Box</strong>.
+    </p>
+    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 32px 0;">
+      Nei prossimi <strong style="color:#f5f2ec;">24–48 ore</strong> uno dei nostri collaboratori ti contatterà per definire insieme i dettagli e concordare un appuntamento.
+    </p>
+
+    <!-- Box regalo info -->
+    <div style="background:#111;border:1px solid #1e1e1e;border-left:3px solid #c9a96e;border-radius:6px;padding:24px 20px;margin-bottom:32px;">
+      <p style="color:#c9a96e;font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;margin:0 0 10px 0;">Cosa include la Gift Box</p>
+      <p style="color:#c0b89a;font-size:14px;line-height:1.8;margin:0;">
+        Visita di controllo completa · Consulenza personalizzata · Piano di trattamento su misura
+      </p>
+    </div>
+
+    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 32px 0;">
+      Per qualsiasi necessità puoi rispondere direttamente a questa email o chiamarci al numero indicato sul sito.
+    </p>
+
+    <div style="text-align:center;margin-bottom:8px;">
+      <a href="https://ridentium.it" style="display:inline-block;background:#c9a96e;color:#0c0c0c;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;padding:14px 32px;border-radius:4px;">Scopri RIDENTIUM</a>
+    </div>
+  `
+  return wrap(nome, body)
+}
+
+// ─── Template 2: Benvenuto ────────────────────────────────────────────────────
+
+function tplBenvenuto(nome: string): string {
+  const body = `
+    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 20px 0;">
+      benvenuto in <strong style="color:#c9a96e;">RIDENTIUM</strong>.
+    </p>
+    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 32px 0;">
+      Siamo lieti di averti come paziente. Il nostro team è a tua disposizione per accompagnarti in un percorso di cura personalizzato, con la massima attenzione all'estetica e al comfort.
+    </p>
+
+    <div style="background:#111;border:1px solid #1e1e1e;border-left:3px solid #c9a96e;border-radius:6px;padding:24px 20px;margin-bottom:32px;">
+      <p style="color:#c9a96e;font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;margin:0 0 10px 0;">Il nostro impegno</p>
+      <p style="color:#c0b89a;font-size:14px;line-height:1.8;margin:0;">
+        Qualità clinica misurabile · Estetica naturale · Esperienza premium in ogni fase del percorso
+      </p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:8px;">
+      <a href="https://ridentium.it" style="display:inline-block;background:#c9a96e;color:#0c0c0c;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;padding:14px 32px;border-radius:4px;">Scopri RIDENTIUM</a>
+    </div>
+  `
+  return wrap(nome, body)
+}
+
+// ─── Template 3: Personalizzata ──────────────────────────────────────────────
+
+function tplPersonalizzata(nome: string, testo: string): string {
+  const body = `
+    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 28px 0;white-space:pre-wrap;">${testo}</p>
+    <div style="text-align:center;margin-bottom:8px;">
+      <a href="https://ridentium.it" style="display:inline-block;background:#c9a96e;color:#0c0c0c;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;padding:14px 32px;border-radius:4px;">Scopri RIDENTIUM</a>
+    </div>
+  `
+  return wrap(nome, body)
 }
