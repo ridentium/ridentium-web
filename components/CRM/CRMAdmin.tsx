@@ -6,8 +6,21 @@ import { logActivity } from '@/lib/registro'
 import {
   Phone, MessageCircle, Mail, Download, Plus, Search,
   UserCircle, X, ChevronDown, Trash2, AlertCircle, Globe,
-  Clock, CheckCircle2, Star, UserX, UserCheck,
+  Clock, CheckCircle2, Star, UserX, ShieldCheck, ShieldOff, Megaphone, Send,
 } from 'lucide-react'
+
+type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata'
+
+const TEMPLATES: { id: EmailTemplate; label: string; desc: string }[] = [
+  { id: 'box-conferma',   label: 'Gift Box — conferma',    desc: 'Conferma ricezione richiesta Gift Box, promessa contatto 24–48 h' },
+  { id: 'benvenuto',      label: 'Benvenuto',               desc: 'Email di benvenuto per nuovi pazienti' },
+  { id: 'personalizzata', label: 'Messaggio personalizzato', desc: 'Testo libero con firma RIDENTIUM' },
+]
+
+function templateDefault(sorgente: string | null): EmailTemplate {
+  if (sorgente?.toLowerCase().includes('box')) return 'box-conferma'
+  return 'benvenuto'
+}
 
 // ─── Configurazione stati ─────────────────────────────────────────────────────
 
@@ -47,13 +60,15 @@ interface Props {
   userNome: string
 }
 
-type FiltroStato = CRMStato | 'tutti'
+type FiltroStato    = CRMStato | 'tutti'
+type FiltroMarketing = 'tutti' | 'si' | 'no'
 
 export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, userNome }: Props) {
-  const [contatti, setContatti]     = useState(initialContatti)
-  const [filtro, setFiltro]         = useState<FiltroStato>('tutti')
-  const [cerca, setCerca]           = useState('')
-  const [dettaglioId, setDettaglioId] = useState<string | null>(null)
+  const [contatti, setContatti]           = useState(initialContatti)
+  const [filtro, setFiltro]               = useState<FiltroStato>('tutti')
+  const [filtroMarketing, setFiltroMarketing] = useState<FiltroMarketing>('tutti')
+  const [cerca, setCerca]                 = useState('')
+  const [dettaglioId, setDettaglioId]     = useState<string | null>(null)
 
   // Modal aggiunta manuale
   const [nuovoModal, setNuovoModal] = useState(false)
@@ -69,10 +84,30 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
   // Stato per cambio stato rapido
   const [statoLoading, setStatoLoading] = useState<string | null>(null)
 
+  // Modal invio email
+  const [emailModal, setEmailModal]     = useState<CRMContatto | null>(null)
+  const [emailTemplate, setEmailTemplate] = useState<EmailTemplate>('benvenuto')
+  const [emailCustomSubject, setEmailCustomSubject] = useState('')
+  const [emailCustomBody, setEmailCustomBody]       = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailError, setEmailError]     = useState<string | null>(null)
+  const [emailOk, setEmailOk]           = useState(false)
+
+  function apriEmailModal(c: CRMContatto) {
+    setEmailModal(c)
+    setEmailTemplate(templateDefault(c.sorgente))
+    setEmailCustomSubject('')
+    setEmailCustomBody('')
+    setEmailError(null)
+    setEmailOk(false)
+  }
+
   // Filtro contatti
   const filtered = useMemo(() => {
     let list = contatti
     if (filtro !== 'tutti') list = list.filter(c => c.stato === filtro)
+    if (filtroMarketing === 'si')  list = list.filter(c => c.consenso_marketing === true)
+    if (filtroMarketing === 'no')  list = list.filter(c => !c.consenso_marketing)
     if (cerca.trim()) {
       const q = cerca.toLowerCase()
       list = list.filter(c =>
@@ -84,7 +119,13 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
       )
     }
     return list
-  }, [contatti, filtro, cerca])
+  }, [contatti, filtro, filtroMarketing, cerca])
+
+  // Conteggio contatti con consenso marketing
+  const conMarketing = useMemo(
+    () => contatti.filter(c => c.consenso_marketing).length,
+    [contatti]
+  )
 
   const counts = useMemo(() => {
     const m: Record<string, number> = { tutti: contatti.length }
@@ -180,6 +221,37 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     }
   }
 
+  // ── Invio email ───────────────────────────────────────────────────────────
+  async function inviaEmail() {
+    if (!emailModal) return
+    setEmailSending(true)
+    setEmailError(null)
+    setEmailOk(false)
+
+    const res = await fetch('/api/crm/email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contattoId: emailModal.id,
+        template:   emailTemplate,
+        ...(emailCustomSubject ? { customSubject: emailCustomSubject } : {}),
+        ...(emailTemplate === 'personalizzata' ? { customBody: emailCustomBody } : {}),
+      }),
+    })
+
+    if (res.ok) {
+      setEmailOk(true)
+      const nome = nomeCompleto(emailModal)
+      await logActivity(userId, userNome, `CRM: email inviata (${emailTemplate})`, nome, 'crm')
+      setTimeout(() => setEmailModal(null), 1800)
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setEmailError(data.error ?? 'Errore durante l\'invio')
+    }
+
+    setEmailSending(false)
+  }
+
   // ── Export CSV ────────────────────────────────────────────────────────────
   function exportCSV() {
     const url = filtro !== 'tutti'
@@ -227,7 +299,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
       </div>
 
       {/* ── Filtri stato ── */}
-      <div className="flex gap-2 flex-wrap mb-5">
+      <div className="flex gap-2 flex-wrap mb-3">
         {[{ id: 'tutti' as FiltroStato, label: 'Tutti' }, ...STATI.map(s => ({ id: s.id as FiltroStato, label: s.label }))].map(t => (
           <button
             key={t.id}
@@ -244,6 +316,30 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
             }`}>
               {counts[t.id] ?? 0}
             </span>
+          </button>
+        ))}
+      </div>
+
+      {/* ── Filtro consenso marketing ── */}
+      <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-obsidian-light/20">
+        <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Marketing</span>
+        {([
+          { id: 'tutti' as FiltroMarketing, label: 'Tutti' },
+          { id: 'si'    as FiltroMarketing, label: `Consenso sì (${conMarketing})` },
+          { id: 'no'    as FiltroMarketing, label: `Consenso no (${contatti.length - conMarketing})` },
+        ] as { id: FiltroMarketing; label: string }[]).map(f => (
+          <button
+            key={f.id}
+            onClick={() => setFiltroMarketing(f.id)}
+            className={`text-xs px-3 py-1 rounded border transition-colors flex items-center gap-1.5 ${
+              filtroMarketing === f.id
+                ? 'bg-blue-500/20 border-blue-500/40 text-blue-400'
+                : 'border-obsidian-light/40 text-stone hover:text-cream'
+            }`}
+          >
+            {f.id === 'si'  && <Megaphone size={9} />}
+            {f.id === 'no'  && <ShieldOff size={9} />}
+            {f.label}
           </button>
         ))}
       </div>
@@ -291,6 +387,29 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                       {c.telefono && <span className="text-xs text-stone/70">{c.telefono}</span>}
                       <span className="text-[10px] text-stone/40">{formatData(c.created_at)}</span>
                     </div>
+
+                    {/* Badge consensi — sempre visibili */}
+                    <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {/* Privacy */}
+                      <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
+                        c.consenso_privacy
+                          ? 'bg-green-900/20 text-green-500/80'
+                          : 'bg-red-900/10 text-red-400/70'
+                      }`}>
+                        <ShieldCheck size={8} />
+                        Privacy {c.consenso_privacy ? '✓' : '✗'}
+                      </span>
+                      {/* Marketing */}
+                      <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
+                        c.consenso_marketing
+                          ? 'bg-blue-900/20 text-blue-400/80'
+                          : 'bg-obsidian-light/20 text-stone/40'
+                      }`}>
+                        <Megaphone size={8} />
+                        Marketing {c.consenso_marketing ? '✓' : '✗'}
+                      </span>
+                    </div>
+
                     {c.note && isExpanded && (
                       <p className="text-xs text-stone/70 mt-1.5 italic">"{c.note}"</p>
                     )}
@@ -327,6 +446,35 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                       ))}
                     </div>
 
+                    {/* Badge consensi GDPR */}
+                    <div className="flex gap-2 flex-wrap mb-3 pb-3 border-b border-obsidian-light/20">
+                      <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
+                        c.consenso_privacy
+                          ? 'bg-green-900/20 border-green-600/30 text-green-400'
+                          : 'bg-red-900/20 border-red-600/30 text-red-400'
+                      }`}>
+                        {c.consenso_privacy
+                          ? <ShieldCheck size={9} />
+                          : <ShieldOff size={9} />
+                        }
+                        Privacy {c.consenso_privacy ? 'accettata' : 'non accettata'}
+                      </span>
+                      <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
+                        c.consenso_marketing
+                          ? 'bg-blue-900/20 border-blue-500/30 text-blue-400'
+                          : 'bg-obsidian-light/30 border-obsidian-light/40 text-stone/50'
+                      }`}>
+                        <Megaphone size={9} />
+                        Marketing {c.consenso_marketing ? 'sì' : 'no'}
+                      </span>
+                      {c.consenso_versione && (
+                        <span className="text-[10px] text-stone/40 self-center">
+                          Informativa {c.consenso_versione}
+                          {c.consenso_timestamp && ` · ${formatData(c.consenso_timestamp)}`}
+                        </span>
+                      )}
+                    </div>
+
                     {/* Azioni contatto */}
                     <div className="flex gap-2 flex-wrap">
                       {c.telefono && (
@@ -354,12 +502,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                       )}
                       {c.email && (
                         <button
-                          onClick={() => window.open(`mailto:${c.email}`)}
+                          onClick={() => apriEmailModal(c)}
                           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
                                      bg-gold/10 border border-gold/30 text-gold
                                      hover:bg-gold/20 transition-colors"
                         >
-                          <Mail size={11} /> Email
+                          <Send size={11} /> Invia email
                         </button>
                       )}
                       <button
@@ -381,18 +529,6 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                         </button>
                       )}
                     </div>
-                    {/* ── Consensi GDPR ── */}
-                    {(c.consenso_privacy != null || c.consenso_marketing != null) && (
-                      <div className="flex gap-2 flex-wrap mt-3 pt-2 border-t border-obsidian-light/20 items-center">
-                        <span className="text-[10px] text-stone/40 uppercase tracking-wide mr-1">GDPR</span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${c.consenso_privacy ? 'border-green-600/30 bg-green-900/20 text-green-400' : 'border-red-600/30 text-red-400'}`}>
-                          <CheckCircle2 size={9} /> Privacy
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${c.consenso_marketing ? 'border-gold/30 bg-gold/10 text-gold' : 'border-obsidian-light/40 text-stone/50'}`}>
-                          {c.consenso_marketing ? <><Mail size={9}/> Comunicazioni marketing</> : 'Solo dati personali'}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -501,6 +637,106 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                 {nuovoSaving ? 'Salvataggio…' : 'Aggiungi contatto'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal email ── */}
+      {emailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="text-cream font-medium flex items-center gap-2">
+                <Send size={14} className="text-gold" />
+                Invia email
+              </h2>
+              <button onClick={() => setEmailModal(null)} className="text-stone hover:text-cream transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-stone text-xs mb-5">
+              A: <span className="text-cream">{emailModal.email}</span>
+              {emailModal.nome && <> · {nomeCompleto(emailModal)}</>}
+            </p>
+
+            {/* Selezione template */}
+            <div className="space-y-2 mb-4">
+              <label className="block text-xs text-stone mb-2">Tipo di email</label>
+              {TEMPLATES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => { setEmailTemplate(t.id); setEmailError(null) }}
+                  className={`w-full text-left px-3 py-2.5 rounded border transition-colors ${
+                    emailTemplate === t.id
+                      ? 'border-gold/50 bg-gold/10'
+                      : 'border-obsidian-light/40 hover:border-obsidian-light'
+                  }`}
+                >
+                  <p className={`text-xs font-medium ${emailTemplate === t.id ? 'text-gold' : 'text-cream'}`}>{t.label}</p>
+                  <p className="text-[11px] text-stone/60 mt-0.5">{t.desc}</p>
+                </button>
+              ))}
+            </div>
+
+            {/* Oggetto personalizzato (opzionale) */}
+            {emailTemplate !== 'personalizzata' && (
+              <div className="mb-4">
+                <label className="block text-xs text-stone mb-1">Oggetto personalizzato <span className="text-stone/40">(opzionale)</span></label>
+                <input
+                  value={emailCustomSubject}
+                  onChange={e => setEmailCustomSubject(e.target.value)}
+                  placeholder="Lascia vuoto per usare l'oggetto predefinito"
+                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
+                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder:text-stone/30"
+                />
+              </div>
+            )}
+
+            {/* Testo libero per template personalizzata */}
+            {emailTemplate === 'personalizzata' && (
+              <div className="mb-4">
+                <label className="block text-xs text-stone mb-1">Messaggio <span className="text-red-400">*</span></label>
+                <textarea
+                  value={emailCustomBody}
+                  onChange={e => setEmailCustomBody(e.target.value)}
+                  rows={5}
+                  placeholder="Scrivi il messaggio da inviare al paziente…"
+                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
+                             px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 placeholder:text-stone/30"
+                />
+              </div>
+            )}
+
+            {emailError && (
+              <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+                <AlertCircle size={12} /> {emailError}
+              </p>
+            )}
+            {emailOk && (
+              <p className="text-green-400 text-xs mb-3 flex items-center gap-1.5">
+                <CheckCircle2 size={12} /> Email inviata con successo
+              </p>
+            )}
+
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setEmailModal(null)}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={inviaEmail}
+                disabled={emailSending || (emailTemplate === 'personalizzata' && !emailCustomBody.trim())}
+                className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border
+                           border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-40"
+              >
+                <Send size={11} />
+                {emailSending ? 'Invio in corso…' : 'Invia'}
+              </button>
+            </div>
+
           </div>
         </div>
       )}
