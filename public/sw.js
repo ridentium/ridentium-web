@@ -1,17 +1,17 @@
-// RIDENTIUM Service Worker — PWA + Push Notifications + Offline
+// RIDENTIUM Service Worker â PWA + Push Notifications + Offline
 // v3: fix iOS Safari fetch(event.request) navigation bug
 const CACHE_STATIC = 'ridentium-static-v3'   // immutable assets: JS, CSS, fonts, icons
 const CACHE_PAGES  = 'ridentium-pages-v3'    // navigation HTML (network-first)
 const CACHE_IMAGES = 'ridentium-images-v3'   // images (cache-first)
 const ALL_CACHES   = [CACHE_STATIC, CACHE_PAGES, CACHE_IMAGES]
 
-// ── Offline fallback HTML (embedded so it works before any page is visited) ──
+// ââ Offline fallback HTML (embedded so it works before any page is visited) ââ
 const OFFLINE_HTML = `<!DOCTYPE html>
 <html lang="it">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RIDENTIUM — Offline</title>
+  <title>RIDENTIUM â Offline</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#18130E;color:#C8C0B0;font-family:system-ui,sans-serif;
@@ -38,7 +38,7 @@ const OFFLINE_HTML = `<!DOCTYPE html>
 </body>
 </html>`
 
-// ── Install — pre-cache key assets ─────────────────────────────────────────
+// ââ Install â pre-cache key assets âââââââââââââââââââââââââââââââââââââââââ
 self.addEventListener('install', (event) => {
   event.waitUntil(
     Promise.all([
@@ -58,7 +58,7 @@ self.addEventListener('install', (event) => {
   self.skipWaiting()
 })
 
-// ── Activate — clean old caches ────────────────────────────────────────────
+// ââ Activate â clean old caches ââââââââââââââââââââââââââââââââââââââââââââ
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -71,7 +71,7 @@ self.addEventListener('activate', (event) => {
   )
 })
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+// ââ Helpers âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 function isNavigation(request) {
   return request.mode === 'navigate'
 }
@@ -96,16 +96,16 @@ function isApiOrAuth(url) {
   )
 }
 
-// ── Fetch — multi-strategy ─────────────────────────────────────────────────
+// ââ Fetch â multi-strategy âââââââââââââââââââââââââââââââââââââââââââââââââ
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
 
   const url = new URL(event.request.url)
 
-  // API / auth / Supabase — always network, never cache
+  // API / auth / Supabase â always network, never cache
   if (isApiOrAuth(url)) return
 
-  // ── Static assets: cache-first, stale-while-revalidate ──────────────────
+  // ââ Static assets: cache-first, stale-while-revalidate ââââââââââââââââââ
   if (isStaticAsset(url)) {
     event.respondWith(
       caches.open(CACHE_STATIC).then(async (cache) => {
@@ -121,7 +121,7 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // ── Images: cache-first ──────────────────────────────────────────────────
+  // ââ Images: cache-first ââââââââââââââââââââââââââââââââââââââââââââââââââ
   if (isImage(url)) {
     event.respondWith(
       caches.open(CACHE_IMAGES).then(async (cache) => {
@@ -135,12 +135,12 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // ── Navigation (HTML pages): network-first, offline fallback ─────────────
+  // ââ Navigation (HTML pages): network-first, offline fallback âââââââââââââ
   // NOTA: su iOS Safari, fetch(event.request) per richieste di navigazione
-  // può fallire silenziosamente (bug WebKit). Fix: fetch(url, {credentials})
+  // puÃ² fallire silenziosamente (bug WebKit). Fix: fetch(url, {credentials})
   if (isNavigation(event.request)) {
     event.respondWith(
-      fetch(event.request.url, { credentials: 'include', redirect: 'follow' })
+      fetch(event.request.url)
         .then((res) => {
           if (res.ok) {
             caches.open(CACHE_PAGES).then((cache) => cache.put(event.request, res.clone()))
@@ -160,7 +160,7 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // ── Other same-origin GET: network-first, cache fallback ─────────────────
+  // ââ Other same-origin GET: network-first, cache fallback âââââââââââââââââ
   if (url.origin === self.location.origin) {
     event.respondWith(
       fetch(event.request)
@@ -175,7 +175,7 @@ self.addEventListener('fetch', (event) => {
   }
 })
 
-// ── Push Notifications ─────────────────────────────────────────────────────
+// ââ Push Notifications âââââââââââââââââââââââââââââââââââââââââââââââââââââ
 self.addEventListener('push', (event) => {
   if (!event.data) return
 
@@ -204,7 +204,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
-// ── Notification Click ─────────────────────────────────────────────────────
+// ââ Notification Click âââââââââââââââââââââââââââââââââââââââââââââââââââââ
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
@@ -225,7 +225,7 @@ self.addEventListener('notificationclick', (event) => {
   )
 })
 
-// ── Push Subscription Change ───────────────────────────────────────────────
+// ââ Push Subscription Change âââââââââââââââââââââââââââââââââââââââââââââââ
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
     self.registration.pushManager
