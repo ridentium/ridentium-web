@@ -1,8 +1,8 @@
 // RIDENTIUM Service Worker — PWA + Push Notifications + Offline
-// v2: multi-strategy caching for reliable offline experience
-const CACHE_STATIC = 'ridentium-static-v2'   // immutable assets: JS, CSS, fonts, icons
-const CACHE_PAGES  = 'ridentium-pages-v2'    // navigation HTML (network-first)
-const CACHE_IMAGES = 'ridentium-images-v2'   // images (cache-first)
+// v3: fix iOS Safari fetch(event.request) navigation bug
+const CACHE_STATIC = 'ridentium-static-v3'   // immutable assets: JS, CSS, fonts, icons
+const CACHE_PAGES  = 'ridentium-pages-v3'    // navigation HTML (network-first)
+const CACHE_IMAGES = 'ridentium-images-v3'   // images (cache-first)
 const ALL_CACHES   = [CACHE_STATIC, CACHE_PAGES, CACHE_IMAGES]
 
 // ── Offline fallback HTML (embedded so it works before any page is visited) ──
@@ -136,9 +136,11 @@ self.addEventListener('fetch', (event) => {
   }
 
   // ── Navigation (HTML pages): network-first, offline fallback ─────────────
+  // NOTA: su iOS Safari, fetch(event.request) per richieste di navigazione
+  // può fallire silenziosamente (bug WebKit). Fix: fetch(url, {credentials})
   if (isNavigation(event.request)) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request.url, { credentials: 'include', redirect: 'follow' })
         .then((res) => {
           if (res.ok) {
             caches.open(CACHE_PAGES).then((cache) => cache.put(event.request, res.clone()))
