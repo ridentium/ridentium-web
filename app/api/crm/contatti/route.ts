@@ -19,6 +19,7 @@ export async function OPTIONS() {
 
 // ─── POST /api/crm/contatti ────────────────────────────────────────────────────
 // Endpoint PUBBLICO usato dalle landing page per registrare un lead.
+// Richiede l'header  x-api-key: <CRM_API_KEY>  (se la variabile d'ambiente è impostata).
 export async function POST(req: NextRequest) {
   const adminDb = createAdminClient()
 
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     email?: string
     telefono?: string
     sorgente?: string
-    fonte?: string
+    fonte?: string                 // alias per compatibilità
     consenso_privacy?: boolean
     consenso_marketing?: boolean
     consenso_versione?: string
@@ -62,6 +63,7 @@ export async function POST(req: NextRequest) {
     note?: string
   }
 
+  // Almeno un contatto (email o telefono) è obbligatorio
   if (!email?.trim() && !telefono?.trim()) {
     return NextResponse.json(
       { error: 'Inserisci almeno email o telefono' },
@@ -95,14 +97,21 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // ── Email automatica di conferma ─────────────────────────────────────────
+  // IMPORTANTE: await esplicito — su Vercel serverless le promise pendenti
+  // vengono terminate insieme alla funzione non appena viene restituita la
+  // response. Il fire-and-forget non funziona: l'SMTP non fa in tempo a
+  // completare la connessione prima che il processo venga killato.
   if (email?.trim()) {
-    sendEmail({
-      to: email.trim(),
-      nome: nome?.trim() || '',
-      template: 'box-conferma',
-    }).catch((err) => {
+    try {
+      await sendEmail({
+        to: email.trim(),
+        nome: nome?.trim() || '',
+        template: 'box-conferma',
+      })
+    } catch (err) {
       console.warn('[CRM] Auto-email box-conferma failed:', err)
-    })
+    }
   }
 
   return NextResponse.json(
@@ -112,6 +121,10 @@ export async function POST(req: NextRequest) {
 }
 
 // ─── GET /api/crm/contatti ─────────────────────────────────────────────────────
+// Protetto — solo admin/manager autenticati.
+// Query params:
+//   ?format=csv   → esporta CSV
+//   ?stato=nuovo  → filtra per stato
 export async function GET(req: NextRequest) {
   const supabase = createClient()
   const adminDb  = createAdminClient()
@@ -121,6 +134,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
   }
 
+  // Verifica ruolo admin o manager
   const { data: profilo } = await adminDb
     .from('profili')
     .select('ruolo')
@@ -145,16 +159,23 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Errore nel recupero dati' }, { status: 500 })
   }
 
+  // Export CSV
   if (formato === 'csv') {
     const headers = [
       'ID', 'Nome', 'Cognome', 'Email', 'Telefono', 'Stato', 'Sorgente', 'Note',
       'Privacy Accettata', 'Marketing Accettato', 'Versione Informativa', 'Data Consenso', 'Data Registrazione',
     ]
     const rows = (data ?? []).map(r => [
-      r.id, r.nome ?? '', r.cognome ?? '', r.email ?? '', r.telefono ?? '',
-      r.stato, r.sorgente ?? '', (r.note ?? '').replace(/"/g, '""'),
-      r.consenso_privacy    ? 'Si' : 'No',
-      r.consenso_marketing  ? 'Si' : 'No',
+      r.id,
+      r.nome ?? '',
+      r.cognome ?? '',
+      r.email ?? '',
+      r.telefono ?? '',
+      r.stato,
+      r.sorgente ?? '',
+      (r.note ?? '').replace(/"/g, '""'),
+      r.consenso_privacy    ? 'Sì' : 'No',
+      r.consenso_marketing  ? 'Sì' : 'No',
       r.consenso_versione   ?? '',
       r.consenso_timestamp  ? new Date(r.consenso_timestamp).toLocaleDateString('it-IT') : '',
       new Date(r.created_at).toLocaleDateString('it-IT'),
