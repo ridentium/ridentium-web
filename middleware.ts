@@ -27,10 +27,14 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
+  // API pubbliche (form landing, webhook) — nessuna auth richiesta
+  if (pathname.startsWith('/api/crm/contatti') || pathname.startsWith('/api/notify')) {
+    return supabaseResponse
+  }
+
   // Rotte pubbliche
   if (pathname.startsWith('/login')) {
     if (user) {
-      // Già loggato → redirect alla dashboard
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
     return supabaseResponse
@@ -41,7 +45,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Protezione rotte admin — usa service role per bypassare RLS
+  // Protezione rotte admin
   if (pathname.startsWith('/admin')) {
     const adminDb = createAdminSupabase(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
