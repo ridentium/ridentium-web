@@ -12,9 +12,10 @@ import {
 type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata'
 
 const TEMPLATES: { id: EmailTemplate; label: string; desc: string }[] = [
-  { id: 'box-conferma',   label: 'Gift Box — conferma',    desc: 'Conferma ricezione richiesta Gift Box, promessa contatto 24–48 h' },
+  { id: 'box-conferma',   label: 'Gift Box â conferma',    desc: 'Conferma ricezione richiesta Gift Box, promessa contatto 24â48 h' },
   { id: 'benvenuto',      label: 'Benvenuto',               desc: 'Email di benvenuto per nuovi pazienti' },
   { id: 'personalizzata', label: 'Messaggio personalizzato', desc: 'Testo libero con firma RIDENTIUM' },
+  { id: 'ricorda-appuntamento', label: 'Ricorda appuntamento',     desc: 'Promemoria personalizzato per il prossimo appuntamento' },
 ]
 
 function templateDefault(sorgente: string | null): EmailTemplate {
@@ -22,7 +23,7 @@ function templateDefault(sorgente: string | null): EmailTemplate {
   return 'benvenuto'
 }
 
-// ─── Configurazione stati ─────────────────────────────────────────────────────
+// âââ Configurazione stati âââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 const STATI: { id: CRMStato; label: string; color: string; bg: string; icon: React.ElementType }[] = [
   { id: 'nuovo',       label: 'Nuovo',        color: 'text-gold',       bg: 'bg-gold/10 border-gold/30',         icon: Clock },
@@ -34,11 +35,11 @@ const STATI: { id: CRMStato; label: string; color: string; bg: string; icon: Rea
 
 const statoInfo = (stato: CRMStato) => STATI.find(s => s.id === stato) ?? STATI[0]
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// âââ Helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 function nomeCompleto(c: CRMContatto) {
   const parts = [c.nome, c.cognome].filter(Boolean).join(' ')
-  return parts || '—'
+  return parts || 'â'
 }
 
 function formatData(iso: string) {
@@ -51,7 +52,7 @@ function iniziali(c: CRMContatto) {
   return (n + cg).toUpperCase() || (c.email?.[0]?.toUpperCase() ?? '?')
 }
 
-// ─── Componente principale ────────────────────────────────────────────────────
+// âââ Componente principale ââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 interface Props {
   contatti: CRMContatto[]
@@ -133,7 +134,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     return m
   }, [contatti])
 
-  // ── Cambio stato rapido ────────────────────────────────────────────────────
+  // ââ Cambio stato rapido ââââââââââââââââââââââââââââââââââââââââââââââââââââ
   async function cambiaStato(id: string, nuovoStato: CRMStato) {
     setStatoLoading(id)
     const res = await fetch(`/api/crm/contatti/${id}`, {
@@ -150,7 +151,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setStatoLoading(null)
   }
 
-  // ── Aggiornamento note ─────────────────────────────────────────────────────
+  // ââ Aggiornamento note âââââââââââââââââââââââââââââââââââââââââââââââââââââ
   async function salvaNote() {
     if (!editModal) return
     setEditSaving(true)
@@ -169,7 +170,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setEditSaving(false)
   }
 
-  // ── Aggiunta manuale ───────────────────────────────────────────────────────
+  // ââ Aggiunta manuale âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   async function creaNuovoContatto() {
     if (!nuovoForm.email.trim() && !nuovoForm.telefono.trim()) {
       setNuovoError('Inserisci almeno email o telefono')
@@ -209,9 +210,9 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setNuovoSaving(false)
   }
 
-  // ── Elimina contatto ───────────────────────────────────────────────────────
+  // ââ Elimina contatto âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   async function eliminaContatto(id: string) {
-    if (!confirm('Eliminare questo contatto? L\'azione non è reversibile.')) return
+    if (!confirm('Eliminare questo contatto? L\'azione non Ã¨ reversibile.')) return
     const contatto = contatti.find(c => c.id === id)
     const res = await fetch(`/api/crm/contatti/${id}`, { method: 'DELETE' })
     if (res.ok) {
@@ -221,7 +222,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     }
   }
 
-  // ── Invio email ───────────────────────────────────────────────────────────
+  // ââ Invio email âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   async function inviaEmail() {
     if (!emailModal) return
     setEmailSending(true)
@@ -252,7 +253,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setEmailSending(false)
   }
 
-  // ── Export CSV ────────────────────────────────────────────────────────────
+  // ââ Export CSV ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
   function exportCSV() {
     const url = filtro !== 'tutti'
       ? `/api/crm/contatti?format=csv&stato=${filtro}`
@@ -260,13 +261,13 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     window.open(url, '_blank')
   }
 
-  // ─── Render ───────────────────────────────────────────────────────────────
+  // âââ Render âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
   const dettaglio = dettaglioId ? contatti.find(c => c.id === dettaglioId) : null
 
   return (
     <div>
-      {/* ── Toolbar ── */}
+      {/* ââ Toolbar ââ */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         {/* Cerca */}
         <div className="relative flex-1">
@@ -274,7 +275,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
           <input
             value={cerca}
             onChange={e => setCerca(e.target.value)}
-            placeholder="Cerca per nome, email, telefono…"
+            placeholder="Cerca per nome, email, telefonoâ¦"
             className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                        pl-8 pr-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder:text-stone/40"
           />
@@ -298,7 +299,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         </div>
       </div>
 
-      {/* ── Filtri stato ── */}
+      {/* ââ Filtri stato ââ */}
       <div className="flex gap-2 flex-wrap mb-3">
         {[{ id: 'tutti' as FiltroStato, label: 'Tutti' }, ...STATI.map(s => ({ id: s.id as FiltroStato, label: s.label }))].map(t => (
           <button
@@ -320,12 +321,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         ))}
       </div>
 
-      {/* ── Filtro consenso marketing ── */}
+      {/* ââ Filtro consenso marketing ââ */}
       <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-obsidian-light/20">
         <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Marketing</span>
         {([
           { id: 'tutti' as FiltroMarketing, label: 'Tutti' },
-          { id: 'si'    as FiltroMarketing, label: `Consenso sì (${conMarketing})` },
+          { id: 'si'    as FiltroMarketing, label: `Consenso sÃ¬ (${conMarketing})` },
           { id: 'no'    as FiltroMarketing, label: `Consenso no (${contatti.length - conMarketing})` },
         ] as { id: FiltroMarketing; label: string }[]).map(f => (
           <button
@@ -344,7 +345,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         ))}
       </div>
 
-      {/* ── Lista contatti ── */}
+      {/* ââ Lista contatti ââ */}
       {filtered.length === 0 ? (
         <div className="card text-center py-12">
           <UserCircle size={32} className="text-stone mx-auto mb-3" />
@@ -388,7 +389,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                       <span className="text-[10px] text-stone/40">{formatData(c.created_at)}</span>
                     </div>
 
-                    {/* Badge consensi — sempre visibili */}
+                    {/* Badge consensi â sempre visibili */}
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       {/* Privacy */}
                       <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
@@ -397,7 +398,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                           : 'bg-red-900/10 text-red-400/70'
                       }`}>
                         <ShieldCheck size={8} />
-                        Privacy {c.consenso_privacy ? '✓' : '✗'}
+                        Privacy {c.consenso_privacy ? 'â' : 'â'}
                       </span>
                       {/* Marketing */}
                       <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
@@ -406,7 +407,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                           : 'bg-obsidian-light/20 text-stone/40'
                       }`}>
                         <Megaphone size={8} />
-                        Marketing {c.consenso_marketing ? '✓' : '✗'}
+                        Marketing {c.consenso_marketing ? 'â' : 'â'}
                       </span>
                     </div>
 
@@ -465,12 +466,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                           : 'bg-obsidian-light/30 border-obsidian-light/40 text-stone/50'
                       }`}>
                         <Megaphone size={9} />
-                        Marketing {c.consenso_marketing ? 'sì' : 'no'}
+                        Marketing {c.consenso_marketing ? 'sÃ¬' : 'no'}
                       </span>
                       {c.consenso_versione && (
                         <span className="text-[10px] text-stone/40 self-center">
                           Informativa {c.consenso_versione}
-                          {c.consenso_timestamp && ` · ${formatData(c.consenso_timestamp)}`}
+                          {c.consenso_timestamp && ` Â· ${formatData(c.consenso_timestamp)}`}
                         </span>
                       )}
                     </div>
@@ -516,7 +517,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                                    bg-obsidian-light/40 border border-obsidian-light/60 text-stone
                                    hover:text-cream transition-colors"
                       >
-                        Note {c.note ? '✎' : '+'}
+                        Note {c.note ? 'â' : '+'}
                       </button>
                       {isAdmin && (
                         <button
@@ -537,7 +538,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         </div>
       )}
 
-      {/* ── Modal aggiunta manuale ── */}
+      {/* ââ Modal aggiunta manuale ââ */}
       {nuovoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
@@ -600,7 +601,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                   onChange={e => setNuovoForm(p => ({ ...p, sorgente: e.target.value }))}
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
-                  placeholder="Es. landing-implanti, referral…"
+                  placeholder="Es. landing-implanti, referralâ¦"
                 />
               </div>
               <div>
@@ -611,7 +612,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                   rows={2}
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
-                  placeholder="Informazioni aggiuntive…"
+                  placeholder="Informazioni aggiuntiveâ¦"
                 />
               </div>
             </div>
@@ -634,14 +635,14 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                 disabled={nuovoSaving}
                 className="text-xs px-4 py-2 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50"
               >
-                {nuovoSaving ? 'Salvataggio…' : 'Aggiungi contatto'}
+                {nuovoSaving ? 'Salvataggioâ¦' : 'Aggiungi contatto'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Modal email ── */}
+      {/* ââ Modal email ââ */}
       {emailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
@@ -657,7 +658,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
             </div>
             <p className="text-stone text-xs mb-5">
               A: <span className="text-cream">{emailModal.email}</span>
-              {emailModal.nome && <> · {nomeCompleto(emailModal)}</>}
+              {emailModal.nome && <> Â· {nomeCompleto(emailModal)}</>}
             </p>
 
             {/* Selezione template */}
@@ -701,7 +702,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                   value={emailCustomBody}
                   onChange={e => setEmailCustomBody(e.target.value)}
                   rows={5}
-                  placeholder="Scrivi il messaggio da inviare al paziente…"
+                  placeholder="Scrivi il messaggio da inviare al pazienteâ¦"
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 placeholder:text-stone/30"
                 />
@@ -733,7 +734,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                            border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-40"
               >
                 <Send size={11} />
-                {emailSending ? 'Invio in corso…' : 'Invia'}
+                {emailSending ? 'Invio in corsoâ¦' : 'Invia'}
               </button>
             </div>
 
@@ -741,11 +742,11 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         </div>
       )}
 
-      {/* ── Modal note ── */}
+      {/* ââ Modal note ââ */}
       {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">Note — {nomeCompleto(editModal)}</h2>
+            <h2 className="text-cream font-medium mb-1">Note â {nomeCompleto(editModal)}</h2>
             <p className="text-stone text-xs mb-4">Aggiungi o modifica le note per questo contatto</p>
             <textarea
               value={editNote}
@@ -754,7 +755,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
               autoFocus
               className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                          px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
-              placeholder="Inserisci note…"
+              placeholder="Inserisci noteâ¦"
             />
             <div className="flex gap-3 justify-end">
               <button
@@ -768,7 +769,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                 disabled={editSaving}
                 className="text-xs px-4 py-2 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50"
               >
-                {editSaving ? 'Salvataggio…' : 'Salva note'}
+                {editSaving ? 'Salvataggioâ¦' : 'Salva note'}
               </button>
             </div>
           </div>
