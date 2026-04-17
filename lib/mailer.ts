@@ -142,28 +142,24 @@ function wrap(nome: string, body: string): string {
 
 function tplBoxConferma(nome: string): string {
   const body = `
-    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 20px 0;">
-      abbiamo ricevuto la tua richiesta per la <strong style="color:#c9a96e;">RIDENTIUM Gift Box</strong>.
-    </p>
-    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 32px 0;">
-      Nei prossimi <strong style="color:#f5f2ec;">24â48 ore</strong> uno dei nostri collaboratori ti contatterÃ  per definire insieme i dettagli e concordare un appuntamento.
-    </p>
-
-    <!-- Box regalo info -->
-    <div style="background:#111;border:1px solid #1e1e1e;border-left:3px solid #c9a96e;border-radius:6px;padding:24px 20px;margin-bottom:32px;">
-      <p style="color:#c9a96e;font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;margin:0 0 10px 0;">Cosa include la Gift Box</p>
-      <p style="color:#c0b89a;font-size:14px;line-height:1.8;margin:0;">
-        Visita di controllo completa Â· Consulenza personalizzata Â· Piano di trattamento su misura
-      </p>
-    </div>
-
-    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 32px 0;">
-      Per qualsiasi necessitÃ  puoi rispondere direttamente a questa email o chiamarci al numero indicato sul sito.
-    </p>
-
-    <div style="text-align:center;margin-bottom:8px;">
-      <a href="https://ridentium.it" style="display:inline-block;background:#c9a96e;color:#0c0c0c;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;padding:14px 32px;border-radius:4px;">Scopri RIDENTIUM</a>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <tr><td style="padding:52px 40px 20px;">
+        <p style="font-family:Georgia,serif;font-size:11px;color:#B8974A;letter-spacing:.22em;text-transform:uppercase;margin:0 0 36px;font-weight:normal;">Gift Box &middot; RIDENTIUM</p>
+        <h2 style="font-family:Georgia,'Times New Roman',serif;font-size:28px;color:#1A1A1A;font-weight:normal;margin:0 0 32px;line-height:1.25;">La tua richiesta<br>è stata ricevuta.</h2>
+        <p style="font-family:Georgia,serif;font-size:16px;color:#3A3A3A;line-height:1.85;margin:0 0 24px;">Grazie per esserti registrato alla <strong style="font-weight:normal;color:#1A1A1A;">Gift Box RIDENTIUM</strong>. La tua richiesta è stata registrata con cura.</p>
+        <p style="font-family:Georgia,serif;font-size:16px;color:#3A3A3A;line-height:1.85;margin:0 0 40px;">Non appena RIDENTIUM aprirà le porte ad Aversa, potrai venire a ritirarla direttamente presso la nostra sede. Ti avviseremo non appena sarà il momento.</p>
+        <div style="border-left:2px solid #B8974A;padding:22px 26px;margin:0 0 40px;background:rgba(184,151,74,.04);">
+          <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:#B8974A;letter-spacing:.18em;text-transform:uppercase;margin:0 0 12px;font-weight:normal;">La nostra sede</p>
+          <p style="font-family:Georgia,serif;font-size:18px;color:#1A1A1A;margin:0 0 4px;line-height:1.3;font-weight:normal;">Via Paolo Riverso 99</p>
+          <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#7A6F63;margin:0;letter-spacing:.04em;">Aversa&nbsp;&nbsp;&middot;&nbsp;&nbsp;Caserta</p>
+        </div>
+        <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:#B8974A;letter-spacing:.18em;text-transform:uppercase;margin:0 0 10px;font-weight:normal;">Incluso nella Gift Box</p>
+        <p style="font-family:Georgia,serif;font-size:13px;color:#6A6059;line-height:1.8;margin:0 0 44px;">Visita di controllo completa &nbsp;&middot;&nbsp; Consulenza personalizzata &nbsp;&middot;&nbsp; Piano di trattamento su misura</p>
+        <div style="border-top:1px solid #E4DDD3;padding-top:28px;">
+          <p style="font-family:Georgia,serif;font-size:13px;color:#7A6F63;line-height:1.75;margin:0;">Per qualsiasi necessità, rispondi direttamente a questa email.<br>Saremo felici di accoglierti.</p>
+        </div>
+      </td></tr>
+    </table>
   `
   return wrap(nome, body)
 }
