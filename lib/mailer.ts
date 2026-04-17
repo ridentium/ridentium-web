@@ -1,6 +1,6 @@
 import { createTransport } from 'nodemailer'
 
-// âââ Transporter ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Transporter ────────────────────────────────────────────────────────────
 
 const transporter = createTransport({
   service: 'gmail',
@@ -10,7 +10,7 @@ const transporter = createTransport({
   },
 })
 
-// âââ Tipi âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Tipi ───────────────────────────────────────────────────────────────────
 
 export type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata' | 'ricorda-appuntamento'
 
@@ -27,7 +27,7 @@ export interface SendEmailResult {
   error?: string
 }
 
-// âââ Entry point principale âââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Entry point principale ──────────────────────────────────────────────────
 
 export async function sendEmail({
   to,
@@ -41,13 +41,18 @@ export async function sendEmail({
   }
 
   try {
-    const { subject, html } = buildEmail(nome, template, customBody)
+    const { subject, html } = customSubject
+      ? { subject: customSubject, html: customBody ?? '' }
+      : buildEmail(nome, template, customBody)
 
     await transporter.sendMail({
-      from: `RIDENTIUM <${process.env.GMAIL_USER}>`,
+      from: `"RIDENTIUM" <${process.env.GMAIL_USER}>`,
       to,
-      subject: customSubject || subject,
+      subject,
       html,
+      headers: {
+        'Content-Type': 'text/html; charset=UTF-8',
+      },
     })
 
     return { success: true }
@@ -68,7 +73,7 @@ export async function sendConfermaIscrizione({
   await sendEmail({ to: email, nome, template: 'box-conferma' })
 }
 
-// âââ Router template âââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Router template ─────────────────────────────────────────────────────────
 
 function buildEmail(
   nome: string,
@@ -80,7 +85,7 @@ function buildEmail(
   switch (template) {
     case 'box-conferma':
       return {
-        subject: 'La tua richiesta Ã¨ stata ricevuta â RIDENTIUM Gift Box',
+        subject: 'La tua richiesta \u00e8 stata ricevuta \u2014 RIDENTIUM Gift Box',
         html: tplBoxConferma(n),
       }
     case 'benvenuto':
@@ -95,131 +100,186 @@ function buildEmail(
       }
     case 'ricorda-appuntamento':
       return {
-        subject: 'Il tuo appuntamento · RIDENTIUM',
+        subject: 'Il tuo appuntamento \u00b7 RIDENTIUM',
         html: tplAppuntamento(n, customBody ?? ''),
       }
   }
 }
 
-// âââ HTML condiviso âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Template 1: Gift Box conferma ──────────────────────────────────────────
 
-function wrap(nome: string, body: string): string {
+function tplBoxConferma(nome: string): string {
   return `<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>RIDENTIUM Gift Box</title>
 </head>
-<body style="margin:0;padding:0;background:#0c0c0c;font-family:Georgia,serif;">
-  <div style="max-width:560px;margin:0 auto;padding:48px 28px;">
+<body style="margin:0;padding:0;background:#FAF8F5;font-family:Georgia,serif;">
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#FAF8F5" style="background:#FAF8F5;">
+<tr><td align="center" style="padding:40px 16px;">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:6px;">
 
-    <!-- Testata -->
-    <div style="text-align:center;padding-bottom:32px;border-bottom:1px solid #1e1e1e;margin-bottom:40px;">
-      <p style="margin:0 0 6px 0;letter-spacing:.35em;text-transform:uppercase;font-size:11px;color:#c9a96e;font-family:Helvetica,Arial,sans-serif;">RIDENTIUM</p>
-      <p style="margin:0;font-size:11px;color:#555;font-family:Helvetica,Arial,sans-serif;letter-spacing:.08em;">Odontoiatria premium Â· Aversa</p>
-    </div>
+  <!-- HEADER -->
+  <tr><td align="center" style="padding:36px 32px 28px;border-bottom:1px solid #EDE8E0;">
+    <p style="margin:0 0 4px;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:#B8974A;font-weight:normal;">RIDENTIUM</p>
+    <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:.12em;color:#AAA;font-weight:normal;text-transform:uppercase;">Odontoiatria premium &middot; Aversa</p>
+  </td></tr>
 
-    <!-- Saluto -->
-    <p style="color:#f5f2ec;font-size:18px;margin:0 0 28px 0;">Caro ${nome},</p>
+  <!-- BOX IMAGE -->
+  <tr><td style="padding:0;line-height:0;font-size:0;">
+    <img src="https://ridentium-web.vercel.app/email-box.jpg"
+         alt="RIDENTIUM Gift Box"
+         width="560"
+         style="display:block;width:100%;max-width:560px;height:auto;"
+    />
+  </td></tr>
 
-    ${body}
+  <!-- BODY -->
+  <tr><td style="padding:40px 40px 36px;">
 
-    <!-- Separatore -->
-    <div style="text-align:center;margin:40px 0 32px;"><span style="display:inline-block;width:40px;height:1px;background:#c9a96e;opacity:.5;"></span></div>
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#B8974A;margin:0 0 20px;font-weight:normal;">Gift Box &middot; RIDENTIUM</p>
 
-    <!-- Footer -->
-    <p style="color:#555;font-size:11px;text-align:center;font-family:Helvetica,Arial,sans-serif;line-height:1.7;margin:0;">
-      RIDENTIUM Â· Via Aldo Moro 96, Aversa (CE)<br/>
-      <a href="https://ridentium.it" style="color:#c9a96e;text-decoration:none;">ridentium.it</a>
+    <h2 style="font-family:Georgia,'Times New Roman',serif;font-size:26px;color:#1A1A1A;font-weight:normal;margin:0 0 20px;line-height:1.35;">Caro ${nome},<br>la tua richiesta<br>&egrave; stata ricevuta.</h2>
+
+    <p style="font-family:Georgia,serif;font-size:15px;color:#4A4A4A;line-height:1.85;margin:0 0 32px;">Ti contatteremo non appena RIDENTIUM aprir&agrave; le porte ad Aversa.<br>La Gift Box verr&agrave; consegnata al tuo primo appuntamento.</p>
+
+    <!-- SEPARATOR -->
+    <div style="height:1px;background:#EDE8E0;margin:0 0 28px;"></div>
+
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#B8974A;margin:0 0 10px;font-weight:normal;">Incluso nella Gift Box</p>
+    <p style="font-family:Georgia,serif;font-size:14px;color:#5A5A5A;line-height:2;margin:0 0 36px;">
+      Visita di controllo completa &nbsp;&middot;&nbsp; Consulenza personalizzata &nbsp;&middot;&nbsp; Piano di trattamento su misura
     </p>
 
-  </div>
+    <!-- SEPARATOR -->
+    <div style="height:1px;background:#EDE8E0;margin:0 0 28px;"></div>
+
+    <p style="font-family:Georgia,serif;font-size:13px;color:#7A6F63;line-height:1.85;margin:0;">Per qualsiasi necessit&agrave;, rispondi direttamente a questa email.<br>Saremo felici di accoglierti.</p>
+
+  </td></tr>
+
+  <!-- FOOTER -->
+  <tr><td align="center" style="padding:20px 40px 36px;border-top:1px solid #EDE8E0;">
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;color:#BBB;letter-spacing:.08em;margin:0;line-height:2;">
+      RIDENTIUM &middot; Via Aldo Moro 96, Aversa (CE)<br>
+      <a href="https://ridentium.it" style="color:#B8974A;text-decoration:none;">ridentium.it</a>
+    </p>
+  </td></tr>
+
+</table>
+</td></tr>
+</table>
 </body>
 </html>`
 }
 
-// âââ Template 1: Gift Box conferma ââââââââââââââââââââââââââââââââââââââââââââ
-
-function tplBoxConferma(nome: string): string {
-  const body = `
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-      <tr><td style="padding:52px 40px 20px;">
-        <p style="font-family:Georgia,serif;font-size:11px;color:#B8974A;letter-spacing:.22em;text-transform:uppercase;margin:0 0 36px;font-weight:normal;">Gift Box &middot; RIDENTIUM</p>
-        <h2 style="font-family:Georgia,'Times New Roman',serif;font-size:28px;color:#1A1A1A;font-weight:normal;margin:0 0 32px;line-height:1.25;">La tua richiesta<br>è stata ricevuta.</h2>
-        <p style="font-family:Georgia,serif;font-size:16px;color:#3A3A3A;line-height:1.85;margin:0 0 24px;">Grazie per esserti registrato alla <strong style="font-weight:normal;color:#1A1A1A;">Gift Box RIDENTIUM</strong>. La tua richiesta è stata registrata con cura.</p>
-        <p style="font-family:Georgia,serif;font-size:16px;color:#3A3A3A;line-height:1.85;margin:0 0 40px;">Non appena RIDENTIUM aprirà le porte ad Aversa, potrai venire a ritirarla direttamente presso la nostra sede. Ti avviseremo non appena sarà il momento.</p>
-        <div style="border-left:2px solid #B8974A;padding:22px 26px;margin:0 0 40px;background:rgba(184,151,74,.04);">
-          <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:#B8974A;letter-spacing:.18em;text-transform:uppercase;margin:0 0 12px;font-weight:normal;">La nostra sede</p>
-          <p style="font-family:Georgia,serif;font-size:18px;color:#1A1A1A;margin:0 0 4px;line-height:1.3;font-weight:normal;">Via Paolo Riverso 99</p>
-          <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:13px;color:#7A6F63;margin:0;letter-spacing:.04em;">Aversa&nbsp;&nbsp;&middot;&nbsp;&nbsp;Caserta</p>
-        </div>
-        <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:10px;color:#B8974A;letter-spacing:.18em;text-transform:uppercase;margin:0 0 10px;font-weight:normal;">Incluso nella Gift Box</p>
-        <p style="font-family:Georgia,serif;font-size:13px;color:#6A6059;line-height:1.8;margin:0 0 44px;">Visita di controllo completa &nbsp;&middot;&nbsp; Consulenza personalizzata &nbsp;&middot;&nbsp; Piano di trattamento su misura</p>
-        <div style="border-top:1px solid #E4DDD3;padding-top:28px;">
-          <p style="font-family:Georgia,serif;font-size:13px;color:#7A6F63;line-height:1.75;margin:0;">Per qualsiasi necessità, rispondi direttamente a questa email.<br>Saremo felici di accoglierti.</p>
-        </div>
-      </td></tr>
-    </table>
-  `
-  return wrap(nome, body)
-}
-
-// âââ Template 2: Benvenuto ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Template 2: Benvenuto ───────────────────────────────────────────────────
 
 function tplBenvenuto(nome: string): string {
-  const body = `
-    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 20px 0;">
-      benvenuto in <strong style="color:#c9a96e;">RIDENTIUM</strong>.
-    </p>
-    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 32px 0;">
-      Siamo lieti di averti come paziente. Il nostro team Ã¨ a tua disposizione per accompagnarti in un percorso di cura personalizzato, con la massima attenzione all'estetica e al comfort.
-    </p>
-
-    <div style="background:#111;border:1px solid #1e1e1e;border-left:3px solid #c9a96e;border-radius:6px;padding:24px 20px;margin-bottom:32px;">
-      <p style="color:#c9a96e;font-size:11px;letter-spacing:.25em;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;margin:0 0 10px 0;">Il nostro impegno</p>
-      <p style="color:#c0b89a;font-size:14px;line-height:1.8;margin:0;">
-        QualitÃ  clinica misurabile Â· Estetica naturale Â· Esperienza premium in ogni fase del percorso
-      </p>
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Benvenuto in RIDENTIUM</title>
+</head>
+<body style="margin:0;padding:0;background:#FAF8F5;">
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#FAF8F5">
+<tr><td align="center" style="padding:40px 16px;">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:6px;">
+  <tr><td align="center" style="padding:36px 40px 28px;border-bottom:1px solid #EDE8E0;">
+    <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:#B8974A;font-weight:normal;">RIDENTIUM</p>
+  </td></tr>
+  <tr><td style="padding:40px 40px 36px;">
+    <p style="color:#3A3A3A;font-size:16px;line-height:1.8;margin:0 0 20px;font-family:Georgia,serif;">Caro ${nome}, benvenuto in <strong style="color:#B8974A;">RIDENTIUM</strong>.</p>
+    <p style="color:#4A4A4A;font-size:14px;line-height:1.9;margin:0 0 32px;font-family:Georgia,serif;">Siamo lieti di averti come paziente. Il nostro team &egrave; a tua disposizione per accompagnarti in un percorso di cura personalizzato, con la massima attenzione all&rsquo;estetica e al comfort.</p>
+    <div style="border:1px solid #EDE8E0;border-left:3px solid #B8974A;border-radius:4px;padding:20px 24px;margin-bottom:32px;">
+      <p style="color:#B8974A;font-size:10px;letter-spacing:.25em;text-transform:uppercase;font-family:Helvetica,Arial,sans-serif;margin:0 0 10px;font-weight:normal;">Il nostro impegno</p>
+      <p style="color:#4A4A4A;font-size:14px;line-height:1.9;margin:0;font-family:Georgia,serif;">Qualit&agrave; clinica misurabile &middot; Estetica naturale &middot; Esperienza premium in ogni fase del percorso</p>
     </div>
-
-    <div style="text-align:center;margin-bottom:8px;">
-      <a href="https://ridentium.it" style="display:inline-block;background:#c9a96e;color:#0c0c0c;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;padding:14px 32px;border-radius:4px;">Scopri RIDENTIUM</a>
+    <div style="text-align:center;">
+      <a href="https://ridentium.it" style="display:inline-block;background:#B8974A;color:#FFFFFF;font-family:Helvetica,Arial,sans-serif;font-size:11px;letter-spacing:.18em;text-transform:uppercase;text-decoration:none;padding:14px 36px;border-radius:3px;">Scopri RIDENTIUM</a>
     </div>
-  `
-  return wrap(nome, body)
+  </td></tr>
+  <tr><td align="center" style="padding:20px 40px 36px;border-top:1px solid #EDE8E0;">
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;color:#BBB;letter-spacing:.08em;margin:0;line-height:2;">RIDENTIUM &middot; Via Aldo Moro 96, Aversa (CE)<br><a href="https://ridentium.it" style="color:#B8974A;text-decoration:none;">ridentium.it</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`
 }
 
-// âââ Template 3: Personalizzata ââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Template 3: Personalizzata ─────────────────────────────────────────────
 
-function tplPersonalizzata(nome: string, testo: string): string {
-  const body = `
-    <p style="color:#c0b89a;font-size:15px;line-height:1.8;margin:0 0 28px 0;white-space:pre-wrap;">${testo}</p>
-    <div style="text-align:center;margin-bottom:8px;">
-      <a href="https://ridentium.it" style="display:inline-block;background:#c9a96e;color:#0c0c0c;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.15em;text-transform:uppercase;text-decoration:none;padding:14px 32px;border-radius:4px;">Scopri RIDENTIUM</a>
-    </div>
-  `
-  return wrap(nome, body)
+function tplPersonalizzata(nome: string, body: string): string {
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Messaggio da RIDENTIUM</title>
+</head>
+<body style="margin:0;padding:0;background:#FAF8F5;">
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#FAF8F5">
+<tr><td align="center" style="padding:40px 16px;">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:6px;">
+  <tr><td align="center" style="padding:36px 40px 28px;border-bottom:1px solid #EDE8E0;">
+    <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:#B8974A;font-weight:normal;">RIDENTIUM</p>
+  </td></tr>
+  <tr><td style="padding:40px 40px 36px;">
+    <p style="color:#3A3A3A;font-size:16px;line-height:1.8;margin:0 0 24px;font-family:Georgia,serif;">Caro ${nome},</p>
+    <div style="color:#4A4A4A;font-size:15px;line-height:1.9;font-family:Georgia,serif;">${body}</div>
+  </td></tr>
+  <tr><td align="center" style="padding:20px 40px 36px;border-top:1px solid #EDE8E0;">
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;color:#BBB;letter-spacing:.08em;margin:0;line-height:2;">RIDENTIUM &middot; Via Aldo Moro 96, Aversa (CE)<br><a href="https://ridentium.it" style="color:#B8974A;text-decoration:none;">ridentium.it</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`
 }
 
+// ─── Template 4: Ricorda appuntamento ────────────────────────────────────────
 
-// ─── Template 4: Ricorda appuntamento ──────────────────────────────────────────
-
-function tplAppuntamento(nome: string, testo: string): string {
-  const det = testo || 'Ti aspettiamo presso il nostro studio. Il team è pronto ad accoglierti.'
-  const body = `
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-      <tr><td style="padding:40px 40px 36px;">
-        <p style="font-family:Georgia,serif;font-size:11px;color:#B8974A;letter-spacing:.2em;text-transform:uppercase;margin:0 0 36px;font-weight:normal;">Promemoria Appuntamento</p>
-        <p style="font-family:Georgia,serif;font-size:16px;color:#3A3A3A;line-height:1.85;margin:0 0 28px;">desideriamo ricordarti il tuo prossimo appuntamento presso <strong style="font-weight:normal;color:#1A1A1A;">RIDENTIUM</strong>.</p>
-        <div style="border-left:2px solid #B8974A;padding:20px 24px;margin:0 0 32px;background:rgba(184,151,74,.04);">
-          <p style="font-family:Georgia,serif;font-size:15px;color:#1A1A1A;line-height:1.85;margin:0;white-space:pre-line;">${det}</p>
-        </div>
-        <p style="font-family:Georgia,serif;font-size:14px;color:#5A5A5A;line-height:1.8;margin:0 0 40px;">Per confermare o modificare il tuo appuntamento, rispondi a questa email. Siamo a tua disposizione.</p>
-        <div style="border-top:1px solid #E4DDD3;padding-top:24px;">
-          <p style="font-family:'Helvetica Neue',Arial,sans-serif;font-size:11px;color:#9A8E82;letter-spacing:.14em;text-transform:uppercase;margin:0;">RIDENTIUM · Studio Odontoiatrico · Aversa</p>
-        </div>
-      </td></tr>
-    </table>
-  `
-  return wrap(nome, body)
+function tplAppuntamento(nome: string, body: string): string {
+  return `<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Il tuo appuntamento RIDENTIUM</title>
+</head>
+<body style="margin:0;padding:0;background:#FAF8F5;">
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#FAF8F5">
+<tr><td align="center" style="padding:40px 16px;">
+<table width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border-radius:6px;">
+  <tr><td align="center" style="padding:36px 40px 28px;border-bottom:1px solid #EDE8E0;">
+    <p style="margin:0;font-family:Helvetica,Arial,sans-serif;font-size:12px;letter-spacing:.4em;text-transform:uppercase;color:#B8974A;font-weight:normal;">RIDENTIUM</p>
+  </td></tr>
+  <tr><td style="padding:40px 40px 36px;">
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#B8974A;margin:0 0 16px;font-weight:normal;">Promemoria appuntamento</p>
+    <p style="color:#3A3A3A;font-size:16px;line-height:1.8;margin:0 0 24px;font-family:Georgia,serif;">Caro ${nome},</p>
+    <div style="color:#4A4A4A;font-size:15px;line-height:1.9;font-family:Georgia,serif;">${body}</div>
+  </td></tr>
+  <tr><td align="center" style="padding:20px 40px 36px;border-top:1px solid #EDE8E0;">
+    <p style="font-family:Helvetica,Arial,sans-serif;font-size:10px;color:#BBB;letter-spacing:.08em;margin:0;line-height:2;">RIDENTIUM &middot; Via Aldo Moro 96, Aversa (CE)<br><a href="https://ridentium.it" style="color:#B8974A;text-decoration:none;">ridentium.it</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`
 }
