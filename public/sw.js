@@ -1,81 +1,40 @@
-// RIDENTIUM Service Worker Ã¢ÂÂ PWA + Push Notifications + Offline
-// v3: fix iOS Safari fetch(event.request) navigation bug
-const CACHE_STATIC = 'ridentium-static-v4'   // immutable assets: JS, CSS, fonts, icons
-const CACHE_PAGES  = 'ridentium-pages-v4'    // navigation HTML (network-first)
-const CACHE_IMAGES = 'ridentium-images-v4'   // images (cache-first)
-const ALL_CACHES   = [CACHE_STATIC, CACHE_PAGES, CACHE_IMAGES]
+// RIDENTIUM Service Worker — PWA + Push Notifications + Offline
+// v4: bypass SW navigation entirely — fixes iOS Safari SSL/privacy warning
+const CACHE_STATIC = 'ridentium-static-v5'  // immutable assets: JS, CSS, fonts, icons
+const CACHE_IMAGES = 'ridentium-images-v5'  // images (cache-first)
+const ALL_CACHES   = [CACHE_STATIC, CACHE_IMAGES]
 
-// Ã¢ÂÂÃ¢ÂÂ Offline fallback HTML (embedded so it works before any page is visited) Ã¢ÂÂÃ¢ÂÂ
-const OFFLINE_HTML = `<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>RIDENTIUM Ã¢ÂÂ Offline</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#18130E;color:#C8C0B0;font-family:system-ui,sans-serif;
-         display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
-    .card{background:#221C16;border:1px solid #2E2720;border-radius:12px;
-          padding:3rem 2.5rem;text-align:center;max-width:400px;width:100%}
-    h1{font-family:Georgia,serif;font-size:1.25rem;font-weight:300;
-       letter-spacing:.2em;color:#E8E0D0;margin-bottom:.5rem}
-    .dot{width:8px;height:8px;background:#C8A95A;border-radius:50%;
-         display:inline-block;margin-bottom:2rem}
-    p{font-size:.875rem;line-height:1.7;color:#7A6E64;margin-bottom:1.5rem}
-    button{background:#C8A95A;color:#18130E;border:none;border-radius:6px;
-           padding:.75rem 1.5rem;font-size:.875rem;cursor:pointer;width:100%}
-    button:hover{opacity:.85}
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="dot"></div>
-    <h1>RIDENTIUM</h1>
-    <p>Connessione non disponibile.<br>Torna online per accedere al pannello.</p>
-    <button onclick="location.reload()">Riprova</button>
-  </div>
-</body>
-</html>`
-
-// Ã¢ÂÂÃ¢ÂÂ Install Ã¢ÂÂ pre-cache key assets Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Install ─ pre-cache key assets ────────────────────────────────────────────
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    Promise.all([
-      caches.open(CACHE_STATIC).then((cache) =>
-        cache.addAll([
-          '/manifest.json',
-          '/icons/icon-192.png',
-          '/icons/icon-512.png',
-        ])
-      ),
-      // Pre-cache root page for offline navigation fallback
-      caches.open(CACHE_PAGES).then((cache) =>
-        cache.add('/').catch(() => {/* ignore if root requires auth redirect */})
-      ),
-    ])
+    caches.open(CACHE_STATIC).then((cache) =>
+      cache.addAll([
+        '/manifest.json',
+        '/icons/icon-192.png',
+        '/icons/icon-512.png',
+      ])
+    )
   )
   self.skipWaiting()
 })
 
-// Ã¢ÂÂÃ¢ÂÂ Activate Ã¢ÂÂ clean old caches Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Activate ─ clean old caches ───────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
+    caches.keys()
+      .then((keys) => Promise.all(
         keys
           .filter((key) => !ALL_CACHES.includes(key))
           .map((key) => caches.delete(key))
-      )
-    ).then(() => self.clients.claim())
+      ))
+      .then(() => self.clients.claim())
   )
 })
 
-// Ã¢ÂÂÃ¢ÂÂ Helpers Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function isNavigation(request) {
   return request.mode === 'navigate'
 }
-
 function isStaticAsset(url) {
   return (
     url.pathname.startsWith('/_next/static/') ||
@@ -83,11 +42,9 @@ function isStaticAsset(url) {
     url.pathname === '/manifest.json'
   )
 }
-
 function isImage(url) {
   return /\.(png|jpg|jpeg|gif|webp|svg|ico)$/.test(url.pathname)
 }
-
 function isApiOrAuth(url) {
   return (
     url.pathname.startsWith('/api/') ||
@@ -96,16 +53,20 @@ function isApiOrAuth(url) {
   )
 }
 
-// Ã¢ÂÂÃ¢ÂÂ Fetch Ã¢ÂÂ multi-strategy Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Fetch ─ multi-strategy ────────────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return
 
   const url = new URL(event.request.url)
 
-  // API / auth / Supabase Ã¢ÂÂ always network, never cache
+  // Navigation requests — bypass SW entirely to avoid iOS Safari SSL warning
+  // iOS Safari flags SW-intercepted navigations as "not private connection"
+  if (isNavigation(event.request)) return
+
+  // API / auth / Supabase — always network, never cache
   if (isApiOrAuth(url)) return
 
-  // Ã¢ÂÂÃ¢ÂÂ Static assets: cache-first, stale-while-revalidate Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ── Static assets: cache-first, stale-while-revalidate ──────────────────────
   if (isStaticAsset(url)) {
     event.respondWith(
       caches.open(CACHE_STATIC).then(async (cache) => {
@@ -114,14 +75,13 @@ self.addEventListener('fetch', (event) => {
           if (res.ok) cache.put(event.request, res.clone())
           return res
         }).catch(() => cached)
-        // Return cached immediately; update in background
         return cached || networkFetch
       })
     )
     return
   }
 
-  // Ã¢ÂÂÃ¢ÂÂ Images: cache-first Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ── Images: cache-first ──────────────────────────────────────────────────────
   if (isImage(url)) {
     event.respondWith(
       caches.open(CACHE_IMAGES).then(async (cache) => {
@@ -135,57 +95,25 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
-  // Ã¢ÂÂÃ¢ÂÂ Navigation (HTML pages): network-first, offline fallback Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
-  // NOTA: su iOS Safari, fetch(event.request) per richieste di navigazione
-  // puÃÂ² fallire silenziosamente (bug WebKit). Fix: fetch(url, {credentials})
-  if (isNavigation(event.request)) {
-    event.respondWith(
-      fetch(event.request.url)
-        .then((res) => {
-          if (res.ok) {
-            caches.open(CACHE_PAGES).then((cache) => cache.put(event.request, res.clone()))
-          }
-          return res
-        })
-        .catch(async () => {
-          // Try cache first
-          const cached = await caches.match(event.request)
-          if (cached) return cached
-          // Return embedded offline page
-          return new Response(OFFLINE_HTML, {
-            headers: { 'Content-Type': 'text/html; charset=utf-8' },
-          })
-        })
-    )
-    return
-  }
-
-  // Ã¢ÂÂÃ¢ÂÂ Other same-origin GET: network-first, cache fallback Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+  // ── Other same-origin GET: network-first, cache fallback ────────────────────
   if (url.origin === self.location.origin) {
     event.respondWith(
       fetch(event.request)
-        .then((res) => {
-          if (res.ok) {
-            caches.open(CACHE_PAGES).then((cache) => cache.put(event.request, res.clone()))
-          }
-          return res
-        })
+        .then((res) => res)
         .catch(() => caches.match(event.request))
     )
   }
 })
 
-// Ã¢ÂÂÃ¢ÂÂ Push Notifications Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Push Notifications ────────────────────────────────────────────────────────
 self.addEventListener('push', (event) => {
   if (!event.data) return
-
   let data
   try {
     data = event.data.json()
   } catch {
     data = { title: 'RIDENTIUM', body: event.data.text() }
   }
-
   const title = data.title || 'RIDENTIUM'
   const options = {
     body: data.body || '',
@@ -200,16 +128,13 @@ self.addEventListener('push', (event) => {
     actions: data.actions || [],
     vibrate: [200, 100, 200],
   }
-
   event.waitUntil(self.registration.showNotification(title, options))
 })
 
-// Ã¢ÂÂÃ¢ÂÂ Notification Click Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Notification Click ────────────────────────────────────────────────────────
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
-
   const targetUrl = event.notification.data?.url || '/'
-
   event.waitUntil(
     clients
       .matchAll({ type: 'window', includeUncontrolled: true })
@@ -225,7 +150,7 @@ self.addEventListener('notificationclick', (event) => {
   )
 })
 
-// Ã¢ÂÂÃ¢ÂÂ Push Subscription Change Ã¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂÃ¢ÂÂ
+// ── Push Subscription Change ──────────────────────────────────────────────────
 self.addEventListener('pushsubscriptionchange', (event) => {
   event.waitUntil(
     self.registration.pushManager
