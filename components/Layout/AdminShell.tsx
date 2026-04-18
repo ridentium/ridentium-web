@@ -6,6 +6,7 @@ import Sidebar from './Sidebar'
 import ChatWidget from '@/components/AI/ChatWidget'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 import { UserProfile } from '@/types'
+import PushInit from '@/components/Push/PushInit'
 
 interface Props {
   children: React.ReactNode
@@ -62,6 +63,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
       </div>
 
       <ChatWidget userName={userName} userRole={userRole} alertCount={alertCount} tasksCount={tasksCount} />
+      <PushInit />
     </div>
   )
 }
