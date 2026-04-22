@@ -94,7 +94,15 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
   }
 
   return (
-    <aside className="w-56 h-full flex flex-col" style={{ background:'#1A1009', borderRight:'1px solid rgba(74,59,44,0.6)' }}>
+    <aside
+      className="w-64 md:w-56 h-full flex flex-col"
+      style={{
+        background: '#1A1009',
+        borderRight: '1px solid rgba(74,59,44,0.6)',
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+      }}
+    >
       {/* Header */}
       <div className="px-6 py-6 flex items-start justify-between"
         style={{ borderBottom:'1px solid rgba(74,59,44,0.5)' }}>
@@ -108,9 +116,13 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
           <div className="hidden md:block">
             <NotificheBell isAdmin={isAdmin} />
           </div>
-          <button onClick={onClose} className="md:hidden p-1 transition-colors"
-            style={{ color:'rgba(160,144,126,0.5)' }}>
-            <X size={16} />
+          <button
+            onClick={onClose}
+            className="md:hidden transition-colors flex items-center justify-center"
+            style={{ color:'rgba(160,144,126,0.5)', minWidth: 44, minHeight: 44 }}
+            aria-label="Chiudi menu"
+          >
+            <X size={18} />
           </button>
         </div>
       </div>
@@ -146,7 +158,13 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
       )}
 
       {/* User footer */}
-      <div className="px-4 py-4 flex-shrink-0" style={{ borderTop:'1px solid rgba(74,59,44,0.4)' }}>
+      <div
+        className="px-4 py-4 flex-shrink-0"
+        style={{
+          borderTop: '1px solid rgba(74,59,44,0.4)',
+          paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
+        }}
+      >
         <div className="flex items-center gap-3 mb-3">
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
             style={{ background:'rgba(201,168,76,0.2)', border:'1px solid rgba(201,168,76,0.4)', color:'#C9A84C' }}>

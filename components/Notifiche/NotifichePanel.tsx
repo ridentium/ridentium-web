@@ -46,6 +46,14 @@ export default function NotifichePanel({ isAdmin }: { isAdmin: boolean }) {
 
   useEffect(() => { setMounted(true) }, [])
 
+  // Chiudi con ESC quando aperto
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, setOpen])
+
   if (!mounted) return null
 
   return createPortal(
@@ -67,6 +75,8 @@ export default function NotifichePanel({ isAdmin }: { isAdmin: boolean }) {
           transition: 'transform 0.25s cubic-bezier(.4,0,.2,1)',
           boxShadow: open ? '-8px 0 32px rgba(0,0,0,0.45)' : 'none',
           pointerEvents: open ? 'auto' : 'none',
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingRight: 'env(safe-area-inset-right)',
         }}
         aria-hidden={!open}
       >
@@ -169,7 +179,13 @@ export default function NotifichePanel({ isAdmin }: { isAdmin: boolean }) {
 
         {/* Footer */}
         {list.length > 0 && (
-          <div className="px-5 py-3 flex-shrink-0" style={{ borderTop: '1px solid rgba(74,59,44,0.35)' }}>
+          <div
+            className="px-5 py-3 flex-shrink-0"
+            style={{
+              borderTop: '1px solid rgba(74,59,44,0.35)',
+              paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom))',
+            }}
+          >
             <Link
               href={`${base}/notifiche`}
               onClick={() => setOpen(false)}
