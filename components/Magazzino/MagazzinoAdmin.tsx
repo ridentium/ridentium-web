@@ -392,15 +392,18 @@ function ItemModal({ item, onClose, onSave }: {
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSave() {
+    if (saving) return // guard doppio-click
     setSaving(true)
-    if (item) {
-      const { data } = await supabase.from('magazzino').update(form).eq('id', item.id).select().single()
+    try {
+      if (item) {
+        const { data } = await supabase.from('magazzino').update(form).eq('id', item.id).select().single()
+        onSave(data ?? undefined)
+      } else {
+        const { data } = await supabase.from('magazzino').insert(form).select().single()
+        onSave(data ?? undefined)
+      }
+    } finally {
       setSaving(false)
-      onSave(data ?? undefined)
-    } else {
-      const { data } = await supabase.from('magazzino').insert(form).select().single()
-      setSaving(false)
-      onSave(data ?? undefined)
     }
   }
 

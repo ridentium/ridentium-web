@@ -15,6 +15,8 @@ export interface Notifica {
 interface NotificheContext {
   list: Notifica[]
   unread: number
+  open: boolean
+  setOpen: (v: boolean) => void
   markAllRead: () => Promise<void>
   refresh: () => Promise<void>
 }
@@ -26,6 +28,7 @@ const POLL_MS = 60_000
 export function NotificheProvider({ children }: { children: React.ReactNode }) {
   const [list, setList] = useState<Notifica[]>([])
   const [unread, setUnread] = useState(0)
+  const [open, setOpen] = useState(false)
   const inFlight = useRef(false)
 
   const refresh = useCallback(async () => {
@@ -81,13 +84,16 @@ export function NotificheProvider({ children }: { children: React.ReactNode }) {
     }
   }, [refresh])
 
-  return <Ctx.Provider value={{ list, unread, markAllRead, refresh }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ list, unread, open, setOpen, markAllRead, refresh }}>{children}</Ctx.Provider>
 }
 
 export function useNotifiche(): NotificheContext {
   const v = useContext(Ctx)
   if (!v) {
-    return { list: [], unread: 0, markAllRead: async () => {}, refresh: async () => {} }
+    return {
+      list: [], unread: 0, open: false,
+      setOpen: () => {}, markAllRead: async () => {}, refresh: async () => {},
+    }
   }
   return v
 }
