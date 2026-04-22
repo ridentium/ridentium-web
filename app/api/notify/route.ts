@@ -2,12 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import webpush from 'web-push'
 
-// Configure VAPID
-webpush.setVapidDetails(
-  'mailto:admin@ridentium.it',
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || '',
-  process.env.VAPID_PRIVATE_KEY || ''
-)
+// VAPID is configured per-request to avoid build-time failures when env
+// vars are missing ("No key set vapidDetails.publicKey").
+function configureVapid() {
+  const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const priv = process.env.VAPID_PRIVATE_KEY
+  if (!pub || !priv) return false
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:admin@ridentium.it',
+    pub,
+    priv,
+  )
+  return true
+}
 
 interface NotifyPayload {
   tipo: string           // e.g. 'stock_minimo', 'task_assegnata', 'ricorrente_scaduta'
@@ -28,6 +35,10 @@ export async function POST(req: NextRequest) {
     const secret = req.headers.get('x-notify-secret')
     if (secret !== process.env.NOTIFY_SECRET) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    if (!configureVapid()) {
+      return NextResponse.json({ ok: true, sent: 0, reason: 'vapid_missing' })
     }
 
     const payload: NotifyPayload = await req.json()
