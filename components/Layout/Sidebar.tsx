@@ -129,7 +129,7 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
 
       {/* Alert magazzino */}
       {alertCount > 0 && (
-        <Link href={isAdmin ? '/admin/magazzino' : '/staff/magazzino'} onClick={onClose}
+        <Link href={(isAdmin ? '/admin/magazzino' : '/staff/magazzino') + '?filter=alert'} onClick={onClose}
           className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors"
           style={{ background:'rgba(224,85,69,0.15)', border:'1px solid rgba(224,85,69,0.35)', color:'#F87171' }}>
           <AlertTriangle size={12} />

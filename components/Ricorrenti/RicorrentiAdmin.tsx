@@ -186,9 +186,13 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                     <span className="text-xs text-stone">
                       {assigneeUser ? `${assigneeUser.nome} ${assigneeUser.cognome}` : 'Tutti'}
                     </span>
-                    <span className={`text-xs font-medium ${pctColor}`}>
-                      {completatiPeriodo.length}/{totalAssigned} completate ({pct}%)
-                    </span>
+                    {totalAssigned > 0 ? (
+                      <span className={`text-xs font-medium ${pctColor}`}>
+                        {completatiPeriodo.length}/{totalAssigned} completate ({pct}%)
+                      </span>
+                    ) : (
+                      <span className="text-xs text-stone/60 italic">Nessuno staff assegnato</span>
+                    )}
                   </div>
                   {completatiPeriodo.length > 0 && (
                     <div className="mt-2 space-y-0.5">
