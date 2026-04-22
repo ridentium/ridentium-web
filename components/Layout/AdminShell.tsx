@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import ChatWidget from '@/components/AI/ChatWidget'
@@ -23,11 +23,28 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const isAdmin = profilo.ruolo === 'admin'
 
+  // Blocca scroll body quando la sidebar mobile è aperta e chiudila con ESC
+  useEffect(() => {
+    if (!sidebarOpen) return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setSidebarOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [sidebarOpen])
+
   return (
     <NotificheProvider>
-      <div className="flex h-screen overflow-hidden" style={{ background: '#2C2018' }}>
+      <div className="flex overflow-hidden h-screen-safe" style={{ background: '#2C2018' }}>
         {sidebarOpen && (
-          <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+          <div
+            className="fixed inset-0 bg-black/60 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+            aria-hidden="true"
+          />
         )}
         <div
           className={`fixed inset-y-0 left-0 z-50 md:relative md:z-auto transition-transform duration-300 ease-in-out flex-shrink-0 ${
@@ -38,18 +55,24 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
         </div>
 
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {/* Mobile header */}
+          {/* Mobile header con safe-area-inset-top per stare sotto la notch */}
           <div
-            className="md:hidden flex items-center gap-3 px-4 h-14 flex-shrink-0"
-            style={{ background: '#221A12', borderBottom: '1px solid #4A3B2C' }}
+            className="md:hidden flex items-center gap-3 px-4 flex-shrink-0 pt-safe"
+            style={{
+              background: '#221A12',
+              borderBottom: '1px solid #4A3B2C',
+              height: 'calc(3.5rem + env(safe-area-inset-top))',
+              paddingLeft: 'max(1rem, env(safe-area-inset-left))',
+              paddingRight: 'max(1rem, env(safe-area-inset-right))',
+            }}
           >
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 -ml-1 transition-colors rounded"
-              style={{ color: '#A0907E' }}
+              style={{ color: '#A0907E', minWidth: 44, minHeight: 44 }}
               aria-label="Apri menu"
             >
-              <Menu size={20} />
+              <Menu size={22} />
             </button>
             <span
               className="flex-1 text-sm tracking-[0.3em] font-light"
@@ -60,8 +83,16 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
             <NotificheBell isAdmin={isAdmin} />
           </div>
 
-          <main className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8">{children}</div>
+          <main
+            className="flex-1 overflow-y-auto overflow-x-hidden"
+            style={{
+              paddingLeft: 'env(safe-area-inset-left)',
+              paddingRight: 'env(safe-area-inset-right)',
+            }}
+          >
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-safe-or-4">
+              {children}
+            </div>
           </main>
         </div>
 

@@ -1,39 +1,72 @@
 {
   "name": "RIDENTIUM — Sistema Operativo",
   "short_name": "RIDENTIUM",
-  "description": "Pannello di gestione interno RIDENTIUM",
+  "description": "Pannello di gestione interno dello studio RIDENTIUM",
+  "id": "/",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#18130E",
   "theme_color": "#18130E",
   "orientation": "any",
-  "categories": ["business", "productivity"],
+  "categories": ["business", "productivity", "medical"],
   "lang": "it",
+  "dir": "ltr",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
     },
     {
       "src": "/icons/icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ],
   "shortcuts": [
     {
       "name": "Magazzino",
       "short_name": "Magazzino",
+      "description": "Vedi scorte e prodotti sotto soglia",
       "url": "/admin/magazzino",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Ordini",
+      "short_name": "Ordini",
+      "description": "Gestione ordini fornitori",
+      "url": "/admin/ordini",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Task",
       "short_name": "Task",
+      "description": "Task e attività assegnate",
       "url": "/admin/tasks",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Notifiche",
+      "short_name": "Notifiche",
+      "description": "Archivio notifiche",
+      "url": "/admin/notifiche",
       "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
