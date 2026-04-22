@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { unsubscribeUser } from '@/lib/push'
 import { UserProfile } from '@/types'
 import { cn, roleLabel } from '@/lib/utils'
 import {
@@ -84,6 +85,9 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
   const isAdmin  = profilo.ruolo === 'admin'
 
   async function handleLogout() {
+    // Remove push subscription for this device BEFORE signing out
+    // to prevent notifications going to the next user on a shared device.
+    try { await unsubscribeUser() } catch {}
     await supabase.auth.signOut()
     router.push('/login')
     router.refresh()
@@ -100,7 +104,10 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
             style={{ color:'rgba(210,198,182,0.5)' }}>{isAdmin ? 'Admin' : 'Staff'}</p>
         </div>
         <div className="flex items-center gap-1 -mr-1">
-          <NotificheBell isAdmin={isAdmin} />
+          {/* Desktop-only: su mobile la campanella è nel header AdminShell per evitare doppione */}
+          <div className="hidden md:block">
+            <NotificheBell isAdmin={isAdmin} />
+          </div>
           <button onClick={onClose} className="md:hidden p-1 transition-colors"
             style={{ color:'rgba(160,144,126,0.5)' }}>
             <X size={16} />
