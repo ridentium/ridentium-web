@@ -67,6 +67,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   const [annullaModal, setAnnullaModal] = useState<{ ordineId: string } | null>(null)
   const [annullaNote, setAnnullaNote] = useState('')
   const [annullaError, setAnnullaError] = useState<string | null>(null)
+  const [annullaSaving, setAnnullaSaving] = useState(false)
 
   // Modal nuovo ordine
   const [nuovoModal, setNuovoModal] = useState(false)
@@ -110,6 +111,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
   async function confermaRicezione() {
     if (!ricezioneModal || !ricezioneTipo) return
+    if (ricezioneSaving) return // guard doppio-click
     setRicezioneSaving(true)
     setRicezioneError(null)
 
@@ -169,6 +171,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   }
 
   async function cambiaStatoAnnullato(ordineId: string, note?: string) {
+    if (annullaSaving) return // guard doppio-click
+    setAnnullaSaving(true)
     setLoading(ordineId)
     setAnnullaError(null)
     const ordine = ordini.find(o => o.id === ordineId)
@@ -189,6 +193,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
       const body = await res.json().catch(() => ({}))
       setAnnullaError(body.error ?? 'Errore nel salvataggio. Riprova.')
       setLoading(null)
+      setAnnullaSaving(false)
       return
     }
 
@@ -226,6 +231,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     setLoading(null)
     setAnnullaModal(null)
     setAnnullaNote('')
+    setAnnullaSaving(false)
     router.refresh()
   }
 
@@ -272,6 +278,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   }
 
   async function creaNuovoOrdine() {
+    if (nuovoSaving) return // guard doppio-click: era la fonte principale dei duplicati
     if (!nuovoFornitore.trim()) return
     const righeValide = nuovoRighe.filter(r => r.prodotto_nome.trim() && r.quantita > 0)
     if (righeValide.length === 0) return
@@ -685,19 +692,21 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => { setAnnullaModal(null); setAnnullaNote(''); setAnnullaError(null) }}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                disabled={annullaSaving}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
               <button
                 onClick={() => cambiaStatoAnnullato(annullaModal.ordineId, annullaNote || undefined)}
-                className={`text-xs px-4 py-2 rounded border transition-colors ${
+                disabled={annullaSaving}
+                className={`text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50 ${
                   isRicezioneAnnullata
                     ? 'bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30'
                     : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
                 }`}
               >
-                Conferma
+                {annullaSaving ? 'Salvataggio…' : 'Conferma'}
               </button>
             </div>
           </div>
