@@ -9,7 +9,7 @@ import { cn, roleLabel } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen, Users, LogOut, ChevronRight,
   AlertTriangle, ShoppingCart, UserCircle2, RefreshCw, Activity, Sparkles,
-  Building2, X, Bell,
+  Building2, X, Bell, ShieldCheck,
 } from 'lucide-react'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 
@@ -28,9 +28,10 @@ const adminTeam: NavItem[] = [
   { href:'/admin/staff',      label:'Staff',     icon:Users },
 ]
 const adminSistema: NavItem[] = [
-  { href:'/admin/sop',         label:'Protocolli', icon:BookOpen },
-  { href:'/admin/registro',    label:'Registro',   icon:Activity },
-  { href:'/admin/notifiche',   label:'Notifiche',  icon:Bell },
+  { href:'/admin/adempimenti', label:'Adempimenti', icon:ShieldCheck },
+  { href:'/admin/sop',         label:'Protocolli',  icon:BookOpen },
+  { href:'/admin/registro',    label:'Registro',    icon:Activity },
+  { href:'/admin/notifiche',   label:'Notifiche',   icon:Bell },
 ]
 const adminAI: NavItem[] = [{ href:'/admin/ai', label:'Lina AI', icon:Sparkles, highlight:true }]
 
@@ -39,6 +40,7 @@ const staffNav: NavItem[] = [
   { href:'/staff/magazzino',   label:'Magazzino',   icon:Package },
   { href:'/staff/tasks',       label:'I miei task', icon:CheckSquare },
   { href:'/staff/ricorrenti',  label:'Ricorrenti',  icon:RefreshCw },
+  { href:'/staff/adempimenti', label:'Adempimenti', icon:ShieldCheck },
   { href:'/staff/sop',         label:'Protocolli',  icon:BookOpen },
   { href:'/staff/notifiche',   label:'Notifiche',   icon:Bell },
 ]
