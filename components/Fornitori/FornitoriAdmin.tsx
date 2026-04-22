@@ -63,18 +63,25 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
   const [editContact, setEditContact] = useState<FornitoreContatto | null>(null) // contact being edited
   const [contactForm, setContactForm] = useState<Partial<FornitoreContatto>>(emptyContactForm())
   const [savingContact, setSavingContact] = useState(false)
+  const [savingFornitore, setSavingFornitore] = useState(false)
 
   function resetForm() {
     setNome(''); setNote(''); setShowForm(false)
   }
 
   async function addFornitore() {
+    if (savingFornitore) return // guard doppio-click
     if (!nome.trim()) return
-    const { data } = await supabase.from('fornitori').insert({ nome: nome.trim(), note: note.trim() || null }).select().single()
-    await logActivity(currentUserId, currentUserNome, 'Fornitore aggiunto', nome.trim(), 'fornitori')
-    resetForm()
-    if (data) setExpandedId(data.id)
-    startTransition(() => router.refresh())
+    setSavingFornitore(true)
+    try {
+      const { data } = await supabase.from('fornitori').insert({ nome: nome.trim(), note: note.trim() || null }).select().single()
+      await logActivity(currentUserId, currentUserNome, 'Fornitore aggiunto', nome.trim(), 'fornitori')
+      resetForm()
+      if (data) setExpandedId(data.id)
+      startTransition(() => router.refresh())
+    } finally {
+      setSavingFornitore(false)
+    }
   }
 
   function startEdit(f: Fornitore) {
@@ -179,7 +186,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
 
       {/* Header */}
       <div className="flex items-center justify-between">
-        <p className="text-stone text-sm">{fornitori.length} fornitore{fornitori.length !== 1 ? 'i' : ''}</p>
+        <p className="text-stone text-sm">{fornitori.length} fornitor{fornitori.length !== 1 ? 'i' : 'e'}</p>
         {canEdit && (
           <button onClick={() => setShowForm(v => !v)} className="btn-primary flex items-center gap-1.5 text-xs">
             <Plus size={13} /> Aggiungi fornitore

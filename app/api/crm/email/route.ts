@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, EmailTemplate } from '@/lib/mailer'
 
 export async function POST(req: NextRequest) {
-  const cookieStore = cookies()
+  const supabase = createClient()
+  const adminDb  = createAdminClient()
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { get: (n) => cookieStore.get(n)?.value } },
-  )
-
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
+  // Use getUser() (verifies JWT) instead of getSession() (just reads cookie)
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) {
     return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  }
+
+  // Role gate: solo admin/manager possono inviare email dal CRM
+  const { data: profilo } = await adminDb
+    .from('profili').select('ruolo').eq('id', user.id).single()
+  if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
+    return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
 
   let body: {
@@ -36,8 +39,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'contattoId e template sono obbligatori' }, { status: 400 })
   }
 
-  // Carica il contatto
-  const { data: contatto, error: dbError } = await supabase
+  // Carica il contatto (usa admin per bypassare RLS; abbiamo già verificato ruolo)
+  const { data: contatto, error: dbError } = await adminDb
     .from('crm_contatti')
     .select('id, nome, email')
     .eq('id', contattoId)
@@ -51,7 +54,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Il contatto non ha un indirizzo email' }, { status: 400 })
   }
 
-  // Invia
   const result = await sendEmail({
     to: contatto.email,
     nome: contatto.nome ?? '',
