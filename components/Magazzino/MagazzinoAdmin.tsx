@@ -31,7 +31,10 @@ interface Props {
 export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '' }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
-  const [soloAlert, setSoloAlert] = useState(false)
+  // Se l'URL contiene ?filter=alert (es. da tap su "19 sotto soglia" nel dashboard),
+  // la pagina apre già filtrata sui prodotti sotto soglia.
+  const initialSoloAlert = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('filter') === 'alert'
+  const [soloAlert, setSoloAlert] = useState(initialSoloAlert)
   const [cerca, setCerca] = useState('')
   const [sortField, setSortField] = useState<SortField>('prodotto')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
