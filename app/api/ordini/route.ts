@@ -11,6 +11,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
   }
 
+  const { data: profilo } = await adminDb
+    .from('profili').select('ruolo').eq('id', user.id).single()
+  if (!profilo || !['admin', 'manager', 'segretaria'].includes(profilo.ruolo)) {
+    return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
+  }
+
   const { fornitore_id, fornitore_nome, canale, note, righe } = await req.json()
 
   if (!fornitore_nome || !righe?.length) {

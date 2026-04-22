@@ -1,16 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * GET /api/notify/stock
  * Check inventory levels and send push notifications for items below threshold.
- * Called from:
- * - Admin layout background check
- * - After magazzino quantity updates
- * - (future) Vercel Cron
+ *
+ * Accepts either:
+ *  (a) an authenticated admin/manager session, OR
+ *  (b) a server-to-server call with the x-notify-secret header (for cron/internal use).
  */
 export async function GET(req: NextRequest) {
   try {
+    const secret = req.headers.get('x-notify-secret')
+    const secretOk = !!process.env.NOTIFY_SECRET && secret === process.env.NOTIFY_SECRET
+
+    if (!secretOk) {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      const { data: profilo } = await supabase
+        .from('profili').select('ruolo').eq('id', user.id).single()
+      if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
+    }
+
     const adminDb = createAdminClient()
 
     // Fetch items below minimum threshold
@@ -31,14 +48,12 @@ export async function GET(req: NextRequest) {
       .from('notification_settings')
       .select('abilitata')
       .eq('tipo', 'stock_minimo')
-      .single()
+      .maybeSingle()
 
     if (setting && !setting.abilitata) {
       return NextResponse.json({ ok: true, alerts: below.length, skipped: 'disabled' })
     }
 
-    // Avoid spamming — only notify if there's a "new" alert (simplified: just send)
-    // A more advanced implementation would track last-notified time per item
     const names = below.slice(0, 3).map((i: any) => i.prodotto).join(', ')
     const extra = below.length > 3 ? ` e altri ${below.length - 3}` : ''
 
@@ -51,7 +66,7 @@ export async function GET(req: NextRequest) {
       requireInteraction: true,
     }
 
-    // Call the notify endpoint
+    // Call the notify endpoint server-to-server
     const baseUrl = req.nextUrl.origin
     const res = await fetch(`${baseUrl}/api/notify`, {
       method: 'POST',
