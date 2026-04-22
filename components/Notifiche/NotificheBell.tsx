@@ -6,16 +6,7 @@ import Link from 'next/link'
 import {
   Bell, X, Package, CheckSquare, RefreshCw, MessageCircle, UserCircle2, ExternalLink,
 } from 'lucide-react'
-
-interface Notifica {
-  id: string
-  tipo: 'magazzino' | 'task' | 'ricorrente' | 'messaggio' | 'crm'
-  titolo: string
-  corpo?: string | null
-  url?: string | null
-  letta: boolean
-  created_at: string
-}
+import { useNotifiche } from './NotificheProvider'
 
 const TIPO_META: Record<string, { Icon: React.ElementType; color: string; label: string }> = {
   magazzino:  { Icon: Package,       color: '#F87171', label: 'Magazzino' },
@@ -25,54 +16,36 @@ const TIPO_META: Record<string, { Icon: React.ElementType; color: string; label:
   crm:        { Icon: UserCircle2,   color: '#34D399', label: 'CRM' },
 }
 
-function timeAgo(d: string) {
-  const m = Math.floor((Date.now() - new Date(d).getTime()) / 60000)
-  if (m < 1) return 'adesso'
-  if (m < 60) return m + 'm'
-  const h = Math.floor(m / 60)
-  if (h < 24) return h + 'h'
-  return Math.floor(h / 24) + 'g'
+function TimeAgo({ iso }: { iso: string }) {
+  const [label, setLabel] = useState<string>('')
+  useEffect(() => {
+    function compute() {
+      const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000)
+      if (m < 1) return 'adesso'
+      if (m < 60) return m + 'm'
+      const h = Math.floor(m / 60)
+      if (h < 24) return h + 'h'
+      return Math.floor(h / 24) + 'g'
+    }
+    setLabel(compute())
+    const t = setInterval(() => setLabel(compute()), 60_000)
+    return () => clearInterval(t)
+  }, [iso])
+  return <span>{label}</span>
 }
 
 export default function NotificheBell({ isAdmin }: { isAdmin: boolean }) {
   const [open, setOpen]     = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [list, setList]     = useState<Notifica[]>([])
-  const [unread, setUnread] = useState(0)
+  const { list, unread, markAllRead } = useNotifiche()
   const base = isAdmin ? '/admin' : '/staff'
 
   useEffect(() => { setMounted(true) }, [])
 
-  const fetchData = useCallback(async () => {
-    try {
-      const r = await fetch('/api/notifiche', { cache: 'no-store' })
-      if (!r.ok) return
-      const d = await r.json()
-      setList(d.notifiche ?? [])
-      setUnread(d.unreadCount ?? 0)
-    } catch {}
-  }, [])
-
-  useEffect(() => {
-    fetchData()
-    const t = setInterval(fetchData, 60_000)
-    return () => clearInterval(t)
-  }, [fetchData])
-
-  const handleOpen = useCallback(async () => {
+  const handleOpen = useCallback(() => {
     setOpen(true)
-    if (unread > 0) {
-      try {
-        await fetch('/api/notifiche/leggi', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ all: true }),
-        })
-        setUnread(0)
-        setList(p => p.map(n => ({ ...n, letta: true })))
-      } catch {}
-    }
-  }, [unread])
+    void markAllRead()
+  }, [markAllRead])
 
   const bellBtn = (
     <button
@@ -183,7 +156,7 @@ export default function NotificheBell({ isAdmin }: { isAdmin: boolean }) {
                       {n.titolo}
                     </p>
                     <span className="text-[10px] flex-shrink-0" style={{ color: 'rgba(160,144,126,0.45)' }}>
-                      {timeAgo(n.created_at)}
+                      <TimeAgo iso={n.created_at} />
                     </span>
                   </div>
                   {n.corpo && (
