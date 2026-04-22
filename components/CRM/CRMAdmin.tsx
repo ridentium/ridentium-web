@@ -9,10 +9,10 @@ import {
   Clock, CheckCircle2, Star, UserX, ShieldCheck, ShieldOff, Megaphone, Send,
 } from 'lucide-react'
 
-type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata'
+type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata' | 'ricorda-appuntamento'
 
 const TEMPLATES: { id: EmailTemplate; label: string; desc: string }[] = [
-  { id: 'box-conferma',   label: 'Gift Box â conferma',    desc: 'Conferma ricezione richiesta Gift Box, promessa contatto 24â48 h' },
+  { id: 'box-conferma',   label: 'Gift Box — conferma',    desc: 'Conferma ricezione richiesta Gift Box, promessa contatto 24–48 h' },
   { id: 'benvenuto',      label: 'Benvenuto',               desc: 'Email di benvenuto per nuovi pazienti' },
   { id: 'personalizzata', label: 'Messaggio personalizzato', desc: 'Testo libero con firma RIDENTIUM' },
   { id: 'ricorda-appuntamento', label: 'Ricorda appuntamento',     desc: 'Promemoria personalizzato per il prossimo appuntamento' },
@@ -23,7 +23,7 @@ function templateDefault(sorgente: string | null): EmailTemplate {
   return 'benvenuto'
 }
 
-// âââ Configurazione stati âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Configurazione stati ────────────────────────────────────────────────────
 
 const STATI: { id: CRMStato; label: string; color: string; bg: string; icon: React.ElementType }[] = [
   { id: 'nuovo',       label: 'Nuovo',        color: 'text-gold',       bg: 'bg-gold/10 border-gold/30',         icon: Clock },
@@ -35,11 +35,11 @@ const STATI: { id: CRMStato; label: string; color: string; bg: string; icon: Rea
 
 const statoInfo = (stato: CRMStato) => STATI.find(s => s.id === stato) ?? STATI[0]
 
-// âââ Helpers ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function nomeCompleto(c: CRMContatto) {
   const parts = [c.nome, c.cognome].filter(Boolean).join(' ')
-  return parts || 'â'
+  return parts || '—'
 }
 
 function formatData(iso: string) {
@@ -52,7 +52,7 @@ function iniziali(c: CRMContatto) {
   return (n + cg).toUpperCase() || (c.email?.[0]?.toUpperCase() ?? '?')
 }
 
-// âââ Componente principale ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+// ─── Componente principale ───────────────────────────────────────────────────
 
 interface Props {
   contatti: CRMContatto[]
@@ -134,8 +134,9 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     return m
   }, [contatti])
 
-  // ââ Cambio stato rapido ââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Cambio stato rapido ────────────────────────────────────────────────────
   async function cambiaStato(id: string, nuovoStato: CRMStato) {
+    if (statoLoading === id) return // guard doppio-click
     setStatoLoading(id)
     const res = await fetch(`/api/crm/contatti/${id}`, {
       method: 'PATCH',
@@ -151,9 +152,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setStatoLoading(null)
   }
 
-  // ââ Aggiornamento note âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Aggiornamento note ─────────────────────────────────────────────────────
   async function salvaNote() {
     if (!editModal) return
+    if (editSaving) return // guard doppio-click
     setEditSaving(true)
     const res = await fetch(`/api/crm/contatti/${editModal.id}`, {
       method: 'PATCH',
@@ -170,8 +172,9 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setEditSaving(false)
   }
 
-  // ââ Aggiunta manuale âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Aggiunta manuale ───────────────────────────────────────────────────────
   async function creaNuovoContatto() {
+    if (nuovoSaving) return // guard doppio-click
     if (!nuovoForm.email.trim() && !nuovoForm.telefono.trim()) {
       setNuovoError('Inserisci almeno email o telefono')
       return
@@ -195,6 +198,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         note:     nuovoForm.note     || null,
         sorgente: nuovoForm.sorgente || 'manuale',
         stato:    'nuovo',
+        consenso_privacy: false,
+        consenso_marketing: false,
+        consenso_versione: null,
+        consenso_timestamp: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }
@@ -210,9 +217,9 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setNuovoSaving(false)
   }
 
-  // ââ Elimina contatto âââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Elimina contatto ───────────────────────────────────────────────────────
   async function eliminaContatto(id: string) {
-    if (!confirm('Eliminare questo contatto? L\'azione non Ã¨ reversibile.')) return
+    if (!confirm('Eliminare questo contatto? L\'azione non è reversibile.')) return
     const contatto = contatti.find(c => c.id === id)
     const res = await fetch(`/api/crm/contatti/${id}`, { method: 'DELETE' })
     if (res.ok) {
@@ -222,9 +229,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     }
   }
 
-  // ââ Invio email âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Invio email ────────────────────────────────────────────────────────────
   async function inviaEmail() {
     if (!emailModal) return
+    if (emailSending) return // guard doppio-click
     setEmailSending(true)
     setEmailError(null)
     setEmailOk(false)
@@ -253,7 +261,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     setEmailSending(false)
   }
 
-  // ââ Export CSV ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ── Export CSV ─────────────────────────────────────────────────────────────
   function exportCSV() {
     const url = filtro !== 'tutti'
       ? `/api/crm/contatti?format=csv&stato=${filtro}`
@@ -261,13 +269,13 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     window.open(url, '_blank')
   }
 
-  // âââ Render âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
+  // ─── Render ─────────────────────────────────────────────────────────────────
 
   const dettaglio = dettaglioId ? contatti.find(c => c.id === dettaglioId) : null
 
   return (
     <div>
-      {/* ââ Toolbar ââ */}
+      {/* ── Toolbar ── */}
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         {/* Cerca */}
         <div className="relative flex-1">
@@ -275,7 +283,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
           <input
             value={cerca}
             onChange={e => setCerca(e.target.value)}
-            placeholder="Cerca per nome, email, telefonoâ¦"
+            placeholder="Cerca per nome, email, telefono…"
             className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                        pl-8 pr-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder:text-stone/40"
           />
@@ -299,7 +307,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         </div>
       </div>
 
-      {/* ââ Filtri stato ââ */}
+      {/* ── Filtri stato ── */}
       <div className="flex gap-2 flex-wrap mb-3">
         {[{ id: 'tutti' as FiltroStato, label: 'Tutti' }, ...STATI.map(s => ({ id: s.id as FiltroStato, label: s.label }))].map(t => (
           <button
@@ -321,12 +329,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         ))}
       </div>
 
-      {/* ââ Filtro consenso marketing ââ */}
+      {/* ── Filtro consenso marketing ── */}
       <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-obsidian-light/20">
         <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Marketing</span>
         {([
           { id: 'tutti' as FiltroMarketing, label: 'Tutti' },
-          { id: 'si'    as FiltroMarketing, label: `Consenso sÃ¬ (${conMarketing})` },
+          { id: 'si'    as FiltroMarketing, label: `Consenso sì (${conMarketing})` },
           { id: 'no'    as FiltroMarketing, label: `Consenso no (${contatti.length - conMarketing})` },
         ] as { id: FiltroMarketing; label: string }[]).map(f => (
           <button
@@ -345,7 +353,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         ))}
       </div>
 
-      {/* ââ Lista contatti ââ */}
+      {/* ── Lista contatti ── */}
       {filtered.length === 0 ? (
         <div className="card text-center py-12">
           <UserCircle size={32} className="text-stone mx-auto mb-3" />
@@ -389,7 +397,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                       <span className="text-[10px] text-stone/40">{formatData(c.created_at)}</span>
                     </div>
 
-                    {/* Badge consensi â sempre visibili */}
+                    {/* Badge consensi — sempre visibili */}
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       {/* Privacy */}
                       <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
@@ -398,7 +406,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                           : 'bg-red-900/10 text-red-400/70'
                       }`}>
                         <ShieldCheck size={8} />
-                        Privacy {c.consenso_privacy ? 'â' : 'â'}
+                        Privacy {c.consenso_privacy ? '✓' : '✗'}
                       </span>
                       {/* Marketing */}
                       <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
@@ -407,12 +415,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                           : 'bg-obsidian-light/20 text-stone/40'
                       }`}>
                         <Megaphone size={8} />
-                        Marketing {c.consenso_marketing ? 'â' : 'â'}
+                        Marketing {c.consenso_marketing ? '✓' : '✗'}
                       </span>
                     </div>
 
                     {c.note && isExpanded && (
-                      <p className="text-xs text-stone/70 mt-1.5 italic">"{c.note}"</p>
+                      <p className="text-xs text-stone/70 mt-1.5 italic">&ldquo;{c.note}&rdquo;</p>
                     )}
                   </div>
 
@@ -466,12 +474,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                           : 'bg-obsidian-light/30 border-obsidian-light/40 text-stone/50'
                       }`}>
                         <Megaphone size={9} />
-                        Marketing {c.consenso_marketing ? 'sÃ¬' : 'no'}
+                        Marketing {c.consenso_marketing ? 'sì' : 'no'}
                       </span>
                       {c.consenso_versione && (
                         <span className="text-[10px] text-stone/40 self-center">
                           Informativa {c.consenso_versione}
-                          {c.consenso_timestamp && ` Â· ${formatData(c.consenso_timestamp)}`}
+                          {c.consenso_timestamp && ` · ${formatData(c.consenso_timestamp)}`}
                         </span>
                       )}
                     </div>
@@ -517,7 +525,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                                    bg-obsidian-light/40 border border-obsidian-light/60 text-stone
                                    hover:text-cream transition-colors"
                       >
-                        Note {c.note ? 'â' : '+'}
+                        Note {c.note ? '✎' : '+'}
                       </button>
                       {isAdmin && (
                         <button
@@ -538,7 +546,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         </div>
       )}
 
-      {/* ââ Modal aggiunta manuale ââ */}
+      {/* ── Modal aggiunta manuale ── */}
       {nuovoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
@@ -601,7 +609,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                   onChange={e => setNuovoForm(p => ({ ...p, sorgente: e.target.value }))}
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
-                  placeholder="Es. landing-implanti, referralâ¦"
+                  placeholder="Es. landing-implanti, referral…"
                 />
               </div>
               <div>
@@ -612,7 +620,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                   rows={2}
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
-                  placeholder="Informazioni aggiuntiveâ¦"
+                  placeholder="Informazioni aggiuntive…"
                 />
               </div>
             </div>
@@ -626,7 +634,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
             <div className="flex gap-3 justify-end mt-5">
               <button
                 onClick={() => setNuovoModal(false)}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                disabled={nuovoSaving}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -635,14 +644,14 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                 disabled={nuovoSaving}
                 className="text-xs px-4 py-2 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50"
               >
-                {nuovoSaving ? 'Salvataggioâ¦' : 'Aggiungi contatto'}
+                {nuovoSaving ? 'Salvataggio…' : 'Aggiungi contatto'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ââ Modal email ââ */}
+      {/* ── Modal email ── */}
       {emailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
@@ -658,7 +667,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
             </div>
             <p className="text-stone text-xs mb-5">
               A: <span className="text-cream">{emailModal.email}</span>
-              {emailModal.nome && <> Â· {nomeCompleto(emailModal)}</>}
+              {emailModal.nome && <> · {nomeCompleto(emailModal)}</>}
             </p>
 
             {/* Selezione template */}
@@ -702,7 +711,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                   value={emailCustomBody}
                   onChange={e => setEmailCustomBody(e.target.value)}
                   rows={5}
-                  placeholder="Scrivi il messaggio da inviare al pazienteâ¦"
+                  placeholder="Scrivi il messaggio da inviare al paziente…"
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 placeholder:text-stone/30"
                 />
@@ -723,7 +732,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setEmailModal(null)}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                disabled={emailSending}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -734,7 +744,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                            border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-40"
               >
                 <Send size={11} />
-                {emailSending ? 'Invio in corsoâ¦' : 'Invia'}
+                {emailSending ? 'Invio in corso…' : 'Invia'}
               </button>
             </div>
 
@@ -742,11 +752,11 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         </div>
       )}
 
-      {/* ââ Modal note ââ */}
+      {/* ── Modal note ── */}
       {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
           <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">Note â {nomeCompleto(editModal)}</h2>
+            <h2 className="text-cream font-medium mb-1">Note — {nomeCompleto(editModal)}</h2>
             <p className="text-stone text-xs mb-4">Aggiungi o modifica le note per questo contatto</p>
             <textarea
               value={editNote}
@@ -755,12 +765,13 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
               autoFocus
               className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                          px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
-              placeholder="Inserisci noteâ¦"
+              placeholder="Inserisci note…"
             />
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setEditModal(null)}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                disabled={editSaving}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -769,7 +780,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
                 disabled={editSaving}
                 className="text-xs px-4 py-2 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50"
               >
-                {editSaving ? 'Salvataggioâ¦' : 'Salva note'}
+                {editSaving ? 'Salvataggio…' : 'Salva note'}
               </button>
             </div>
           </div>
