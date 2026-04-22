@@ -205,6 +205,7 @@ function InviteModal({ onClose, onSave }: { onClose: () => void; onSave: () => v
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleCreate() {
+    if (saving) return // guard doppio-click
     if (!form.email || !form.nome || !form.password) {
       setError('Email, nome e password sono obbligatori')
       return

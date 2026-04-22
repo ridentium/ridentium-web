@@ -4,10 +4,29 @@ import Link from 'next/link'
 import { ArrowRight, Package, CheckSquare, RefreshCw, ShoppingCart, Loader2 } from 'lucide-react'
 interface BachecaItem { tipo:'scorta'|'task'|'riordine'|'ricorrente'; priorita:number; titolo:string; dettaglio:string }
 interface Props { briefingFallback:string; firstName:string; alertCount:number; tasksCount:number; riordiniCount:number; ricorrentiCount:number }
+
+// TTL della cache briefing: 2 ore. Oltre: rigenera.
+const BRIEFING_TTL_MS = 2 * 60 * 60 * 1000
+
 export default function LinaBriefingCard({ briefingFallback, firstName, alertCount, tasksCount, riordiniCount, ricorrentiCount }: Props) {
   const [briefing, setBriefing] = useState(briefingFallback)
   const [loading, setLoading] = useState(false)
+
   useEffect(() => {
+    // Cache key: counts + date (giorno). Stesso giorno + stessi counts = stesso briefing.
+    const today = new Date().toISOString().slice(0, 10)
+    const cacheKey = `lina-briefing:${today}:${alertCount}:${tasksCount}:${riordiniCount}:${ricorrentiCount}`
+    try {
+      const raw = sessionStorage.getItem(cacheKey)
+      if (raw) {
+        const { text, ts } = JSON.parse(raw)
+        if (Date.now() - ts < BRIEFING_TTL_MS && text) {
+          setBriefing(text)
+          return // skip API call
+        }
+      }
+    } catch {}
+
     setLoading(true)
     const ctx = [
       alertCount > 0 ? alertCount+' prodotti sotto soglia' : 'magazzino in ordine',
@@ -15,11 +34,27 @@ export default function LinaBriefingCard({ briefingFallback, firstName, alertCou
       riordiniCount > 0 ? riordiniCount+' riordini da evadere' : null,
       ricorrentiCount > 0 ? ricorrentiCount+' azioni ricorrenti in sospeso' : null,
     ].filter(Boolean).join(', ')
-    fetch('/api/ai/chat', { method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ messages:[{ role:'user', content:'Briefing del giorno per '+firstName+'. Situazione attuale: '+ctx+'. Scrivi UNA frase di massimo 25 parole, tono caldo e diretto come una brava segretaria. Nessun prefisso, nessun elenco.' }] })
-    }).then(r=>r.json()).then(d=>{ if(d.risposta&&d.risposta.length<200) setBriefing(d.risposta.trim()) }).catch(()=>{}).finally(()=>setLoading(false))
+    const ctrl = new AbortController()
+    fetch('/api/ai/chat', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ messages:[{ role:'user', content:'Briefing del giorno per '+firstName+'. Situazione attuale: '+ctx+'. Scrivi UNA frase di massimo 25 parole, tono caldo e diretto come una brava segretaria. Nessun prefisso, nessun elenco.' }] }),
+      signal: ctrl.signal,
+    })
+      .then(r => r.json())
+      .then(d => {
+        if (d.risposta && d.risposta.length < 200) {
+          const text = d.risposta.trim()
+          setBriefing(text)
+          try { sessionStorage.setItem(cacheKey, JSON.stringify({ text, ts: Date.now() })) } catch {}
+        }
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+    return () => ctrl.abort()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [alertCount, tasksCount, riordiniCount, ricorrentiCount])
+
   function openLina() { document.dispatchEvent(new CustomEvent('lina:open')) }
   return (
     <div className="card lg:col-span-2 relative overflow-hidden" style={{ background:'linear-gradient(135deg,#3A2E22 0%,#2C2018 100%)', borderColor:'rgba(201,168,76,0.25)' }}>
