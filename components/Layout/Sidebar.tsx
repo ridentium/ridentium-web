@@ -9,7 +9,7 @@ import { cn, roleLabel } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen, Users, LogOut, ChevronRight,
   AlertTriangle, ShoppingCart, UserCircle2, RefreshCw, Activity, Sparkles,
-  Building2, X, Bell, ShieldCheck,
+  Building2, X, Bell, ShieldCheck, Settings2,
 } from 'lucide-react'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 
@@ -28,10 +28,11 @@ const adminTeam: NavItem[] = [
   { href:'/admin/staff',      label:'Staff',     icon:Users },
 ]
 const adminSistema: NavItem[] = [
-  { href:'/admin/adempimenti', label:'Adempimenti', icon:ShieldCheck },
-  { href:'/admin/sop',         label:'Protocolli',  icon:BookOpen },
-  { href:'/admin/registro',    label:'Registro',    icon:Activity },
-  { href:'/admin/notifiche',   label:'Notifiche',   icon:Bell },
+  { href:'/admin/adempimenti',  label:'Adempimenti',  icon:ShieldCheck },
+  { href:'/admin/sop',          label:'Protocolli',   icon:BookOpen },
+  { href:'/admin/registro',     label:'Registro',     icon:Activity },
+  { href:'/admin/notifiche',    label:'Notifiche',    icon:Bell },
+  { href:'/admin/impostazioni', label:'Impostazioni', icon:Settings2 },
 ]
 const adminAI: NavItem[] = [{ href:'/admin/ai', label:'Lina AI', icon:Sparkles, highlight:true }]
 
