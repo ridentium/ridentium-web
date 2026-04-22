@@ -43,21 +43,29 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
   const [newDesc, setNewDesc] = useState('')
   const [newFreq, setNewFreq] = useState<'giornaliero' | 'settimanale' | 'mensile'>('giornaliero')
   const [newAssignee, setNewAssignee] = useState<string>('null')
+  const [saving, setSaving] = useState(false)
+  const [toggling, setToggling] = useState<string | null>(null)
 
   async function toggleCompletamento(az: Ricorrente) {
-    const key = getPeriodoKey(az.frequenza)
-    const completamenti = [...az.completamenti]
-    const idx = completamenti.findIndex(c => c.userId === currentUserId && c.periodoKey === key)
-    if (idx >= 0) {
-      completamenti.splice(idx, 1)
-    } else {
-      completamenti.push({ userId: currentUserId, userName: currentUserNome, periodoKey: key, data: new Date().toISOString() })
+    if (toggling === az.id) return // guard doppio-click: evita duplicati nel JSON completamenti
+    setToggling(az.id)
+    try {
+      const key = getPeriodoKey(az.frequenza)
+      const completamenti = [...az.completamenti]
+      const idx = completamenti.findIndex(c => c.userId === currentUserId && c.periodoKey === key)
+      if (idx >= 0) {
+        completamenti.splice(idx, 1)
+      } else {
+        completamenti.push({ userId: currentUserId, userName: currentUserNome, periodoKey: key, data: new Date().toISOString() })
+      }
+      await supabase.from('ricorrenti').update({ completamenti }).eq('id', az.id)
+      await logActivity(currentUserId, currentUserNome,
+        idx >= 0 ? 'Azione ricorrente rimossa' : 'Azione ricorrente completata',
+        az.titolo, 'ricorrenti')
+      startTransition(() => router.refresh())
+    } finally {
+      setToggling(null)
     }
-    await supabase.from('ricorrenti').update({ completamenti }).eq('id', az.id)
-    await logActivity(currentUserId, currentUserNome,
-      idx >= 0 ? 'Azione ricorrente rimossa' : 'Azione ricorrente completata',
-      az.titolo, 'ricorrenti')
-    startTransition(() => router.refresh())
   }
 
   async function toggleAttiva(az: Ricorrente) {
@@ -77,21 +85,27 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
   }
 
   async function addAzione() {
+    if (saving) return // guard doppio-click
     if (!newTitolo.trim()) return
-    const nuova = {
-      titolo: newTitolo.trim(),
-      descrizione: newDesc.trim() || null,
-      frequenza: newFreq,
-      assegnato_a: newAssignee === 'null' ? null : newAssignee,
-      attiva: true,
-      completamenti: [],
+    setSaving(true)
+    try {
+      const nuova = {
+        titolo: newTitolo.trim(),
+        descrizione: newDesc.trim() || null,
+        frequenza: newFreq,
+        assegnato_a: newAssignee === 'null' ? null : newAssignee,
+        attiva: true,
+        completamenti: [],
+      }
+      await supabase.from('ricorrenti').insert(nuova)
+      await logActivity(currentUserId, currentUserNome,
+        'Azione ricorrente creata', `${newTitolo} (${newFreq})`, 'ricorrenti')
+      setNewTitolo(''); setNewDesc(''); setNewFreq('giornaliero'); setNewAssignee('null')
+      setShowForm(false)
+      startTransition(() => router.refresh())
+    } finally {
+      setSaving(false)
     }
-    await supabase.from('ricorrenti').insert(nuova)
-    await logActivity(currentUserId, currentUserNome,
-      'Azione ricorrente creata', `${newTitolo} (${newFreq})`, 'ricorrenti')
-    setNewTitolo(''); setNewDesc(''); setNewFreq('giornaliero'); setNewAssignee('null')
-    setShowForm(false)
-    startTransition(() => router.refresh())
   }
 
   return (
@@ -126,8 +140,10 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
             </select>
           </div>
           <div className="flex gap-3">
-            <button onClick={addAzione} className="btn-primary text-xs">Aggiungi</button>
-            <button onClick={() => setShowForm(false)} className="btn-secondary text-xs">Annulla</button>
+            <button onClick={addAzione} disabled={saving || !newTitolo.trim()} className="btn-primary text-xs disabled:opacity-50">
+              {saving ? 'Salvataggio…' : 'Aggiungi'}
+            </button>
+            <button onClick={() => setShowForm(false)} disabled={saving} className="btn-secondary text-xs disabled:opacity-50">Annulla</button>
           </div>
         </div>
       )}
@@ -155,8 +171,8 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                   type="checkbox"
                   checked={!!mioCompletamento}
                   onChange={() => az.attiva && toggleCompletamento(az)}
-                  disabled={!az.attiva}
-                  className="mt-1 w-4 h-4 accent-gold cursor-pointer flex-shrink-0"
+                  disabled={!az.attiva || toggling === az.id}
+                  className="mt-1 w-4 h-4 accent-gold cursor-pointer flex-shrink-0 disabled:cursor-wait"
                 />
                 <div className="flex-1 min-w-0">
                   <p className={`text-sm font-medium ${mioCompletamento ? 'line-through text-stone' : 'text-cream'}`}>

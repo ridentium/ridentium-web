@@ -162,6 +162,7 @@ function NewTaskModal({ staff, onClose, onSave }: {
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSave() {
+    if (saving) return // guard doppio-click
     if (!form.titolo.trim()) return
     setSaving(true)
     setError(null)
