@@ -5,6 +5,7 @@ import { Menu } from 'lucide-react'
 import Sidebar from './Sidebar'
 import ChatWidget from '@/components/AI/ChatWidget'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
+import NotifichePanel from '@/components/Notifiche/NotifichePanel'
 import { NotificheProvider } from '@/components/Notifiche/NotificheProvider'
 import { UserProfile } from '@/types'
 import PushInit from '@/components/Push/PushInit'
@@ -66,6 +67,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
 
         <ChatWidget userName={userName} userRole={userRole} alertCount={alertCount} tasksCount={tasksCount} />
         <PushInit />
+        <NotifichePanel isAdmin={isAdmin} />
       </div>
     </NotificheProvider>
   )

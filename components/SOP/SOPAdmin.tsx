@@ -113,15 +113,19 @@ function SOPModal({ sop, onClose, onSave }: { sop: any | null; onClose: () => vo
   }
 
   async function handleSave() {
+    if (saving) return // guard doppio-click
     setSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (sop) {
-      await supabase.from('sop').update(form).eq('id', sop.id)
-    } else {
-      await supabase.from('sop').insert({ ...form, autore: user?.id })
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (sop) {
+        await supabase.from('sop').update(form).eq('id', sop.id)
+      } else {
+        await supabase.from('sop').insert({ ...form, autore: user?.id })
+      }
+      onSave()
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    onSave()
   }
 
   return (
