@@ -10,7 +10,7 @@ import { DEFAULT_IMPOSTAZIONI, type ImpostazioniStudio } from '@/types/impostazi
 import {
   CheckCircle2, Clock, AlertCircle, ChevronDown, Filter, X,
   AlertTriangle, FileText, ShieldCheck, RefreshCw,
-  LayoutList, CalendarDays, AlignLeft,
+  LayoutList, CalendarDays, AlignLeft, UserCircle2,
 } from 'lucide-react'
 import AdempimentiCalendario from './AdempimentiCalendario'
 import AdempimentiTimeline from './AdempimentiTimeline'
@@ -31,6 +31,7 @@ const STATO_META: Record<StatoAdempimento, { Icon: React.ElementType; color: str
 export default function AdempimentiView({ canEdit }: Props) {
   const [adempimenti, setAdempimenti]     = useState<Adempimento[]>([])
   const [consulenti, setConsulenti]       = useState<Consulente[]>([])
+  const [profili, setProfili]             = useState<{ id: string; nome: string; cognome: string; ruolo: string }[]>([])
   const [impostazioni, setImpostazioni]   = useState<ImpostazioniStudio>(DEFAULT_IMPOSTAZIONI)
   const [loading, setLoading]             = useState(true)
   const [filtroStato, setFiltroStato]     = useState<FiltroStato>('tutti')
@@ -52,6 +53,7 @@ export default function AdempimentiView({ canEdit }: Props) {
           const d = await rAd.json()
           setAdempimenti(d.adempimenti ?? [])
           setConsulenti(d.consulenti ?? [])
+          setProfili(d.profili ?? [])
         }
         if (rImp.ok) {
           const imp = await rImp.json()
@@ -98,6 +100,19 @@ export default function AdempimentiView({ canEdit }: Props) {
       return aT - bT
     })
   }, [conStato, filtroStato, filtroCategoria])
+
+  async function onAssegnaResponsabile(adempimentoId: string, profiloId: string | null) {
+    await fetch(`/api/adempimenti/${adempimentoId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ responsabile_profilo_id: profiloId }),
+    })
+    const r = await fetch('/api/adempimenti', { cache: 'no-store' })
+    if (r.ok) {
+      const d = await r.json()
+      setAdempimenti(d.adempimenti ?? [])
+    }
+  }
 
   async function onCompletato() {
     const r = await fetch('/api/adempimenti', { cache: 'no-store' })
@@ -326,6 +341,37 @@ export default function AdempimentiView({ canEdit }: Props) {
                           {a.descrizione && (
                             <p className="text-xs text-stone/80 leading-relaxed">{a.descrizione}</p>
                           )}
+
+                          {/* Assegnato a — editabile da admin/manager */}
+                          <div className="flex items-center gap-2 text-xs">
+                            <UserCircle2 size={12} className="text-gold/60 flex-shrink-0" />
+                            <span className="text-stone/60 flex-shrink-0">Assegnato a:</span>
+                            {canEdit ? (
+                              <select
+                                value={a.responsabile_profilo_id ?? ''}
+                                onChange={e => onAssegnaResponsabile(a.id, e.target.value || null)}
+                                className="flex-1 min-w-0 text-xs rounded border px-2 py-1 outline-none"
+                                style={{
+                                  background: 'rgba(26,16,9,0.8)',
+                                  borderColor: 'rgba(74,59,44,0.6)',
+                                  color: '#D2C6B6',
+                                }}
+                              >
+                                <option value="">— Nessuno / etichetta —</option>
+                                {profili.map(p => (
+                                  <option key={p.id} value={p.id}>
+                                    {p.nome} {p.cognome}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-cream/80">{responsabileLabel(a)}</span>
+                            )}
+                            {canEdit && a.responsabile_etichetta && !a.responsabile_profilo_id && (
+                              <span className="text-stone/50 truncate">({a.responsabile_etichetta})</span>
+                            )}
+                          </div>
+
                           {a.evidenza_richiesta && (
                             <div className="flex items-start gap-2 text-xs">
                               <FileText size={12} className="text-gold/70 mt-0.5 flex-shrink-0" />
