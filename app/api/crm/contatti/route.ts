@@ -83,14 +83,16 @@ export async function POST(req: NextRequest) {
 
   // Notifica interna agli admin — nuovo lead nel CRM
   const nomeDisplay = [nome?.trim(), cognome?.trim()].filter(Boolean).join(' ') || email?.trim() || telefono?.trim() || 'Nuovo contatto'
-  createNotifica({
-    ruoli: ['admin'],
-    tipo: 'crm',
-    titolo: `Nuovo lead: ${nomeDisplay}`,
-    corpo: sorgente?.trim() ? `Sorgente: ${sorgente.trim()}` : undefined,
-    url: '/admin/crm',
-    push: true,
-  }).catch(e => console.warn('[CRM] Notifica failed:', e))
+  try {
+    await createNotifica({
+      ruoli: ['admin'],
+      tipo: 'crm',
+      titolo: `Nuovo lead: ${nomeDisplay}`,
+      corpo: sorgente?.trim() ? `Sorgente: ${sorgente.trim()}` : undefined,
+      url: '/admin/crm',
+      push: true,
+    })
+  } catch (e) { console.error('[CRM] Notifica failed:', e) }
 
   return NextResponse.json({ success: true, id: data.id }, { status: 201, headers: corsHeaders() })
 }
