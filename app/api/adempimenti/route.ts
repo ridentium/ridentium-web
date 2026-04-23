@@ -31,7 +31,12 @@ export async function GET(_req: NextRequest) {
     .eq('attivo', true)
     .order('ruolo')
 
-  return NextResponse.json({ adempimenti: adempimenti ?? [], consulenti: consulenti ?? [] })
+  const { data: profili } = await adminDb
+    .from('profili')
+    .select('id, nome, cognome, ruolo')
+    .order('nome')
+
+  return NextResponse.json({ adempimenti: adempimenti ?? [], consulenti: consulenti ?? [], profili: profili ?? [] })
 }
 
 // POST /api/adempimenti — crea nuovo adempimento (solo admin/manager)
