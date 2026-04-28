@@ -23,7 +23,7 @@ export default async function MagazzinoPage() {
       .select('*, profili(nome, cognome)')
       .eq('stato', 'aperta')
       .order('created_at', { ascending: false }),
-    supabase.from('fornitori').select('*').order('nome'),
+    supabase.from('fornitori').select('*, fornitore_contatti(*)').order('nome'),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
   ])
 
