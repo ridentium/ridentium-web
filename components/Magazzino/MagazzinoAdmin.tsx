@@ -26,6 +26,8 @@ interface Props {
   fornitori?: Fornitore[]
   userId?: string
   userNome?: string
+  /** IDs magazzino già presenti in ordini aperti (server-side) */
+  orderedItemIds?: string[]
 }
 
 interface ItemModalProps {
@@ -35,7 +37,7 @@ interface ItemModalProps {
   onSave: (updated?: MagazzinoItem) => void
 }
 
-export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '' }: Props) {
+export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '', orderedItemIds = [] }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
   // Se l'URL contiene ?filter=alert (es. da tap su "19 sotto soglia" nel dashboard),
@@ -106,10 +108,8 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       return 0
     })
 
-  // Alert items per ordine rapido: solo quelli con fornitore assegnato
   const alertItems = items.filter(i => i.quantita < i.soglia_minima)
   const alertCount = alertItems.length
-  const alertItemsConFornitore = alertItems.filter(i => (i as any).fornitore_id)
 
   async function saveQuantita(id: string, nuovaQuantita: number) {
     const item = items.find(i => i.id === id)
@@ -164,8 +164,8 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         </div>
       )}
 
-      {/* Ordine Rapido (collassabile) */}
-      {fornitori.length > 0 && alertItemsConFornitore.length > 0 && (
+      {/* Ordine Rapido (collassabile) — mostra tutti i prodotti sotto soglia */}
+      {alertItems.length > 0 && (
         <div className="card border-gold/20">
           <button
             onClick={() => setShowOrdineRapido(v => !v)}
@@ -174,7 +174,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             <div className="flex items-center gap-2">
               <Zap size={13} className="text-gold" />
               <h3 className="text-xs uppercase tracking-widest text-gold">
-                Ordine Rapido — {alertItemsConFornitore.length} prodott{alertItemsConFornitore.length === 1 ? 'o' : 'i'} da riordinare
+                Ordine Rapido — {alertItems.length} prodott{alertItems.length === 1 ? 'o' : 'i'} sotto soglia
               </h3>
             </div>
             {showOrdineRapido
@@ -185,10 +185,11 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
           {showOrdineRapido && (
             <div className="mt-4">
               <SottoSogliaOrdina
-                alertItems={alertItemsConFornitore}
+                alertItems={alertItems}
                 fornitori={fornitori}
                 userId={userId}
                 userNome={userNome}
+                orderedItemIds={orderedItemIds}
               />
             </div>
           )}
