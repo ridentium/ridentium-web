@@ -112,5 +112,42 @@ export async function PATCH(
     })
   }
 
+  // ── Ripristino ricezione (annulla ricezione → torna inviato) ──────────────
+  if (action === 'ripristina_ricezione') {
+    const { note, righe } = body as {
+      note?: string
+      righe: Array<{ id: string; magazzino_id?: string | null; quantita_ricevuta?: number | null; quantita_ordinata?: number }>
+    }
+
+    // Scala le quantità aggiunte al magazzino durante la ricezione
+    for (const r of righe ?? []) {
+      if (!r.magazzino_id) continue
+      const qtyDaScalare = Number(r.quantita_ricevuta ?? r.quantita_ordinata ?? 0)
+      if (qtyDaScalare <= 0) continue
+      const { data: item } = await adminDb.from('magazzino').select('quantita').eq('id', r.magazzino_id).single()
+      if (item) {
+        await adminDb.from('magazzino')
+          .update({ quantita: Math.max(0, (item as any).quantita - qtyDaScalare) })
+          .eq('id', r.magazzino_id)
+      }
+    }
+
+    // Riporta l'ordine a stato 'inviato' e cancella data_ricezione
+    const { error } = await adminDb
+      .from('ordini')
+      .update({ stato: 'inviato', data_ricezione: null, note: note || null })
+      .eq('id', params.id)
+
+    if (error) {
+      console.error('[ordini ripristina_ricezione]', error)
+      return NextResponse.json({ error: error.message }, { status: 500 })
+    }
+
+    return NextResponse.json({
+      ok: true,
+      updates: { stato: 'inviato', data_ricezione: null, note: note || null },
+    })
+  }
+
   return NextResponse.json({ error: 'Azione non riconosciuta' }, { status: 400 })
 }

@@ -156,8 +156,15 @@ export async function GET(req: NextRequest) {
     return 0
   })
 
+  // Profili per il pannello "Aggiungi"
+  const { data: profiliList } = await adminDb
+    .from('profili')
+    .select('id, nome, cognome, ruolo')
+    .order('cognome')
+
   return NextResponse.json({
     events,
+    profili: profiliList ?? [],
     meta: {
       oggi: oggiStr,
       fino: finoStr,

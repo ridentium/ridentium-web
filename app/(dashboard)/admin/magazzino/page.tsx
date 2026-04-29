@@ -10,7 +10,7 @@ export default async function MagazzinoPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   // Tutti i dati in parallelo
-  const [{ data: items }, { data: riordini }, { data: fornitori }, { data: profilo }] = await Promise.all([
+  const [{ data: items }, { data: riordini }, { data: fornitori }, { data: profilo }, { data: ordiniRighe }] = await Promise.all([
     supabase
       .from('magazzino')
       .select('*')
@@ -25,7 +25,18 @@ export default async function MagazzinoPage() {
       .order('created_at', { ascending: false }),
     supabase.from('fornitori').select('*, fornitore_contatti(*)').order('nome'),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
+    // Item magazzino già presenti in ordini aperti (inviato o parziale)
+    adminDb
+      .from('ordini_righe')
+      .select('magazzino_id, ordini!inner(stato)')
+      .in('ordini.stato' as any, ['inviato', 'parziale'])
+      .not('magazzino_id', 'is', null),
   ])
+
+  // Estrai gli ID magazzino già ordinati
+  const orderedItemIds = (ordiniRighe ?? [])
+    .map((r: any) => r.magazzino_id as string)
+    .filter(Boolean)
 
   const userNome = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
 
@@ -41,6 +52,7 @@ export default async function MagazzinoPage() {
         fornitori={fornitori ?? []}
         userId={user!.id}
         userNome={userNome}
+        orderedItemIds={orderedItemIds}
       />
     </div>
   )
