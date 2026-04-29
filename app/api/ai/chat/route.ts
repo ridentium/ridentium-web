@@ -102,10 +102,55 @@ const ALL_TOOLS = [
       },
     },
   },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'create_ordine',
+      description: 'Crea un ordine e lo invia al fornitore tramite il canale predefinito. Usalo quando l\'utente vuole ordinare prodotti sotto soglia o specifici articoli da un fornitore.',
+      parameters: {
+        type: 'object',
+        required: ['fornitore_id', 'fornitore_nome', 'righe'],
+        properties: {
+          fornitore_id: { type: 'string', description: 'ID del fornitore.' },
+          fornitore_nome: { type: 'string', description: 'Nome del fornitore.' },
+          canale: { type: 'string', enum: ['whatsapp', 'email', 'eshop', 'telefono'], description: 'Canale di invio. Se omesso usa whatsapp.' },
+          note: { type: 'string', description: 'Note aggiuntive per l\'ordine.' },
+          righe: {
+            type: 'array',
+            description: 'Lista prodotti da ordinare.',
+            items: {
+              type: 'object',
+              required: ['prodotto_nome', 'quantita_ordinata'],
+              properties: {
+                magazzino_id: { type: 'string', description: 'ID prodotto magazzino (se noto).' },
+                prodotto_nome: { type: 'string', description: 'Nome del prodotto.' },
+                quantita_ordinata: { type: 'number', description: 'Quantità da ordinare.' },
+                unita: { type: 'string', description: 'Unità di misura (pz, conf, ecc.).' },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_agenda',
+      description: 'Legge l\'agenda unificata: task, azioni ricorrenti e adempimenti. Usalo per rispondere su cosa c\'è in programma, scadenze imminenti o carichi di lavoro del team.',
+      parameters: {
+        type: 'object',
+        properties: {
+          profilo_id: { type: 'string', description: 'Filtra per uno specifico membro dello staff (ID profilo). Ometti per tutti.' },
+          giorni: { type: 'number', description: 'Numero di giorni futuri da considerare (default 30).' },
+        },
+      },
+    },
+  },
 ]
 
 // Strumenti non disponibili ad aso/segretaria
-const RESTRICTED_FOR_BASIC = ['create_riordine']
+const RESTRICTED_FOR_BASIC = ['create_riordine', 'create_ordine']
 
 // ── Tool executor ─────────────────────────────────────────────────────────────
 
@@ -191,6 +236,76 @@ async function executeTool(
         })
         if (error) return { errore: error.message }
         return { successo: true, messaggio: `Richiesta di riordino per "${item?.prodotto ?? 'prodotto'}" inviata.` }
+      }
+
+      case 'create_ordine': {
+        if (!input.righe?.length) return { errore: 'Nessun prodotto specificato.' }
+        const { data: ordine, error: errOrdine } = await db.from('ordini').insert({
+          fornitore_id: input.fornitore_id,
+          fornitore_nome: input.fornitore_nome,
+          canale: input.canale ?? 'whatsapp',
+          stato: 'inviato',
+          note: input.note ?? null,
+          data_invio: new Date().toISOString(),
+          created_by: userId,
+        }).select('id').single()
+        if (errOrdine || !ordine) return { errore: errOrdine?.message ?? 'Errore creazione ordine' }
+
+        const righeInsert = input.righe.map((r: any) => ({
+          ordine_id: ordine.id,
+          magazzino_id: r.magazzino_id ?? null,
+          prodotto_nome: r.prodotto_nome,
+          quantita_ordinata: r.quantita_ordinata,
+          unita: r.unita ?? null,
+        }))
+        const { error: errRighe } = await db.from('ordini_righe').insert(righeInsert)
+        if (errRighe) {
+          await db.from('ordini').delete().eq('id', ordine.id)
+          return { errore: errRighe.message }
+        }
+
+        const prodottiStr = input.righe.slice(0, 3).map((r: any) => r.prodotto_nome).join(', ')
+        return {
+          successo: true,
+          ordine_id: ordine.id,
+          messaggio: `Ordine creato per ${input.fornitore_nome}: ${prodottiStr}${input.righe.length > 3 ? ` +${input.righe.length - 3} altri` : ''}. Vai in /admin/ordini per seguirlo.`,
+        }
+      }
+
+      case 'get_agenda': {
+        const giorni = input.giorni ?? 30
+        const oggi = new Date()
+        const fino = new Date(oggi.getTime() + giorni * 24 * 60 * 60 * 1000)
+        const oggiStr = oggi.toISOString().split('T')[0]
+        const finoStr = fino.toISOString().split('T')[0]
+
+        // Task aperti con scadenza nel range
+        let tasksQ = db.from('tasks')
+          .select('id, titolo, stato, priorita, scadenza, assegnato_a, profili!tasks_assegnato_a_fkey(nome, cognome)')
+          .in('stato', ['da_fare', 'in_corso'])
+          .lte('scadenza', finoStr)
+          .gte('scadenza', oggiStr)
+          .order('scadenza')
+        if (input.profilo_id) tasksQ = (tasksQ as any).eq('assegnato_a', input.profilo_id)
+        const { data: tasks } = await tasksQ
+
+        // Adempimenti con scadenza nel range
+        let ademQ = db.from('adempimenti')
+          .select('id, titolo, categoria, prossima_scadenza, preavviso_giorni, responsabile_profilo_id, responsabile_profilo:profili!adempimenti_responsabile_profilo_id_fkey(nome, cognome)')
+          .eq('attivo', true)
+          .lte('prossima_scadenza', finoStr)
+          .gte('prossima_scadenza', oggiStr)
+          .order('prossima_scadenza')
+        if (input.profilo_id) ademQ = (ademQ as any).eq('responsabile_profilo_id', input.profilo_id)
+        const { data: adempimenti } = await ademQ
+
+        return {
+          periodo: `${oggiStr} → ${finoStr}`,
+          tasks: (tasks ?? []).slice(0, 30),
+          adempimenti: (adempimenti ?? []).slice(0, 30),
+          totale_task: tasks?.length ?? 0,
+          totale_adempimenti: adempimenti?.length ?? 0,
+        }
       }
 
       default:

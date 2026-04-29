@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createNotifica } from '@/lib/notifiche'
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -62,6 +63,22 @@ export async function POST(req: NextRequest) {
   if (errRighe) {
     await adminDb.from('ordini').delete().eq('id', ordine.id)
     return NextResponse.json({ error: errRighe.message }, { status: 500 })
+  }
+
+  // Notifica push: ordine inviato
+  const prodottiStr = righe.slice(0, 3).map((r: any) => r.prodotto_nome).join(', ')
+  const extra = righe.length > 3 ? ` +${righe.length - 3} altri` : ''
+  try {
+    await createNotifica({
+      ruoli: ['admin', 'manager'],
+      tipo: 'magazzino',
+      titolo: `Ordine inviato a ${fornitore_nome}`,
+      corpo: `${prodottiStr}${extra} — canale: ${canale ?? 'whatsapp'}`,
+      url: '/admin/ordini',
+      push: true,
+    })
+  } catch (e) {
+    console.error('[ordini] Notifica failed:', e)
   }
 
   return NextResponse.json({ ordine: { ...ordine, righe: righeData ?? [] } })

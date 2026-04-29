@@ -9,7 +9,7 @@ import { cn, roleLabel } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen, Users, LogOut, ChevronRight,
   AlertTriangle, ShoppingCart, UserCircle2, RefreshCw, Activity, Sparkles,
-  Building2, X, Bell, ShieldCheck, Settings2,
+  Building2, X, Bell, ShieldCheck, Settings2, CalendarDays,
 } from 'lucide-react'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 
@@ -22,6 +22,7 @@ const adminOperazioni: NavItem[] = [
   { href:'/admin/fornitori', label:'Fornitori', icon:Building2 },
 ]
 const adminTeam: NavItem[] = [
+  { href:'/admin/agenda',     label:'Agenda',    icon:CalendarDays },
   { href:'/admin/tasks',      label:'Task',      icon:CheckSquare },
   { href:'/admin/ricorrenti', label:'Ricorrenti', icon:RefreshCw },
   { href:'/admin/crm',        label:'CRM',       icon:UserCircle2 },
@@ -38,6 +39,7 @@ const adminAI: NavItem[] = [{ href:'/admin/ai', label:'Lina AI', icon:Sparkles, 
 
 const staffNav: NavItem[] = [
   { href:'/staff',             label:'Home',        icon:LayoutDashboard },
+  { href:'/staff/agenda',      label:'Agenda',      icon:CalendarDays },
   { href:'/staff/magazzino',   label:'Magazzino',   icon:Package },
   { href:'/staff/tasks',       label:'I miei task', icon:CheckSquare },
   { href:'/staff/ricorrenti',  label:'Ricorrenti',  icon:RefreshCw },
