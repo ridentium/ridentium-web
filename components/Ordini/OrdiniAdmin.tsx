@@ -63,8 +63,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   const [ricezioneSaving, setRicezioneSaving] = useState(false)
   const [ricezioneError, setRicezioneError] = useState<string | null>(null)
 
-  // Modal annulla
-  const [annullaModal, setAnnullaModal] = useState<{ ordineId: string } | null>(null)
+  // Modal annulla (isRipristino = true → annulla ricezione, non annulla ordine)
+  const [annullaModal, setAnnullaModal] = useState<{ ordineId: string; isRipristino?: boolean } | null>(null)
   const [annullaNote, setAnnullaNote] = useState('')
   const [annullaError, setAnnullaError] = useState<string | null>(null)
   const [annullaSaving, setAnnullaSaving] = useState(false)
@@ -170,19 +170,22 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     setRicezioneSaving(false)
   }
 
-  async function cambiaStatoAnnullato(ordineId: string, note?: string) {
+  async function cambiaStatoAnnullato(ordineId: string, note?: string, isRipristino?: boolean) {
     if (annullaSaving) return // guard doppio-click
     setAnnullaSaving(true)
     setLoading(ordineId)
     setAnnullaError(null)
     const ordine = ordini.find(o => o.id === ordineId)
 
-    // Delega tutto all'API route (usa admin client server-side, bypassa RLS)
+    // "Annulla ricezione" → ripristina l'ordine a stato inviato (le qty vengono stornate dal magazzino)
+    // "Annulla ordine" → imposta stato annullato
+    const action = isRipristino ? 'ripristina_ricezione' : 'annulla'
+
     const res = await fetch(`/api/ordini/${ordineId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        action: 'annulla',
+        action,
         note: note ?? '',
         statoCorrente: ordine?.stato ?? '',
         righe: ordine?.righe ?? [],
@@ -197,36 +200,15 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
       return
     }
 
-    if (res.ok) {
-      const { updates } = await res.json()
-      setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
+    const { updates } = await res.json()
+    setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
 
-      const prodottiScalati = (ordine?.righe ?? [])
-        .filter(r => {
-          const qty = (r as OrdineRigaConRicevuta).quantita_ricevuta != null
-            ? (r as OrdineRigaConRicevuta).quantita_ricevuta as number
-            : ordine?.stato === 'ricevuto' ? r.quantita_ordinata : 0
-          return qty > 0 && r.magazzino_id
-        })
-        .map(r => {
-          const qty = (r as OrdineRigaConRicevuta).quantita_ricevuta != null
-            ? (r as OrdineRigaConRicevuta).quantita_ricevuta as number
-            : r.quantita_ordinata
-          return `${r.prodotto_nome}: -${qty} ${r.unita ?? 'pz'}`
-        })
-
-      const azioneLabel = ordine?.stato === 'ricevuto'
+    const azioneLabel = isRipristino
+      ? `Ricezione annullata (ordine ripristinato): ${ordine?.fornitore_nome ?? ''}`
+      : ordine?.stato === 'ricevuto'
         ? `Ricezione annullata: ${ordine.fornitore_nome}`
         : `Ordine annullato: ${ordine?.fornitore_nome ?? ''}`
-      await logActivity(
-        userId, userNome,
-        azioneLabel,
-        prodottiScalati.length > 0
-          ? `Scalato dal magazzino — ${prodottiScalati.join(', ')}`
-          : undefined,
-        'magazzino'
-      )
-    }
+    await logActivity(userId, userNome, azioneLabel, undefined, 'magazzino')
 
     setLoading(null)
     setAnnullaModal(null)
@@ -527,7 +509,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                 {ordine.stato === 'ricevuto' && (
                   <div className="mt-3 pt-3 border-t border-obsidian-light/30 flex gap-2 flex-wrap">
                     <button
-                      onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote(''); setAnnullaError(null) }}
+                      onClick={() => { setAnnullaModal({ ordineId: ordine.id, isRipristino: true }); setAnnullaNote(''); setAnnullaError(null) }}
                       disabled={isLoading}
                       className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-orange-500/10 border border-orange-500/30 text-orange-400 hover:bg-orange-500/20 transition-colors disabled:opacity-50"
                     >
@@ -543,8 +525,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
       {/* Modal ricezione ordine */}
       {ricezioneModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="border border-obsidian-light/60 rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl" style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}>
 
             {ricezioneStep === 'tipo' ? (
               <>
@@ -661,20 +643,19 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
       {/* Modal annulla ordine / annulla ricezione */}
       {annullaModal && (() => {
         const ordineTarget = ordini.find(o => o.id === annullaModal.ordineId)
-        const isRicezioneAnnullata = ordineTarget?.stato === 'ricevuto' || ordineTarget?.stato === 'parziale'
-        const titleLabel = (ordineTarget?.stato === 'ricevuto' || ordineTarget?.stato === 'parziale')
-          ? 'Annulla ricezione'
-          : 'Annulla ordine'
+        const isRipristino = annullaModal.isRipristino === true
         return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">{titleLabel}</h2>
-            {isRicezioneAnnullata ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="border border-obsidian-light/60 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl" style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}>
+            <h2 className="font-medium mb-1" style={{ color: '#F2EDE4' }}>
+              {isRipristino ? 'Annulla ricezione' : 'Annulla ordine'}
+            </h2>
+            {isRipristino ? (
               <p className="text-orange-400/80 text-xs mb-4">
-                ⚠ Le quantità aggiunte al magazzino verranno scalate. Aggiungi un motivo (opzionale).
+                ⚠ Le quantità aggiunte al magazzino verranno stornate. L&apos;ordine tornerà nello stato &ldquo;Inviato&rdquo; e potrà essere confermato di nuovo.
               </p>
             ) : (
-              <p className="text-stone text-xs mb-4">Motivo annullamento (opzionale)</p>
+              <p className="text-xs mb-4" style={{ color: 'rgba(210,198,182,0.6)' }}>Motivo annullamento (opzionale)</p>
             )}
             <textarea
               value={annullaNote}
@@ -698,15 +679,15 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                 Annulla
               </button>
               <button
-                onClick={() => cambiaStatoAnnullato(annullaModal.ordineId, annullaNote || undefined)}
+                onClick={() => cambiaStatoAnnullato(annullaModal.ordineId, annullaNote || undefined, isRipristino)}
                 disabled={annullaSaving}
                 className={`text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50 ${
-                  isRicezioneAnnullata
+                  isRipristino
                     ? 'bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30'
                     : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
                 }`}
               >
-                {annullaSaving ? 'Salvataggio…' : 'Conferma'}
+                {annullaSaving ? 'Salvataggio…' : isRipristino ? 'Conferma annulla ricezione' : 'Conferma annullamento'}
               </button>
             </div>
           </div>
@@ -716,8 +697,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
       {/* Modal nuovo ordine */}
       {nuovoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+          <div className="border border-obsidian-light/60 rounded-xl p-6 w-full max-w-xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-cream font-medium">Nuovo ordine</h2>
               <button
