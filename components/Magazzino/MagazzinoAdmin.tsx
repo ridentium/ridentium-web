@@ -28,6 +28,13 @@ interface Props {
   userNome?: string
 }
 
+interface ItemModalProps {
+  item: MagazzinoItem | null
+  fornitori: Fornitore[]
+  onClose: () => void
+  onSave: (updated?: MagazzinoItem) => void
+}
+
 export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '' }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
@@ -105,8 +112,21 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   const alertItemsConFornitore = alertItems.filter(i => (i as any).fornitore_id)
 
   async function saveQuantita(id: string, nuovaQuantita: number) {
+    const item = items.find(i => i.id === id)
+    const eraOk = item ? item.quantita >= item.soglia_minima : true
+    const saraAlert = item ? nuovaQuantita < item.soglia_minima : false
+
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantita: nuovaQuantita } : i))
     await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
+
+    // Notifica soglia solo quando si PASSA da ok → alert (non ad ogni modifica sotto soglia)
+    if (eraOk && saraAlert && item) {
+      fetch('/api/magazzino/check-soglia', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, prodotto: item.prodotto, quantita: nuovaQuantita, soglia_minima: item.soglia_minima }),
+      }).catch(() => {})
+    }
   }
 
   async function evadiRiordine(riordineId: string) {
@@ -316,7 +336,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                       }
                     </td>
                     <td className={item.scadenza && new Date(item.scadenza) < new Date() ? 'text-red-400' : ''}>
-                      {formatDate(item.scadenza)}
+                      {formatDate(item.scadenza ?? undefined)}
                     </td>
                     <td>
                       <button onClick={() => setEditItem(item)} className="btn-ghost p-1.5">
@@ -335,6 +355,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       {(editItem || showAddForm) && (
         <ItemModal
           item={editItem}
+          fornitori={fornitori}
           onClose={() => { setEditItem(null); setShowAddForm(false) }}
           onSave={(updated?: MagazzinoItem) => {
             setEditItem(null)
@@ -380,11 +401,7 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
   )
 }
 
-function ItemModal({ item, onClose, onSave }: {
-  item: MagazzinoItem | null
-  onClose: () => void
-  onSave: (updated?: MagazzinoItem) => void
-}) {
+function ItemModal({ item, fornitori, onClose, onSave }: ItemModalProps) {
   const supabase = createClient()
   const [form, setForm] = useState<Partial<MagazzinoItem>>(item ?? {
     prodotto: '', categoria: 'Impianti', azienda: 'Neodent',
@@ -436,6 +453,17 @@ function ItemModal({ item, onClose, onSave }: {
             <label className="label-field block mb-1.5">Azienda</label>
             <input className="input" value={form.azienda ?? ''} onChange={e => set('azienda', e.target.value)} />
           </div>
+          {fornitori.length > 0 && (
+            <div className="col-span-2">
+              <label className="label-field block mb-1.5">Fornitore (per riordino automatico)</label>
+              <select className="input" value={form.fornitore_id ?? ''} onChange={e => set('fornitore_id', e.target.value || null)}>
+                <option value="">— Nessun fornitore —</option>
+                {fornitori.map(f => (
+                  <option key={f.id} value={f.id}>{f.nome}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label className="label-field block mb-1.5">Codice Articolo</label>
             <input className="input" value={form.codice_articolo ?? ''} onChange={e => set('codice_articolo', e.target.value)} />
