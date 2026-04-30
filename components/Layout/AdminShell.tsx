@@ -126,7 +126,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
           </main>
         </div>
 
-        <BottomNav isAdmin={isAdmin} onSearchOpen={() => setSearchOpen(true)} />
+        <BottomNav isAdmin={isAdmin} onSearchOpen={() => setSearchOpen(true)} alertCount={alertCount} tasksCount={tasksCount} />
         <ChatWidget userName={userName} userRole={userRole} alertCount={alertCount} tasksCount={tasksCount} />
         <PushInit />
         <NotifichePanel isAdmin={isAdmin} />

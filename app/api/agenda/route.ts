@@ -12,6 +12,17 @@ import { AgendaEvent } from '@/types/agenda'
  *   - tutti   (default false per staff, true per admin/manager):
  *             se "false" mostra solo gli eventi assegnati all'utente corrente
  */
+function getPeriodoKey(frequenza: string): string {
+  const now = new Date()
+  if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
+  if (frequenza === 'settimanale') {
+    const d = new Date(now)
+    d.setDate(d.getDate() - d.getDay() + 1)
+    return 'W' + d.toISOString().split('T')[0]
+  }
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
+}
+
 export async function GET(req: NextRequest) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -84,7 +95,7 @@ export async function GET(req: NextRequest) {
     let q = adminDb
       .from('ricorrenti')
       .select(`
-        id, titolo, descrizione, frequenza, assegnato_a, attiva,
+        id, titolo, descrizione, frequenza, assegnato_a, attiva, completamenti,
         assegnato_a_profilo:profili!ricorrenti_assegnato_a_fkey(id, nome, cognome)
       `)
       .eq('attiva', true)
@@ -98,6 +109,9 @@ export async function GET(req: NextRequest) {
       if (!mostraTutti && assegnatoId !== null && assegnatoId !== user.id) continue
 
       const profAssegnato = (r as any).assegnato_a_profilo
+      const completamenti: Array<{ periodoKey: string }> = (r as any).completamenti ?? []
+      const periodoKey = getPeriodoKey(r.frequenza)
+      const completata_oggi = completamenti.some(c => c.periodoKey === periodoKey)
       events.push({
         id: r.id,
         tipo: 'ricorrente',
@@ -106,6 +120,7 @@ export async function GET(req: NextRequest) {
         data: null,
         frequenza: r.frequenza,
         attiva: (r as any).attiva ?? true,
+        completata_oggi,
         assegnato_a_id: assegnatoId,
         assegnato_a_nome: profAssegnato
           ? `${profAssegnato.nome} ${profAssegnato.cognome}`.trim()

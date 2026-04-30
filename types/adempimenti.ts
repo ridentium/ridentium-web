@@ -54,6 +54,8 @@ export interface Adempimento {
   preavviso_giorni: number
   prossima_scadenza: string | null
   ultima_esecuzione: string | null
+  evidenza_descrizione: string | null
+  evidenza_url: string | null
   attivo: boolean
   note: string | null
   created_at: string
