@@ -1,17 +1,18 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Adempimento, Consulente, CATEGORIA_LABEL, CATEGORIA_COLOR,
   FREQUENZA_LABEL, calcolaStato, scadenzaLabel,
   type StatoAdempimento, type CategoriaAdempimento, type FrequenzaAdempimento,
 } from '@/types/adempimenti'
 import { DEFAULT_IMPOSTAZIONI, type ImpostazioniStudio } from '@/types/impostazioni'
+import Toast, { type ToastState } from '@/components/ui/Toast'
 import {
   CheckCircle2, Clock, AlertCircle, ChevronDown, Filter, X,
   AlertTriangle, FileText, ShieldCheck, RefreshCw,
   LayoutList, CalendarDays, AlignLeft, UserCircle2,
-  Pencil, Trash2, Check, Loader2,
+  Pencil, Trash2, Check, Loader2, Search,
 } from 'lucide-react'
 import AdempimentiCalendario from './AdempimentiCalendario'
 import AdempimentiTimeline from './AdempimentiTimeline'
@@ -37,12 +38,20 @@ export default function AdempimentiView({ canEdit }: Props) {
   const [loading, setLoading]             = useState(true)
   const [filtroStato, setFiltroStato]     = useState<FiltroStato>('tutti')
   const [filtroCategoria, setFiltroCategoria] = useState<'' | CategoriaAdempimento>('')
+  const [search, setSearch]               = useState('')
   const [view, setView]                   = useState<ViewMode>('lista')
   const [expandedId, setExpandedId]       = useState<string | null>(null)
   const [completaTarget, setCompletaTarget] = useState<Adempimento | null>(null)
   const [editTarget, setEditTarget]       = useState<Adempimento | null>(null)
   const [deletingId, setDeletingId]       = useState<string | null>(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [segnandoId, setSegnandoId]       = useState<string | null>(null)
+
+  // Toast
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+  }, [])
 
   useEffect(() => {
     let alive = true
@@ -95,6 +104,14 @@ export default function AdempimentiView({ canEdit }: Props) {
     let list = conStato
     if (filtroStato !== 'tutti') list = list.filter(a => a._stato === filtroStato)
     if (filtroCategoria)         list = list.filter(a => a.categoria === filtroCategoria)
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(a =>
+        a.titolo.toLowerCase().includes(q) ||
+        (a.descrizione ?? '').toLowerCase().includes(q) ||
+        CATEGORIA_LABEL[a.categoria]?.toLowerCase().includes(q)
+      )
+    }
     return [...list].sort((a, b) => {
       const order: Record<StatoAdempimento, number> = { scaduto: 0, in_scadenza: 1, ok: 2 }
       const d = order[a._stato] - order[b._stato]
@@ -103,7 +120,7 @@ export default function AdempimentiView({ canEdit }: Props) {
       const bT = b.prossima_scadenza ? new Date(b.prossima_scadenza).getTime() : 0
       return aT - bT
     })
-  }, [conStato, filtroStato, filtroCategoria])
+  }, [conStato, filtroStato, filtroCategoria, search])
 
   async function onAssegnaResponsabile(adempimentoId: string, profiloId: string | null) {
     await fetch(`/api/adempimenti/${adempimentoId}`, {
@@ -118,10 +135,36 @@ export default function AdempimentiView({ canEdit }: Props) {
     }
   }
 
-  async function onCompletato() {
+  async function reloadAdempimenti() {
     const r = await fetch('/api/adempimenti', { cache: 'no-store' })
     if (r.ok) { const d = await r.json(); setAdempimenti(d.adempimenti ?? []) }
+  }
+
+  async function onCompletato() {
+    await reloadAdempimenti()
     setCompletaTarget(null)
+    showToast('Adempimento completato!')
+  }
+
+  // Smart "Segna fatto": se non serve evidenza, completa direttamente senza modal
+  async function segnaDiretto(a: Adempimento) {
+    if (a.evidenza_richiesta) {
+      setCompletaTarget(a)
+      return
+    }
+    setSegnandoId(a.id)
+    const r = await fetch(`/api/adempimenti/${a.id}/completa`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: null, evidenza_descrizione: null }),
+    })
+    if (r.ok) {
+      await reloadAdempimenti()
+      showToast('Adempimento segnato come fatto!')
+    } else {
+      showToast('Errore durante il completamento', 'error')
+    }
+    setSegnandoId(null)
   }
 
   async function onSalvaModifica(id: string, body: Record<string, unknown>) {
@@ -129,8 +172,10 @@ export default function AdempimentiView({ canEdit }: Props) {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
     if (r.ok) {
-      const d = await fetch('/api/adempimenti', { cache: 'no-store' }).then(x => x.json())
-      setAdempimenti(d.adempimenti ?? [])
+      await reloadAdempimenti()
+      showToast('Modifiche salvate!')
+    } else {
+      showToast('Errore nel salvataggio', 'error')
     }
     setEditTarget(null)
   }
@@ -138,7 +183,12 @@ export default function AdempimentiView({ canEdit }: Props) {
   async function onElimina(id: string) {
     setDeletingId(id)
     const r = await fetch(`/api/adempimenti/${id}`, { method: 'DELETE' })
-    if (r.ok) setAdempimenti(prev => prev.filter(a => a.id !== id))
+    if (r.ok) {
+      setAdempimenti(prev => prev.filter(a => a.id !== id))
+      showToast('Adempimento eliminato')
+    } else {
+      showToast('Errore durante l\'eliminazione', 'error')
+    }
     setDeletingId(null); setConfirmDeleteId(null)
   }
 
@@ -249,6 +299,27 @@ export default function AdempimentiView({ canEdit }: Props) {
         </div>
       )}
 
+      {/* Search bar — solo in vista lista */}
+      {view === 'lista' && (
+        <div className="relative">
+          <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone/40 pointer-events-none" />
+          <input
+            className="input w-full pl-8 pr-8 text-sm"
+            placeholder="Cerca negli adempimenti…"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          {search && (
+            <button
+              onClick={() => setSearch('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone/40 hover:text-cream transition-colors"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── Vista Calendario ── */}
       {view === 'calendario' && (
         <AdempimentiCalendario
@@ -273,7 +344,11 @@ export default function AdempimentiView({ canEdit }: Props) {
           <div className="card text-center py-12" style={{ color: 'rgba(210,198,182,0.5)' }}>
             <ShieldCheck size={32} className="mx-auto mb-3" style={{ color: 'rgba(74,222,128,0.5)' }} />
             <p className="text-sm">
-              {adempimenti.length === 0 ? 'Nessun adempimento configurato.' : 'Nessun adempimento in questo filtro.'}
+              {search
+                ? `Nessun risultato per "${search}".`
+                : adempimenti.length === 0
+                  ? 'Nessun adempimento configurato.'
+                  : 'Nessun adempimento in questo filtro.'}
             </p>
           </div>
         ) : (
@@ -284,6 +359,7 @@ export default function AdempimentiView({ canEdit }: Props) {
               const StatoIcon = meta.Icon
               const isExpanded = expandedId === a.id
               const catColor   = CATEGORIA_COLOR[a.categoria]
+              const isScaduto  = stato === 'scaduto'
 
               return (
                 <div
@@ -291,7 +367,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                   className="card"
                   style={{
                     borderLeft: `3px solid ${meta.color}`,
-                    background: stato === 'scaduto' ? 'rgba(248,113,113,0.04)' : undefined,
+                    background: isScaduto ? 'rgba(248,113,113,0.04)' : undefined,
                   }}
                 >
                   <div className="flex items-start gap-3">
@@ -305,7 +381,18 @@ export default function AdempimentiView({ canEdit }: Props) {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-sm font-medium text-cream leading-snug">{a.titolo}</h3>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-sm font-medium text-cream leading-snug">{a.titolo}</h3>
+                            {/* Badge SCADUTO prominente */}
+                            {isScaduto && (
+                              <span
+                                className="text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider flex-shrink-0"
+                                style={{ background: 'rgba(248,113,113,0.15)', color: '#F87171', border: '1px solid rgba(248,113,113,0.4)' }}
+                              >
+                                ⚠ Scaduto
+                              </span>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 mt-1 flex-wrap">
                             <span
                               className="text-[10px] px-1.5 py-0.5 rounded border"
@@ -335,12 +422,17 @@ export default function AdempimentiView({ canEdit }: Props) {
                       </div>
 
                       <div className="flex items-center gap-2 mt-3 flex-wrap">
+                        {/* Smart "Segna fatto" */}
                         <button
-                          onClick={() => setCompletaTarget(a)}
-                          className="flex items-center gap-1.5 text-xs px-3 py-2 rounded border transition-colors"
+                          onClick={() => segnaDiretto(a)}
+                          disabled={segnandoId === a.id}
+                          className="flex items-center gap-1.5 text-xs px-3 py-2 rounded border transition-colors disabled:opacity-50"
                           style={{ background: 'rgba(74,222,128,0.12)', borderColor: 'rgba(74,222,128,0.4)', color: '#4ADE80', minHeight: 36 }}
                         >
-                          <CheckCircle2 size={13} /> Segna fatto
+                          {segnandoId === a.id
+                            ? <><Loader2 size={13} className="animate-spin" /> Salvataggio…</>
+                            : <><CheckCircle2 size={13} /> Segna fatto</>
+                          }
                         </button>
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : a.id)}
@@ -465,6 +557,14 @@ export default function AdempimentiView({ canEdit }: Props) {
           onSaved={(body) => onSalvaModifica(editTarget.id, body)}
         />
       )}
+
+      {/* Toast */}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
+      )}
+
+      {/* Suppress unused import warning */}
+      {consulenti.length === 0 && null}
     </div>
   )
 }
@@ -482,6 +582,15 @@ function CompletaModal({
   const [evidenza, setEvidenza] = useState('')
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState<string | null>(null)
+
+  // Escape key
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
 
   async function handleSubmit() {
     if (saving) return
@@ -606,6 +715,15 @@ function EditAdempimentoModal({
   const RUOLO_LABEL: Record<string, string> = {
     admin: 'Admin', manager: 'Manager', aso: 'ASO', segretaria: 'Segreteria', clinico: 'Clinico',
   }
+
+  // Escape key
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
 
   async function handleSave() {
     if (!titolo.trim()) { setErrore('Il titolo è obbligatorio'); return }
