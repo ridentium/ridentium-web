@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import PageHeader from '@/components/Layout/PageHeader'
 import TasksAdmin from '@/components/Tasks/TasksAdmin'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export default async function TasksAdminPage() {
   const supabase = createClient()
@@ -18,7 +19,9 @@ export default async function TasksAdminPage() {
   return (
     <div>
       <PageHeader title="Task" subtitle="Gestione attività e assegnazioni" />
-      <TasksAdmin tasks={tasks ?? []} staff={staff ?? []} />
+      <ErrorBoundary fallback="Errore nel caricamento dei task">
+        <TasksAdmin tasks={tasks ?? []} staff={staff ?? []} />
+      </ErrorBoundary>
     </div>
   )
 }
