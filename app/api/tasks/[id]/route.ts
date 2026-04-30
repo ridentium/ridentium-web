@@ -125,8 +125,11 @@ export async function DELETE(
     }
   }
 
-  const { error } = await adminDb.from('tasks').delete().eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const { error } = await adminDb
+    .from('tasks')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', params.id)
+  if (error) return NextResponse.json({ error: 'Errore durante l\'eliminazione' }, { status: 500 })
 
   await logActivityServer(
     user.id, userNome,

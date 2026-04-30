@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const [{ data: profilo }, { data: scoreRaw }, { data: tasksRaw }] = await Promise.all([
     adminDb.from('profili').select('*').eq('id', user.id).single(),
     supabase.from('magazzino').select('quantita, soglia_minima'),
-    supabase.from('tasks').select('id').neq('stato', 'completato'),
+    supabase.from('tasks').select('id').neq('stato', 'completato').is('deleted_at', null),
   ])
 
   if (profilo?.ruolo !== 'admin') redirect('/staff')

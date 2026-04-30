@@ -97,7 +97,7 @@ export default async function AdminHome() {
     { data: adempimentiAll },
   ] = await Promise.all([
     supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria'),
-    supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a, stato').neq('stato', 'completato'),
+    supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a, stato').neq('stato', 'completato').is('deleted_at', null),
     supabase.from('profili').select('id').eq('attivo', true),
     supabase.from('riordini').select('id, created_at, magazzino(prodotto)').eq('stato', 'aperta'),
     supabase.from('ricorrenti').select('*').eq('attiva', true).order('created_at', { ascending: true }),

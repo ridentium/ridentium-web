@@ -9,6 +9,7 @@ export default async function TasksAdminPage() {
     supabase
       .from('tasks')
       .select('*, assegnato_a_profilo:profili!tasks_assegnato_a_fkey(nome, cognome, ruolo)')
+      .is('deleted_at', null)
       .order('priorita', { ascending: false })
       .order('created_at', { ascending: false }),
     supabase.from('profili').select('id, nome, cognome, ruolo, email, created_at').eq('attivo', true),

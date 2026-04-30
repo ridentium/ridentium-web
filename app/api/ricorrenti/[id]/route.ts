@@ -64,8 +64,11 @@ export async function DELETE(
   const { data: ricorrente } = await adminDb
     .from('ricorrenti').select('titolo').eq('id', params.id).single()
 
-  const { error } = await adminDb.from('ricorrenti').delete().eq('id', params.id)
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  const { error } = await adminDb
+    .from('ricorrenti')
+    .update({ attiva: false, deleted_at: new Date().toISOString() })
+    .eq('id', params.id)
+  if (error) return NextResponse.json({ error: 'Errore durante l\'eliminazione' }, { status: 500 })
 
   await logActivityServer(
     user.id, userNome,
