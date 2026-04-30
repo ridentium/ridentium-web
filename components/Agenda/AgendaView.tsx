@@ -5,6 +5,7 @@ import { AgendaEvent, AgendaTipo } from '@/types/agenda'
 import { CATEGORIA_LABEL, CATEGORIA_COLOR } from '@/types/adempimenti'
 import type { CategoriaAdempimento } from '@/types/adempimenti'
 import Toast, { type ToastState } from '@/components/ui/Toast'
+import TaskCommenti from '@/components/Tasks/TaskCommenti'
 import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import {
   CheckSquare, RefreshCw, ShieldCheck, AlertTriangle, Clock,
@@ -454,6 +455,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           event={editTarget}
           profili={profili}
           isAdmin={isAdmin}
+          userId={userId}
           onClose={() => setEditTarget(null)}
           onSaved={() => { setEditTarget(null); load(); showToast('Modifiche salvate!') }}
         />
@@ -667,9 +669,9 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
 // ─── EditModal ────────────────────────────────────────────────────────────────
 
 function EditModal({
-  event: e, profili, isAdmin, onClose, onSaved,
+  event: e, profili, isAdmin, userId, onClose, onSaved,
 }: {
-  event: AgendaEvent; profili: Profilo[]; isAdmin: boolean
+  event: AgendaEvent; profili: Profilo[]; isAdmin: boolean; userId: string
   onClose: () => void; onSaved: () => void
 }) {
   const [titolo, setTitolo] = useState(e.titolo)
@@ -698,6 +700,10 @@ function EditModal({
   const [respEtichetta, setRespEtichetta] = useState(e.responsabile_etichetta ?? '')
 
   const cfg = TIPO_CONFIG[e.tipo]
+
+  // Nome utente corrente (per commenti)
+  const currentProfilo = profili.find(p => p.id === userId)
+  const userNome = currentProfilo ? `${currentProfilo.nome} ${currentProfilo.cognome}`.trim() : 'Utente'
 
   // Escape key
   useEffect(() => {
@@ -815,6 +821,14 @@ function EditModal({
                   </select>
                 </div>
               )}
+
+              {/* ── Commenti task ── */}
+              <TaskCommenti
+                taskId={e.id}
+                userId={userId}
+                userNome={userNome}
+                isAdmin={isAdmin}
+              />
             </>
           )}
 

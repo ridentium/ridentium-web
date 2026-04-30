@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivityServer } from '@/lib/registro-server'
 
 // Calcola la prossima scadenza in base alla frequenza dell'adempimento
 function calcolaProssimaScadenza(frequenza: string, dallaData?: string | null): string {
@@ -48,11 +49,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // ── Auto-rinnovo: calcola e imposta la prossima scadenza ─────────────────────
+  // ── Auto-rinnovo + fetch dati per log ─────────────────────────────────────────
   const adminDb = createAdminClient()
   const { data: adempimento } = await adminDb
     .from('adempimenti')
-    .select('frequenza, prossima_scadenza')
+    .select('titolo, frequenza, prossima_scadenza')
     .eq('id', params.id)
     .single()
 
@@ -69,6 +70,18 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       })
       .eq('id', params.id)
   }
+
+  // ── Log attività ──────────────────────────────────────────────────────────────
+  const { data: profilo } = await adminDb
+    .from('profili').select('nome, cognome').eq('id', user.id).single()
+  const userNome = profilo ? `${profilo.nome} ${profilo.cognome}`.trim() : 'Utente'
+
+  await logActivityServer(
+    user.id, userNome,
+    'Adempimento completato',
+    `"${adempimento?.titolo ?? params.id}"`,
+    'adempimenti'
+  )
 
   return NextResponse.json({ ok: true, result: data })
 }

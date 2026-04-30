@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-
-async function requireAdmin(user: { id: string }, adminDb: ReturnType<typeof createAdminClient>) {
-  const { data: profilo } = await adminDb
-    .from('profili').select('ruolo').eq('id', user.id).single()
-  if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) return null
-  return profilo
-}
+import { logActivityServer } from '@/lib/registro-server'
 
 // PATCH /api/ricorrenti/[id] — modifica (solo admin/manager)
 export async function PATCH(
@@ -19,9 +13,16 @@ export async function PATCH(
   if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
   const adminDb = createAdminClient()
-  if (!await requireAdmin(user, adminDb)) {
+  const { data: profilo } = await adminDb
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
+  if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
+
+  // Leggi titolo corrente per il log
+  const { data: ricorrenteCorrente } = await adminDb
+    .from('ricorrenti').select('titolo').eq('id', params.id).single()
 
   const body = await req.json()
   const allowed = ['titolo', 'descrizione', 'frequenza', 'assegnato_a', 'attiva']
@@ -31,6 +32,13 @@ export async function PATCH(
   const { data, error } = await adminDb
     .from('ricorrenti').update(updates).eq('id', params.id).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivityServer(
+    user.id, userNome,
+    'Azione ricorrente aggiornata',
+    `"${ricorrenteCorrente?.titolo ?? data.titolo}"`,
+    'ricorrenti'
+  )
 
   return NextResponse.json({ ricorrente: data })
 }
@@ -45,12 +53,26 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
   const adminDb = createAdminClient()
-  if (!await requireAdmin(user, adminDb)) {
+  const { data: profilo } = await adminDb
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
+  if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
+
+  // Leggi titolo prima di eliminare
+  const { data: ricorrente } = await adminDb
+    .from('ricorrenti').select('titolo').eq('id', params.id).single()
 
   const { error } = await adminDb.from('ricorrenti').delete().eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivityServer(
+    user.id, userNome,
+    'Azione ricorrente eliminata',
+    `"${ricorrente?.titolo ?? params.id}"`,
+    'ricorrenti'
+  )
 
   return NextResponse.json({ ok: true })
 }
