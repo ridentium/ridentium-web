@@ -160,6 +160,9 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   // Edit
   const [editTarget, setEditTarget] = useState<AgendaEvent | null>(null)
 
+  // IDs completati questa sessione (per adempimenti che scomparirebbero dopo reload)
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null)
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
@@ -206,9 +209,9 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   async function handleQuickComplete(event: AgendaEvent) {
     if (event.tipo === 'task') {
       if (event.stato === 'completato') return
-      // Ottimistico: aggiorna subito la UI, poi rollback se l'API fallisce
       const prevStato = event.stato ?? 'da_fare'
       handleStatoChange(event.id, 'completato')
+      setCompletedIds(prev => new Set(prev).add(event.id))
       const r = await fetch(`/api/tasks/${event.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -218,9 +221,12 @@ export default function AgendaView({ isAdmin, userId }: Props) {
         showToast(`"${event.titolo}" segnato come fatto`)
       } else {
         handleStatoChange(event.id, prevStato as 'da_fare' | 'in_corso' | 'completato')
+        setCompletedIds(prev => { const n = new Set(prev); n.delete(event.id); return n })
         showToast('Errore aggiornamento', 'error')
       }
     } else if (event.tipo === 'adempimento') {
+      // Ottimistico: segna subito, non ricaricare (la nuova scadenza sarebbe fuori dai 180gg e l'elemento sparirebbe)
+      setCompletedIds(prev => new Set(prev).add(event.id))
       const r = await fetch(`/api/adempimenti/${event.id}/completa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -228,8 +234,8 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       })
       if (r.ok) {
         showToast(`"${event.titolo}" completato — scadenza rinnovata`)
-        load()
       } else {
+        setCompletedIds(prev => { const n = new Set(prev); n.delete(event.id); return n })
         showToast('Errore completamento adempimento', 'error')
       }
     }
@@ -239,7 +245,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   const filtered = useMemo(() => {
     let list = events.filter(e => tipoFilter === 'tutti' || e.tipo === tipoFilter)
     if (soloAperti) {
-      list = list.filter(e => e.tipo !== 'task' || e.stato !== 'completato')
+      list = list.filter(e => (e.tipo !== 'task' || e.stato !== 'completato') && !completedIds.has(e.id))
     }
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -294,6 +300,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   // Row props shared
   const rowProps = {
     userId, isAdmin, profili,
+    completedIds,
     onEdit: setEditTarget,
     onDelete: handleDelete,
     onStatoChange: handleStatoChange,
@@ -494,20 +501,25 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                           {dayEvs.slice(0, 4).map(e => {
                             const cfg = TIPO_CONFIG[e.tipo]
                             const Icon = cfg.icon
-                            const isCompleted = e.stato === 'completato'
-                            const canFatto = (e.tipo === 'task' && !isCompleted) || e.tipo === 'adempimento'
+                            const isCompleted = e.stato === 'completato' || completedIds.has(e.id)
+                            const canFatto = !isCompleted && (e.tipo === 'task' || e.tipo === 'adempimento')
                             return (
                               <div key={e.id}
                                 className={`w-full flex items-center gap-0.5 text-[9px] rounded border transition-colors ${
-                                  isCompleted ? 'opacity-40' : ''
-                                } ${cfg.bg} ${cfg.color}`}
+                                  isCompleted
+                                    ? 'bg-green-500/10 border-green-500/30 text-green-400/80'
+                                    : `${cfg.bg} ${cfg.color}`
+                                }`}
                               >
                                 <button
                                   onClick={() => setEditTarget(e)}
                                   className="flex-1 flex items-center gap-1 px-1.5 py-1 min-w-0 hover:opacity-80 transition-opacity"
                                 >
-                                  <Icon size={8} className="flex-shrink-0" />
-                                  <span className={`truncate ${isCompleted ? 'line-through' : ''}`}>{e.titolo}</span>
+                                  {isCompleted
+                                    ? <Check size={8} className="flex-shrink-0 text-green-400" />
+                                    : <Icon size={8} className="flex-shrink-0" />
+                                  }
+                                  <span className="truncate">{e.titolo}</span>
                                 </button>
                                 {canFatto && (
                                   <button
@@ -517,11 +529,6 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                                   >
                                     <Check size={7} />
                                   </button>
-                                )}
-                                {isCompleted && (
-                                  <span className="flex-shrink-0 px-1 py-1">
-                                    <Check size={7} className="text-green-400" />
-                                  </span>
                                 )}
                               </div>
                             )
@@ -704,6 +711,7 @@ interface EventRowProps {
   userId: string
   isAdmin: boolean
   profili: Profilo[]
+  completedIds: Set<string>
   onEdit: (e: AgendaEvent) => void
   onDelete: (e: AgendaEvent) => void
   onStatoChange: (id: string, stato: 'da_fare' | 'in_corso' | 'completato') => void
@@ -711,7 +719,7 @@ interface EventRowProps {
   onToast: (msg: string, type?: 'success' | 'error') => void
 }
 
-function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, onQuickComplete, onToast }: EventRowProps) {
+function EventRow({ event: e, userId, isAdmin, completedIds, onEdit, onDelete, onStatoChange, onQuickComplete, onToast }: EventRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -769,8 +777,9 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
     setCompleting(false)
   }
 
-  const isTaskDone = e.tipo === 'task' && e.stato === 'completato'
-  const showFattoBtn = (e.tipo === 'task' && e.stato !== 'completato') || e.tipo === 'adempimento'
+  const isCompleted = (e.tipo === 'task' && e.stato === 'completato') || completedIds.has(e.id)
+  const isTaskDone = isCompleted
+  const showFattoBtn = !isCompleted && (e.tipo === 'task' || e.tipo === 'adempimento')
 
   async function doDelete() {
     setDeleting(true)
@@ -786,8 +795,12 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
   }
 
   return (
-    <div className={`flex items-start gap-3 px-4 py-3 hover:bg-obsidian-light/20 transition-colors ${isTaskDone ? 'opacity-50' : ''}`}>
-      {/* Bottone Fatto — visibile direttamente */}
+    <div className={`flex items-start gap-3 px-4 py-3 transition-colors ${
+      isCompleted
+        ? 'bg-green-500/5 border-l-2 border-green-500/30 hover:bg-green-500/8'
+        : 'hover:bg-obsidian-light/20'
+    }`}>
+      {/* Icona stato */}
       {showFattoBtn ? (
         <button
           onClick={quickComplete}
@@ -800,8 +813,8 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
             : <Check size={11} className="group-hover:scale-110 transition-transform" />
           }
         </button>
-      ) : isTaskDone ? (
-        <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-green-500/30 bg-green-500/10 flex items-center justify-center">
+      ) : isCompleted ? (
+        <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-green-500/40 bg-green-500/15 flex items-center justify-center">
           <Check size={11} className="text-green-400" />
         </div>
       ) : (
@@ -817,8 +830,11 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
         title="Clicca per modificare"
       >
         <div className="flex items-start gap-2 flex-wrap">
-          <p className={`text-sm font-medium truncate ${isTaskDone ? 'line-through text-stone' : isOwn ? 'text-cream' : 'text-cream/70'}`}>{e.titolo}</p>
-          {isOwn && e.tipo !== 'ricorrente' && (
+          <p className={`text-sm font-medium truncate ${isCompleted ? 'text-green-400/80' : isOwn ? 'text-cream' : 'text-cream/70'}`}>{e.titolo}</p>
+          {isCompleted && (
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400/80 border border-green-500/20 flex-shrink-0">✓ Fatto</span>
+          )}
+          {!isCompleted && isOwn && e.tipo !== 'ricorrente' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold/80 border border-gold/20 flex-shrink-0">mio</span>
           )}
         </div>
