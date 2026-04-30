@@ -1,16 +1,16 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
-import Link from 'next/link'
 import { AgendaEvent, AgendaTipo } from '@/types/agenda'
 import { CATEGORIA_LABEL, CATEGORIA_COLOR } from '@/types/adempimenti'
 import type { CategoriaAdempimento } from '@/types/adempimenti'
 import Toast, { type ToastState } from '@/components/ui/Toast'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import {
   CheckSquare, RefreshCw, ShieldCheck, AlertTriangle, Clock,
-  ChevronRight, ChevronLeft, Users, User, CalendarDays, Tag,
+  ChevronLeft, ChevronRight, Users, User, CalendarDays, Tag,
   Plus, List, Loader2, Pencil, Trash2, X, Check, Search,
-  MoreHorizontal,
+  MoreHorizontal, ExternalLink,
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -123,6 +123,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   }, [])
 
   const oggiStr = toISO(now.getFullYear(), now.getMonth(), now.getDate())
+  const supabase = useMemo(() => createBrowserClient(), [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -137,6 +138,17 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   }, [mostraTutti])
 
   useEffect(() => { load() }, [load])
+
+  // ── Realtime: aggiorna automaticamente quando cambiano task/adempimenti/ricorrenti ──
+  useEffect(() => {
+    const channel = supabase
+      .channel('agenda-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'ricorrenti' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'adempimenti' }, () => load())
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [supabase, load])
 
   // ── Handlers ───────────────────────────────────────────────────────────────
   function handleDelete(event: AgendaEvent) {
@@ -549,8 +561,12 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
         <Icon size={12} className={cfg.color} />
       </div>
 
-      {/* Content + link */}
-      <Link href={e.href} className="flex-1 min-w-0 block">
+      {/* Content — clicca per modificare direttamente */}
+      <button
+        onClick={() => onEdit(e)}
+        className="flex-1 min-w-0 text-left hover:opacity-90 transition-opacity"
+        title="Clicca per modificare"
+      >
         <div className="flex items-start gap-2 flex-wrap">
           <p className={`text-sm font-medium truncate ${isOwn ? 'text-cream' : 'text-cream/70'}`}>{e.titolo}</p>
           {isOwn && e.tipo !== 'ricorrente' && (
@@ -587,7 +603,7 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
             <span className={`text-[10px] flex items-center gap-1 ${scad.color}`}><Clock size={9} />{scad.text}</span>
           )}
         </div>
-      </Link>
+      </button>
 
       {/* Actions */}
       <div className="flex items-center flex-shrink-0 ml-1">
@@ -631,6 +647,12 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
                     <Trash2 size={11} /> Elimina
                   </button>
                 )}
+                <a
+                  href={e.href}
+                  className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-stone/50 hover:text-stone hover:bg-obsidian-light/20 transition-colors border-t border-obsidian-light/30"
+                >
+                  <ExternalLink size={11} /> Vai alla sezione
+                </a>
               </div>
             )}
           </div>
