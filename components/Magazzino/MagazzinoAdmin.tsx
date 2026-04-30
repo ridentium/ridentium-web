@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
+import Toast, { type ToastState } from '@/components/ui/Toast'
 
 const CATEGORIE = [
   'Tutte', 'Impianti', 'Componentistica Protesica', 'Materiali Chirurgici',
@@ -49,6 +50,10 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
   const [evadisciModal, setEvadisciModal] = useState<EvadisciModalState | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+  }, [])
   // Se l'URL contiene ?filter=alert (es. da tap su "19 sotto soglia" nel dashboard),
   // la pagina apre già filtrata sui prodotti sotto soglia.
   const initialSoloAlert = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('filter') === 'alert'
@@ -126,7 +131,12 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     const saraAlert = item ? nuovaQuantita < item.soglia_minima : false
 
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantita: nuovaQuantita } : i))
-    await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
+    const { error } = await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
+    if (error) {
+      showToast('Errore aggiornamento quantità', 'error')
+    } else {
+      showToast(saraAlert ? `Sotto soglia — verifica il riordino` : `Quantità aggiornata: ${nuovaQuantita}`)
+    }
 
     // Notifica soglia solo quando si PASSA da ok → alert (non ad ogni modifica sotto soglia)
     if (eraOk && saraAlert && item) {
@@ -152,13 +162,18 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   async function confermaEvadisci(qtyRicevuta: number) {
     if (!evadisciModal) return
     const nuovaQty = evadisciModal.quantitaAttuale + qtyRicevuta
-    await Promise.all([
+    const [{ error }] = await Promise.all([
       supabase.from('riordini').update({ stato: 'evasa' }).eq('id', evadisciModal.riordineId),
       supabase.from('magazzino').update({ quantita: nuovaQty, updated_at: new Date().toISOString() }).eq('id', evadisciModal.magazzinoId),
     ])
-    setItems(prev => prev.map(i =>
-      i.id === evadisciModal.magazzinoId ? { ...i, quantita: nuovaQty } : i
-    ))
+    if (error) {
+      showToast('Errore durante la ricezione merce', 'error')
+    } else {
+      setItems(prev => prev.map(i =>
+        i.id === evadisciModal!.magazzinoId ? { ...i, quantita: nuovaQty } : i
+      ))
+      showToast(`Merce ricevuta — giacenza aggiornata a ${nuovaQty}`)
+    }
     setEvadisciModal(null)
     startTransition(() => router.refresh())
   }
@@ -412,11 +427,14 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                   ? prev.map(i => i.id === updated.id ? updated : i)
                   : [...prev, updated]
               })
+              showToast(editItem ? 'Prodotto aggiornato' : 'Prodotto aggiunto')
             }
             startTransition(() => router.refresh())
           }}
         />
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </div>
   )
 }
