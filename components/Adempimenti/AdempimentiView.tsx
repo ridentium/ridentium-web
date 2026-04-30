@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import {
   Adempimento, Consulente, CATEGORIA_LABEL, CATEGORIA_COLOR,
   FREQUENZA_LABEL, calcolaStato, scadenzaLabel,
-  type StatoAdempimento, type CategoriaAdempimento,
+  type StatoAdempimento, type CategoriaAdempimento, type FrequenzaAdempimento,
 } from '@/types/adempimenti'
 import { DEFAULT_IMPOSTAZIONI, type ImpostazioniStudio } from '@/types/impostazioni'
 import {
   CheckCircle2, Clock, AlertCircle, ChevronDown, Filter, X,
   AlertTriangle, FileText, ShieldCheck, RefreshCw,
   LayoutList, CalendarDays, AlignLeft, UserCircle2,
+  Pencil, Trash2, Check, Loader2,
 } from 'lucide-react'
 import AdempimentiCalendario from './AdempimentiCalendario'
 import AdempimentiTimeline from './AdempimentiTimeline'
@@ -39,6 +40,9 @@ export default function AdempimentiView({ canEdit }: Props) {
   const [view, setView]                   = useState<ViewMode>('lista')
   const [expandedId, setExpandedId]       = useState<string | null>(null)
   const [completaTarget, setCompletaTarget] = useState<Adempimento | null>(null)
+  const [editTarget, setEditTarget]       = useState<Adempimento | null>(null)
+  const [deletingId, setDeletingId]       = useState<string | null>(null)
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -116,11 +120,26 @@ export default function AdempimentiView({ canEdit }: Props) {
 
   async function onCompletato() {
     const r = await fetch('/api/adempimenti', { cache: 'no-store' })
+    if (r.ok) { const d = await r.json(); setAdempimenti(d.adempimenti ?? []) }
+    setCompletaTarget(null)
+  }
+
+  async function onSalvaModifica(id: string, body: Record<string, unknown>) {
+    const r = await fetch(`/api/adempimenti/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+    })
     if (r.ok) {
-      const d = await r.json()
+      const d = await fetch('/api/adempimenti', { cache: 'no-store' }).then(x => x.json())
       setAdempimenti(d.adempimenti ?? [])
     }
-    setCompletaTarget(null)
+    setEditTarget(null)
+  }
+
+  async function onElimina(id: string) {
+    setDeletingId(id)
+    const r = await fetch(`/api/adempimenti/${id}`, { method: 'DELETE' })
+    if (r.ok) setAdempimenti(prev => prev.filter(a => a.id !== id))
+    setDeletingId(null); setConfirmDeleteId(null)
   }
 
   function responsabileLabel(a: Adempimento): string {
@@ -319,12 +338,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                         <button
                           onClick={() => setCompletaTarget(a)}
                           className="flex items-center gap-1.5 text-xs px-3 py-2 rounded border transition-colors"
-                          style={{
-                            background: 'rgba(74,222,128,0.12)',
-                            borderColor: 'rgba(74,222,128,0.4)',
-                            color: '#4ADE80',
-                            minHeight: 36,
-                          }}
+                          style={{ background: 'rgba(74,222,128,0.12)', borderColor: 'rgba(74,222,128,0.4)', color: '#4ADE80', minHeight: 36 }}
                         >
                           <CheckCircle2 size={13} /> Segna fatto
                         </button>
@@ -334,6 +348,36 @@ export default function AdempimentiView({ canEdit }: Props) {
                         >
                           Dettagli <ChevronDown size={11} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
+                        {canEdit && (
+                          <button
+                            onClick={() => setEditTarget(a)}
+                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-obsidian-light/40 text-stone hover:text-gold hover:border-gold/40 transition-colors"
+                          >
+                            <Pencil size={11} /> Modifica
+                          </button>
+                        )}
+                        {canEdit && confirmDeleteId !== a.id && (
+                          <button
+                            onClick={() => setConfirmDeleteId(a.id)}
+                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-obsidian-light/40 text-stone/60 hover:text-red-400 hover:border-red-400/40 transition-colors"
+                          >
+                            <Trash2 size={11} /> Elimina
+                          </button>
+                        )}
+                        {confirmDeleteId === a.id && (
+                          <div className="flex items-center gap-1 bg-red-400/10 border border-red-400/20 rounded px-2 py-1">
+                            <span className="text-[10px] text-red-400/80 mr-1">Elimina?</span>
+                            <button
+                              onClick={() => onElimina(a.id)}
+                              disabled={deletingId === a.id}
+                              className="text-[10px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50"
+                            >
+                              {deletingId === a.id ? '…' : 'Sì'}
+                            </button>
+                            <span className="text-stone/40 text-[10px]">/</span>
+                            <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] text-stone hover:text-cream">No</button>
+                          </div>
+                        )}
                       </div>
 
                       {isExpanded && (
@@ -409,10 +453,16 @@ export default function AdempimentiView({ canEdit }: Props) {
 
       {/* Modale completamento */}
       {completaTarget && (
-        <CompletaModal
-          adempimento={completaTarget}
-          onClose={() => setCompletaTarget(null)}
-          onDone={onCompletato}
+        <CompletaModal adempimento={completaTarget} onClose={() => setCompletaTarget(null)} onDone={onCompletato} />
+      )}
+
+      {/* Modale modifica */}
+      {editTarget && (
+        <EditAdempimentoModal
+          adempimento={editTarget}
+          profili={profili}
+          onClose={() => setEditTarget(null)}
+          onSaved={(body) => onSalvaModifica(editTarget.id, body)}
         />
       )}
     </div>
@@ -516,25 +566,171 @@ function CompletaModal({
         )}
 
         <div className="flex gap-3 justify-end">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="btn-secondary text-xs px-4 disabled:opacity-50"
-          >
-            Annulla
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
+          <button onClick={onClose} disabled={saving} className="btn-secondary text-xs px-4 disabled:opacity-50">Annulla</button>
+          <button onClick={handleSubmit} disabled={saving}
             className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50"
-            style={{
-              background: 'rgba(74,222,128,0.15)',
-              borderColor: 'rgba(74,222,128,0.4)',
-              color: '#4ADE80',
-            }}
-          >
-            <CheckCircle2 size={13} />
-            {saving ? 'Salvataggio…' : 'Conferma fatto'}
+            style={{ background: 'rgba(74,222,128,0.15)', borderColor: 'rgba(74,222,128,0.4)', color: '#4ADE80' }}>
+            <CheckCircle2 size={13} />{saving ? 'Salvataggio…' : 'Conferma fatto'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── Modale modifica adempimento ─────────────────────────────────────────────
+
+function EditAdempimentoModal({
+  adempimento: a, profili, onClose, onSaved,
+}: {
+  adempimento: Adempimento
+  profili: { id: string; nome: string; cognome: string; ruolo: string }[]
+  onClose: () => void
+  onSaved: (body: Record<string, unknown>) => Promise<void>
+}) {
+  const [titolo, setTitolo]           = useState(a.titolo)
+  const [descrizione, setDescrizione] = useState(a.descrizione ?? '')
+  const [categoria, setCategoria]     = useState<CategoriaAdempimento>(a.categoria)
+  const [frequenza, setFrequenza]     = useState<FrequenzaAdempimento>(a.frequenza)
+  const [prossima, setProssima]       = useState(a.prossima_scadenza ?? '')
+  const [preavviso, setPreavviso]     = useState(a.preavviso_giorni)
+  const [evidenza, setEvidenza]       = useState(a.evidenza_richiesta ?? '')
+  const [riferimento, setRiferimento] = useState(a.riferimento_normativo ?? '')
+  const [note, setNote]               = useState(a.note ?? '')
+  const [respMode, setRespMode]       = useState<'profilo' | 'etichetta'>(a.responsabile_etichetta && !a.responsabile_profilo_id ? 'etichetta' : 'profilo')
+  const [respProfiloId, setRespProfiloId] = useState(a.responsabile_profilo_id ?? '')
+  const [respEtichetta, setRespEtichetta] = useState(a.responsabile_etichetta ?? '')
+  const [saving, setSaving]           = useState(false)
+  const [errore, setErrore]           = useState<string | null>(null)
+
+  const RUOLO_LABEL: Record<string, string> = {
+    admin: 'Admin', manager: 'Manager', aso: 'ASO', segretaria: 'Segreteria', clinico: 'Clinico',
+  }
+
+  async function handleSave() {
+    if (!titolo.trim()) { setErrore('Il titolo è obbligatorio'); return }
+    setSaving(true); setErrore(null)
+    await onSaved({
+      titolo: titolo.trim(),
+      descrizione: descrizione.trim() || null,
+      categoria,
+      frequenza,
+      prossima_scadenza: prossima || null,
+      preavviso_giorni: preavviso,
+      evidenza_richiesta: evidenza.trim() || null,
+      riferimento_normativo: riferimento.trim() || null,
+      note: note.trim() || null,
+      responsabile_profilo_id: respMode === 'profilo' ? (respProfiloId || null) : null,
+      responsabile_etichetta: respMode === 'etichetta' ? (respEtichetta.trim() || null) : null,
+    })
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
+      <div
+        className="w-full sm:max-w-lg mx-0 sm:mx-4 rounded-t-xl sm:rounded-xl border border-obsidian-light/50 overflow-y-auto max-h-[90vh] shadow-2xl"
+        style={{ backgroundColor: '#1A1009', color: '#F2EDE4', paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-obsidian-light/30">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(201,168,76,0.7)' }}>Modifica adempimento</p>
+            <h3 className="text-sm font-medium text-cream mt-0.5 truncate max-w-xs">{a.titolo}</h3>
+          </div>
+          <button onClick={onClose} className="p-2 rounded hover:bg-white/5 transition-colors" style={{ color: 'rgba(160,144,126,0.6)' }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Titolo *</label>
+            <input className="input w-full" value={titolo} onChange={e => setTitolo(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Descrizione</label>
+            <textarea className="input w-full resize-none" rows={2} value={descrizione} onChange={e => setDescrizione(e.target.value)} />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Categoria</label>
+              <select className="input w-full" value={categoria} onChange={e => setCategoria(e.target.value as CategoriaAdempimento)}>
+                {Object.entries(CATEGORIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Frequenza</label>
+              <select className="input w-full" value={frequenza} onChange={e => setFrequenza(e.target.value as FrequenzaAdempimento)}>
+                {Object.entries(FREQUENZA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Prossima scadenza</label>
+              <input type="date" className="input w-full" value={prossima} onChange={e => setProssima(e.target.value)} />
+            </div>
+            <div>
+              <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Preavviso (giorni)</label>
+              <input type="number" min={1} max={365} className="input w-full" value={preavviso} onChange={e => setPreavviso(Number(e.target.value))} />
+            </div>
+          </div>
+
+          {/* Responsabile */}
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-2" style={{ color: 'rgba(160,144,126,0.8)' }}>Responsabile</label>
+            <div className="flex gap-2 mb-2">
+              {(['profilo', 'etichetta'] as const).map(m => (
+                <button key={m} type="button" onClick={() => setRespMode(m)}
+                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === m ? 'border-gold/40 text-gold' : 'border-obsidian-light/40 text-stone hover:text-cream'}`}
+                  style={respMode === m ? { background: 'rgba(201,168,76,0.12)' } : undefined}>
+                  {m === 'profilo' ? 'Persona interna' : 'Etichetta libera'}
+                </button>
+              ))}
+            </div>
+            {respMode === 'profilo' ? (
+              <select className="input w-full" value={respProfiloId} onChange={e => setRespProfiloId(e.target.value)}>
+                <option value="">— Nessuno —</option>
+                {profili.map(p => <option key={p.id} value={p.id}>{p.cognome} {p.nome} ({RUOLO_LABEL[p.ruolo] ?? p.ruolo})</option>)}
+              </select>
+            ) : (
+              <input className="input w-full" placeholder="Es. Consulente esterno…" value={respEtichetta} onChange={e => setRespEtichetta(e.target.value)} />
+            )}
+          </div>
+
+          {/* Campi opzionali */}
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Evidenza richiesta</label>
+            <input className="input w-full" placeholder="Es. Registro sterilizzazione compilato" value={evidenza} onChange={e => setEvidenza(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Riferimento normativo</label>
+            <input className="input w-full" placeholder="Es. D.Lgs 81/2008 art. 18" value={riferimento} onChange={e => setRiferimento(e.target.value)} />
+          </div>
+          <div>
+            <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(160,144,126,0.8)' }}>Note interne</label>
+            <textarea className="input w-full resize-none" rows={2} value={note} onChange={e => setNote(e.target.value)} />
+          </div>
+
+          {errore && (
+            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">
+              <AlertTriangle size={13} /> {errore}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 justify-end px-5 pb-5">
+          <button onClick={onClose} disabled={saving} className="btn-secondary text-xs px-4 disabled:opacity-50">Annulla</button>
+          <button onClick={handleSave} disabled={saving}
+            className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50"
+            style={{ background: 'rgba(201,168,76,0.15)', borderColor: 'rgba(201,168,76,0.4)', color: '#C9A84C' }}>
+            {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+            {saving ? 'Salvataggio…' : 'Salva modifiche'}
           </button>
         </div>
       </div>

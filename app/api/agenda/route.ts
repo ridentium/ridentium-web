@@ -84,7 +84,7 @@ export async function GET(req: NextRequest) {
     let q = adminDb
       .from('ricorrenti')
       .select(`
-        id, titolo, descrizione, frequenza, assegnato_a,
+        id, titolo, descrizione, frequenza, assegnato_a, attiva,
         assegnato_a_profilo:profili!ricorrenti_assegnato_a_fkey(id, nome, cognome)
       `)
       .eq('attiva', true)
@@ -105,6 +105,7 @@ export async function GET(req: NextRequest) {
         descrizione: (r as any).descrizione ?? null,
         data: null,
         frequenza: r.frequenza,
+        attiva: (r as any).attiva ?? true,
         assegnato_a_id: assegnatoId,
         assegnato_a_nome: profAssegnato
           ? `${profAssegnato.nome} ${profAssegnato.cognome}`.trim()
@@ -141,6 +142,9 @@ export async function GET(req: NextRequest) {
         titolo: a.titolo,
         data: a.prossima_scadenza ?? null,
         categoria: a.categoria ?? null,
+        frequenza: (a as any).frequenza ?? null,
+        preavviso_giorni: a.preavviso_giorni ?? null,
+        responsabile_etichetta: (a as any).responsabile_etichetta ?? null,
         assegnato_a_id: a.responsabile_profilo_id ?? null,
         assegnato_a_nome: responsabileNome,
         href: isAdmin ? '/admin/adempimenti' : '/staff/adempimenti',
