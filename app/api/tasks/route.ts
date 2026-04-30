@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
   if (error) {
     console.error('[tasks POST]', error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
   }
 
   // ── Log attività ────────────────────────────────────────────────────────────

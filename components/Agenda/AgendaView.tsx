@@ -925,7 +925,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
       {/* ════════════════════════════════════════════════ AGGIUNGI ═══════ */}
       {tab === 'aggiungi' && (
-        <AggiungiPanel isAdmin={isAdmin} userId={userId} profili={profili} loading={loading}
+        <AggiungiPanel key={fabTipo} isAdmin={isAdmin} userId={userId} profili={profili} loading={loading}
           initialTipo={fabTipo}
           onSuccess={() => { load(); setTab('lista'); showToast('Elemento aggiunto!') }} />
       )}
@@ -938,7 +938,14 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           isAdmin={isAdmin}
           userId={userId}
           onClose={() => setEditTarget(null)}
-          onSaved={() => { setEditTarget(null); load(); showToast('Modifiche salvate!') }}
+          onSaved={(patch) => {
+            if (patch && editTarget) {
+              setEvents(prev => prev.map(ev => ev.id === editTarget.id ? { ...ev, ...patch } : ev))
+            }
+            setEditTarget(null)
+            load()
+            showToast('Modifiche salvate!')
+          }}
           onQuickComplete={async (e) => {
             await handleQuickComplete(e)
             setEditTarget(null)
@@ -1227,7 +1234,7 @@ function EditModal({
   event: e, profili, isAdmin, userId, onClose, onSaved, onQuickComplete,
 }: {
   event: AgendaEvent; profili: Profilo[]; isAdmin: boolean; userId: string
-  onClose: () => void; onSaved: () => void
+  onClose: () => void; onSaved: (patch?: Partial<AgendaEvent>) => void
   onQuickComplete?: (e: AgendaEvent) => Promise<void>
 }) {
   const [titolo, setTitolo] = useState(e.titolo)
@@ -1316,7 +1323,17 @@ function EditModal({
     const r = await fetch(url, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
     })
-    if (r.ok) { onSaved() } else {
+    if (r.ok) {
+      const patch: Partial<AgendaEvent> = { titolo: titolo.trim(), descrizione: descrizione.trim() || null }
+      if (e.tipo === 'task') {
+        Object.assign(patch, { stato, priorita, data: scadenza || null })
+      } else if (e.tipo === 'ricorrente') {
+        Object.assign(patch, { frequenza: frequenzaRic, attiva })
+      } else {
+        Object.assign(patch, { categoria, frequenza: frequenzaAd, data: prossima || null })
+      }
+      onSaved(patch)
+    } else {
       const d = await r.json().catch(() => ({}))
       setErrore(d.error ?? 'Errore nel salvataggio'); setSaving(false)
     }
