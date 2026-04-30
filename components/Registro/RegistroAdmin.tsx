@@ -1,8 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { RegistroEntry } from '@/types'
-import { ClipboardList, X } from 'lucide-react'
+import { ClipboardList, X, ChevronDown } from 'lucide-react'
+
+const PAGE_SIZE = 50
 
 const CATEGORIE = ['tutte', 'magazzino', 'ordini', 'fornitori', 'ricorrenti', 'todo', 'tasks', 'crm', 'staff', 'adempimenti', 'sistema', 'altro'] as const
 
@@ -32,6 +34,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
   const [filterUtente, setFilterUtente] = useState<string>('tutti')
   const [dataDa, setDataDa] = useState('')
   const [dataA, setDataA] = useState('')
+  const [page, setPage] = useState(1)
 
   const utenti = useMemo(() => {
     const nomi = Array.from(new Set(entries.map(e => e.user_nome))).sort()
@@ -59,12 +62,18 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
 
   const hasFilters = filterCat !== 'tutte' || filterUtente !== 'tutti' || dataDa || dataA
 
+  // Reset paginazione quando cambiano i filtri
+  useEffect(() => { setPage(1) }, [filterCat, filterUtente, dataDa, dataA])
+
   function resetFilters() {
     setFilterCat('tutte')
     setFilterUtente('tutti')
     setDataDa('')
     setDataA('')
   }
+
+  const paginated = filtered.slice(0, page * PAGE_SIZE)
+  const hasMore = filtered.length > page * PAGE_SIZE
 
   return (
     <div className="space-y-5">
@@ -142,27 +151,38 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
           )}
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
-          {filtered.map(entry => (
-            <div key={entry.id}
-              className="flex items-start gap-4 px-5 py-4 border-b border-obsidian-light/40 last:border-0 hover:bg-obsidian-light/20 transition-colors">
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${CAT_COLOR[entry.categoria] ?? 'text-stone bg-stone/10'}`}>
-                {CAT_ICON[entry.categoria] ?? '📋'}
+        <>
+          <div className="card p-0 overflow-hidden">
+            {paginated.map(entry => (
+              <div key={entry.id}
+                className="flex items-start gap-4 px-5 py-4 border-b border-obsidian-light/40 last:border-0 hover:bg-obsidian-light/20 transition-colors">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${CAT_COLOR[entry.categoria] ?? 'text-stone bg-stone/10'}`}>
+                  {CAT_ICON[entry.categoria] ?? '📋'}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-cream font-medium">{entry.azione}</p>
+                  {entry.dettaglio && <p className="text-xs text-stone mt-0.5">{entry.dettaglio}</p>}
+                  <p className="text-xs text-stone/60 mt-1">{entry.user_nome}</p>
+                </div>
+                <div className="text-xs text-stone flex-shrink-0 text-right">
+                  <p>{new Date(entry.created_at).toLocaleDateString('it-IT')}</p>
+                  <p className="text-stone/60">
+                    {new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-cream font-medium">{entry.azione}</p>
-                {entry.dettaglio && <p className="text-xs text-stone mt-0.5">{entry.dettaglio}</p>}
-                <p className="text-xs text-stone/60 mt-1">{entry.user_nome}</p>
-              </div>
-              <div className="text-xs text-stone flex-shrink-0 text-right">
-                <p>{new Date(entry.created_at).toLocaleDateString('it-IT')}</p>
-                <p className="text-stone/60">
-                  {new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+          {hasMore && (
+            <button
+              onClick={() => setPage(p => p + 1)}
+              className="w-full flex items-center justify-center gap-2 py-3 text-xs text-stone hover:text-cream transition-colors border border-obsidian-light rounded-lg hover:border-stone"
+            >
+              <ChevronDown size={13} />
+              Mostra altri {Math.min(PAGE_SIZE, filtered.length - page * PAGE_SIZE)} — totale {filtered.length}
+            </button>
+          )}
+        </>
       )}
     </div>
   )

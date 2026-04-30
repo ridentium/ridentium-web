@@ -160,6 +160,9 @@ export default async function AdminHome() {
   return (
     <div className="space-y-6">
 
+      {/* Applica visibilità widget prima dell'hydration per evitare il flash */}
+      <script dangerouslySetInnerHTML={{ __html: `(function(){try{var h=JSON.parse(localStorage.getItem('dashboard_widgets_hidden')||'[]');h.forEach(function(id){var el=document.getElementById('widget-'+id);if(el)el.style.display='none';});}catch(e){}})();` }} />
+
       {/* Intestazione */}
       <div className="flex items-center justify-between">
         <p className="text-xs text-stone uppercase tracking-widest">
@@ -185,7 +188,7 @@ export default async function AdminHome() {
         </div>
 
         {/* ── KPI cards ── */}
-        <div id="widget-kpi" className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div id="widget-kpi" className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <StatCard
             label="Adempimenti scaduti"
             value={scadutiCount}
