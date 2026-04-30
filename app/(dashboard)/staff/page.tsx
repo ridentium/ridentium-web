@@ -24,6 +24,7 @@ export default async function StaffHome() {
     .select('*')
     .eq('assegnato_a', user!.id)
     .neq('stato', 'completato')
+    .is('deleted_at', null)
     .order('priorita', { ascending: false })
     .order('scadenza', { ascending: true, nullsFirst: false })
     .limit(5)
