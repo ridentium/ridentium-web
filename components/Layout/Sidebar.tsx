@@ -9,7 +9,7 @@ import { cn, roleLabel } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen, Users, LogOut, ChevronRight,
   AlertTriangle, ShoppingCart, UserCircle2, RefreshCw, Activity, Sparkles,
-  Building2, X, Bell, ShieldCheck, Settings2, CalendarDays,
+  Building2, X, Bell, ShieldCheck, Settings2, CalendarDays, Search,
 } from 'lucide-react'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 
@@ -48,7 +48,7 @@ const staffNav: NavItem[] = [
   { href:'/staff/notifiche',   label:'Notifiche',   icon:Bell },
 ]
 
-interface SidebarProps { profilo:UserProfile; alertCount?:number; tasksCount?:number; onClose?:()=>void }
+interface SidebarProps { profilo:UserProfile; alertCount?:number; tasksCount?:number; onClose?:()=>void; onSearchOpen?:()=>void }
 
 function NavGroup({ label, items, pathname, onClose, badges }: {
   label?:string; items:NavItem[]; pathname:string; onClose?:()=>void; badges?:Record<string,number>
@@ -83,7 +83,7 @@ function NavGroup({ label, items, pathname, onClose, badges }: {
   )
 }
 
-export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }: SidebarProps) {
+export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose, onSearchOpen }: SidebarProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
@@ -117,6 +117,16 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
             style={{ color:'rgba(210,198,182,0.5)' }}>{isAdmin ? 'Admin' : 'Staff'}</p>
         </div>
         <div className="flex items-center gap-1 -mr-1">
+          {/* Ricerca globale (desktop) */}
+          <button
+            onClick={onSearchOpen}
+            className="hidden md:flex items-center justify-center w-7 h-7 rounded transition-colors hover:bg-obsidian-light/50"
+            style={{ color: 'rgba(160,144,126,0.6)' }}
+            title="Ricerca globale (⌘K)"
+            aria-label="Cerca"
+          >
+            <Search size={13} />
+          </button>
           {/* Desktop-only: su mobile la campanella è nel header AdminShell per evitare doppione */}
           <div className="hidden md:block">
             <NotificheBell isAdmin={isAdmin} />
@@ -170,18 +180,22 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose }
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
         }}
       >
-        <div className="flex items-center gap-3 mb-3">
+        <Link
+          href={isAdmin ? '/admin/profilo' : '/staff/profilo'}
+          onClick={onClose}
+          className="flex items-center gap-3 mb-3 group hover:opacity-80 transition-opacity"
+        >
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
             style={{ background:'rgba(201,168,76,0.2)', border:'1px solid rgba(201,168,76,0.4)', color:'#C9A84C' }}>
             {profilo.nome[0]}{profilo.cognome[0]}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate" style={{ color:'#F2EDE4' }}>
+            <p className="text-sm font-medium truncate group-hover:text-gold transition-colors" style={{ color:'#F2EDE4' }}>
               {profilo.nome} {profilo.cognome}
             </p>
             <p className="text-xs" style={{ color:'rgba(210,198,182,0.5)' }}>{roleLabel(profilo.ruolo)}</p>
           </div>
-        </div>
+        </Link>
         <button onClick={handleLogout}
           className="w-full flex items-center gap-2 text-xs px-2 py-1.5 rounded transition-colors"
           style={{ color:'rgba(160,144,126,0.6)' }}

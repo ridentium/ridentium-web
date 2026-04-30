@@ -1,12 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Menu } from 'lucide-react'
+import { Menu, Search } from 'lucide-react'
 import Sidebar from './Sidebar'
 import ChatWidget from '@/components/AI/ChatWidget'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 import NotifichePanel from '@/components/Notifiche/NotifichePanel'
 import { NotificheProvider } from '@/components/Notifiche/NotificheProvider'
+import SearchModal from './SearchModal'
 import { UserProfile } from '@/types'
 import PushInit from '@/components/Push/PushInit'
 
@@ -21,6 +22,7 @@ interface Props {
 
 export default function AdminShell({ children, profilo, alertCount, tasksCount, userName, userRole }: Props) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const isAdmin = profilo.ruolo === 'admin'
 
   // Blocca scroll body quando la sidebar mobile è aperta e chiudila con ESC
@@ -35,6 +37,18 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
       document.removeEventListener('keydown', onKey)
     }
   }, [sidebarOpen])
+
+  // Cmd+K / Ctrl+K apre la ricerca globale
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault()
+        setSearchOpen(true)
+      }
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [])
 
   return (
     <NotificheProvider>
@@ -51,13 +65,19 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
             sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
           }`}
         >
-          <Sidebar profilo={profilo} alertCount={alertCount} tasksCount={tasksCount} onClose={() => setSidebarOpen(false)} />
+          <Sidebar
+            profilo={profilo}
+            alertCount={alertCount}
+            tasksCount={tasksCount}
+            onClose={() => setSidebarOpen(false)}
+            onSearchOpen={() => setSearchOpen(true)}
+          />
         </div>
 
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {/* Mobile header con safe-area-inset-top per stare sotto la notch */}
+          {/* Mobile header */}
           <div
-            className="md:hidden flex items-center gap-3 px-4 flex-shrink-0 pt-safe"
+            className="md:hidden flex items-center gap-2 flex-shrink-0 pt-safe"
             style={{
               background: '#221A12',
               borderBottom: '1px solid #4A3B2C',
@@ -80,6 +100,15 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
             >
               RIDENTIUM
             </span>
+            {/* Ricerca su mobile */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="p-2 transition-colors rounded"
+              style={{ color: '#A0907E', minWidth: 44, minHeight: 44 }}
+              aria-label="Cerca"
+            >
+              <Search size={18} />
+            </button>
             <NotificheBell isAdmin={isAdmin} />
           </div>
 
@@ -99,6 +128,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
         <ChatWidget userName={userName} userRole={userRole} alertCount={alertCount} tasksCount={tasksCount} />
         <PushInit />
         <NotifichePanel isAdmin={isAdmin} />
+        <SearchModal isAdmin={isAdmin} open={searchOpen} onClose={() => setSearchOpen(false)} />
       </div>
     </NotificheProvider>
   )
