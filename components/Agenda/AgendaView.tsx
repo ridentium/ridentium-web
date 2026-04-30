@@ -23,7 +23,7 @@ interface Profilo {
   ruolo: string
 }
 
-type Tab = 'lista' | 'calendario' | 'aggiungi'
+type Tab = 'lista' | 'calendario' | 'focus' | 'aggiungi'
 type TipoNuovo = 'task' | 'ricorrente' | 'adempimento'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -108,6 +108,11 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   const [tipoFilter, setTipoFilter] = useState<AgendaTipo | 'tutti'>('tutti')
   const [search, setSearch] = useState('')
   const [soloAperti, setSoloAperti] = useState(false)
+  const [filterPersona, setFilterPersona] = useState<string>('')
+
+  // FAB type picker
+  const [fabOpen, setFabOpen] = useState(false)
+  const [fabTipo, setFabTipo] = useState<TipoNuovo>('task')
 
   // Calendario
   const now = new Date()
@@ -324,11 +329,32 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     }
   }
 
+  // ── Focus: oggi + in ritardo ───────────────────────────────────────────────
+  const focusItems = useMemo(() => {
+    return events
+      .filter(e => {
+        if (completedIds.has(e.id)) return false
+        if (e.tipo === 'task' && e.stato === 'completato') return false
+        if (e.tipo === 'ricorrente' && e.completata_oggi) return false
+        if (e.tipo === 'ricorrente') return true
+        const days = diffDays(e.data)
+        return days !== null && days <= 0
+      })
+      .sort((a, b) => {
+        const da = diffDays(a.data) ?? 999
+        const db = diffDays(b.data) ?? 999
+        return da - db
+      })
+  }, [events, completedIds])
+
   // ── Lista ──────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = events.filter(e => tipoFilter === 'tutti' || e.tipo === tipoFilter)
     if (soloAperti) {
       list = list.filter(e => (e.tipo !== 'task' || e.stato !== 'completato') && !completedIds.has(e.id))
+    }
+    if (filterPersona) {
+      list = list.filter(e => e.assegnato_a_id === filterPersona)
     }
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -338,7 +364,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       )
     }
     return list
-  }, [events, tipoFilter, soloAperti, search])
+  }, [events, tipoFilter, soloAperti, search, filterPersona])
 
   const conData = useMemo(() => filtered.filter(e => e.data !== null), [filtered])
   const senzaData = useMemo(() => filtered.filter(e => e.data === null), [filtered])
@@ -398,16 +424,26 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {/* Tab nav */}
       <div className="flex items-center border-b border-obsidian-light">
         {([
-          { id: 'lista', label: 'Lista', Icon: List },
+          { id: 'focus',      label: 'Focus',      Icon: AlertTriangle },
+          { id: 'lista',      label: 'Lista',      Icon: List },
           { id: 'calendario', label: 'Calendario', Icon: CalendarDays },
-          { id: 'aggiungi', label: 'Aggiungi', Icon: Plus },
-        ] as const).map(({ id, label, Icon }) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-              tab === id ? 'border-gold text-gold' : 'border-transparent text-stone hover:text-cream'}`}>
-            <Icon size={13} />{label}
-          </button>
-        ))}
+        ] as const).map(({ id, label, Icon }) => {
+          const isFocus = id === 'focus'
+          const badge = isFocus ? focusItems.length : 0
+          return (
+            <button key={id} onClick={() => setTab(id)}
+              className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+                tab === id ? 'border-gold text-gold' : 'border-transparent text-stone hover:text-cream'}`}>
+              <Icon size={13} />{label}
+              {badge > 0 && (
+                <span className="ml-0.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold leading-none"
+                  style={{ background: '#F87171', color: '#1A1009' }}>
+                  {badge}
+                </span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {loading && tab !== 'aggiungi' && (
@@ -456,7 +492,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                 )
               })}
             </div>
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
               <button
                 onClick={() => setSoloAperti(v => !v)}
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
@@ -468,6 +504,18 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                 <Check size={11} />
                 Da completare
               </button>
+              {isAdmin && profili.length > 0 && (
+                <select
+                  value={filterPersona}
+                  onChange={e => setFilterPersona(e.target.value)}
+                  className="input text-xs py-1.5 pr-7 border-obsidian-light text-stone"
+                >
+                  <option value="">Tutto il team</option>
+                  {profili.map(p => (
+                    <option key={p.id} value={p.id}>{p.nome} {p.cognome}</option>
+                  ))}
+                </select>
+              )}
               {isAdmin && (
                 <button onClick={() => setMostraTutti(v => !v)}
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
@@ -514,6 +562,28 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                 )
               })}
             </section>
+          )}
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════ FOCUS ═════════ */}
+      {tab === 'focus' && !loading && (
+        <div className="space-y-5">
+          {focusItems.length === 0 ? (
+            <div className="card text-center py-14">
+              <Check size={32} className="text-green-400 mx-auto mb-3" />
+              <p className="text-sm font-medium text-green-400">Tutto in ordine</p>
+              <p className="text-xs text-stone mt-1">Nessun elemento in ritardo o da completare oggi</p>
+            </div>
+          ) : (
+            <>
+              <p className="text-[10px] uppercase tracking-widest text-stone/50 px-1">
+                {focusItems.length} element{focusItems.length === 1 ? 'o' : 'i'} da gestire
+              </p>
+              <div className="card p-0 divide-y divide-obsidian-light/30">
+                {focusItems.map(e => <EventRow key={e.id} event={e} {...rowProps} />)}
+              </div>
+            </>
           )}
         </div>
       )}
@@ -856,7 +926,8 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {/* ════════════════════════════════════════════════ AGGIUNGI ═══════ */}
       {tab === 'aggiungi' && (
         <AggiungiPanel isAdmin={isAdmin} userId={userId} profili={profili} loading={loading}
-          onSuccess={() => { load(); setTab('calendario'); showToast('Elemento aggiunto!') }} />
+          initialTipo={fabTipo}
+          onSuccess={() => { load(); setTab('lista'); showToast('Elemento aggiunto!') }} />
       )}
 
       {/* ════════════════════════════════════════════════ EDIT MODAL ═════ */}
@@ -875,16 +946,43 @@ export default function AgendaView({ isAdmin, userId }: Props) {
         />
       )}
 
-      {/* FAB — aggiungi rapido */}
+      {/* FAB — type picker */}
       {tab !== 'aggiungi' && (
-        <button
-          onClick={() => setTab('aggiungi')}
-          className="fixed bottom-6 right-5 z-[100] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
-          style={{ backgroundColor: '#C9A84C', color: '#1A1009' }}
-          title="Aggiungi elemento"
-        >
-          <Plus size={24} />
-        </button>
+        <div className="fixed bottom-6 right-5 z-[100]">
+          {fabOpen && (
+            <>
+              <div className="fixed inset-0" onClick={() => setFabOpen(false)} />
+              <div
+                className="absolute bottom-16 right-0 rounded-xl border border-obsidian-light/60 shadow-2xl overflow-hidden min-w-[190px]"
+                style={{ backgroundColor: '#1A1009' }}
+              >
+                {([
+                  { tipo: 'task' as TipoNuovo,        label: 'Nuovo task',         Icon: CheckSquare },
+                  { tipo: 'ricorrente' as TipoNuovo,  label: 'Nuova ricorrente',   Icon: RefreshCw },
+                  { tipo: 'adempimento' as TipoNuovo, label: 'Nuovo adempimento',  Icon: ShieldCheck },
+                ] as const).filter(item => item.tipo === 'task' || isAdmin).map(({ tipo, label, Icon }) => {
+                  const cfg = TIPO_CONFIG[tipo]
+                  return (
+                    <button key={tipo}
+                      onClick={() => { setFabTipo(tipo); setFabOpen(false); setTab('aggiungi') }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 text-sm ${cfg.color} hover:bg-obsidian-light/30 transition-colors text-left`}
+                    >
+                      <Icon size={15} />{label}
+                    </button>
+                  )
+                })}
+              </div>
+            </>
+          )}
+          <button
+            onClick={() => setFabOpen(v => !v)}
+            className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${fabOpen ? 'rotate-45' : ''}`}
+            style={{ backgroundColor: '#C9A84C', color: '#1A1009' }}
+            title="Aggiungi elemento"
+          >
+            <Plus size={24} />
+          </button>
+        </div>
       )}
 
       {/* Toast */}
@@ -1225,13 +1323,14 @@ function EditModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="w-full sm:max-w-lg mx-0 sm:mx-4 rounded-t-xl sm:rounded-xl border border-obsidian-light/50 overflow-y-auto max-h-[90vh] shadow-2xl"
-        style={{ backgroundColor: '#1A1009', color: '#F2EDE4', paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+        className="relative w-full sm:w-[440px] h-full flex flex-col border-l border-obsidian-light/50 shadow-2xl overflow-hidden"
+        style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-obsidian-light/30">
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-obsidian-light/30" style={{ backgroundColor: '#1A1009' }}>
           <div>
             <p className="text-[10px] uppercase tracking-widest text-stone/60">Modifica {cfg.label}</p>
             <h3 className="text-sm font-medium text-cream mt-0.5 truncate max-w-xs">{e.titolo}</h3>
@@ -1241,7 +1340,8 @@ function EditModal({
           </button>
         </div>
 
-        {/* Form */}
+        {/* Form — scrollable area */}
+        <div className="flex-1 overflow-y-auto">
         <div className="px-5 py-4 space-y-4">
           {/* Titolo */}
           <div>
@@ -1388,9 +1488,11 @@ function EditModal({
             </div>
           )}
         </div>
+        </div>
 
-        {/* Footer */}
-        <div className="flex gap-3 justify-end px-5 pb-5 flex-wrap">
+        {/* Footer — sticky at bottom of drawer */}
+        <div className="flex-shrink-0 flex gap-3 justify-end px-5 py-4 flex-wrap border-t border-obsidian-light/30"
+          style={{ backgroundColor: '#1A1009', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           {/* Bottone Fatto — visibile su mobile, utile ovunque */}
           {canFatto && onQuickComplete && (
             <button onClick={handleFatto} disabled={completando}
@@ -1421,10 +1523,11 @@ function EditModal({
 interface AggiungiPanelProps {
   isAdmin: boolean; userId: string; profili: Profilo[]
   loading: boolean; onSuccess: () => void
+  initialTipo?: TipoNuovo
 }
 
-function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuccess }: AggiungiPanelProps) {
-  const [tipo, setTipo] = useState<TipoNuovo>('task')
+function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuccess, initialTipo = 'task' }: AggiungiPanelProps) {
+  const [tipo, setTipo] = useState<TipoNuovo>(initialTipo)
   const [saving, setSaving] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
   const [successo, setSuccesso] = useState(false)
