@@ -5,6 +5,7 @@ import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck } from 'lucide-
 import LinaBriefingCard from '@/components/Dashboard/LinaBriefingCard'
 import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
+import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 
 // ── Calcola periodo corrente per ricorrenti ───────────────────────────────────
@@ -164,6 +165,8 @@ export default async function AdminHome() {
           {oggi.charAt(0).toUpperCase() + oggi.slice(1)}
         </p>
       </div>
+
+      <QuickActionsBar />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
