@@ -75,7 +75,7 @@ export async function PATCH(
       corpo: `Riassegnato da ${userNome}`,
       url: '/admin/tasks',
       push: true,
-    }).catch(() => {})
+    }).catch((err) => { console.error('[notify] riassegnazione task:', err) })
   }
 
   // ── Notifica al creatore quando completato da qualcun altro ──────────────────
@@ -92,7 +92,7 @@ export async function PATCH(
       corpo: `Completato da ${userNome}`,
       url: '/admin/tasks',
       push: true,
-    }).catch(() => {})
+    }).catch((err) => { console.error('[notify] completamento task:', err) })
   }
 
   return NextResponse.json({ task: data })
