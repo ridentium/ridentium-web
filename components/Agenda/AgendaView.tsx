@@ -111,13 +111,30 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
   // Calendario
   const now = new Date()
-  const [calView, setCalView] = useState<'giorno' | 'settimana' | 'mese'>('settimana')
-  const [calYear, setCalYear] = useState(now.getFullYear())
-  const [calMonth, setCalMonth] = useState(now.getMonth())
+
+  // Leggi parametri URL all'avvio
+  const initFromURL = (): { view: 'giorno' | 'settimana' | 'mese'; day: string } => {
+    if (typeof window === 'undefined') return { view: 'settimana', day: toISO(now.getFullYear(), now.getMonth(), now.getDate()) }
+    const p = new URLSearchParams(window.location.search)
+    const v = p.get('view')
+    const d = p.get('data')
+    const validView = (v === 'giorno' || v === 'settimana' || v === 'mese') ? v : 'settimana'
+    const validDay = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : toISO(now.getFullYear(), now.getMonth(), now.getDate())
+    return { view: validView, day: validDay }
+  }
+
+  const { view: initView, day: initDay } = initFromURL()
+  const [calView, setCalView] = useState<'giorno' | 'settimana' | 'mese'>(initView)
+  const [calYear, setCalYear] = useState(() => {
+    const d = new Date((initDay) + 'T00:00:00'); return d.getFullYear()
+  })
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date((initDay) + 'T00:00:00'); return d.getMonth()
+  })
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
   // Giorno
-  const [viewDay, setViewDay] = useState<string>(toISO(now.getFullYear(), now.getMonth(), now.getDate()))
+  const [viewDay, setViewDay] = useState<string>(initDay)
 
   function prevDay() {
     const d = new Date(viewDay + 'T00:00:00')
@@ -165,6 +182,15 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     return days
   }, [weekStart])
 
+  // Sincronizza URL con vista corrente
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const url = new URL(window.location.href)
+    if (tab !== 'calendario') { url.searchParams.delete('view'); url.searchParams.delete('data') }
+    else { url.searchParams.set('view', calView); url.searchParams.set('data', viewDay) }
+    window.history.replaceState(null, '', url.toString())
+  }, [tab, calView, viewDay])
+
   const weekEventMap = useMemo(() => {
     const m = new Map<string, AgendaEvent[]>()
     for (const d of weekDays) m.set(d, [])
@@ -187,6 +213,38 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
   // IDs completati questa sessione (per adempimenti che scomparirebbero dopo reload)
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set())
+
+  // Creazione rapida inline
+  const [quickAdd, setQuickAdd] = useState<{ date: string } | null>(null)
+  const [quickTitle, setQuickTitle] = useState('')
+  const [quickSaving, setQuickSaving] = useState(false)
+
+  async function handleQuickAdd() {
+    if (!quickTitle.trim() || !quickAdd || quickSaving) return
+    setQuickSaving(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: newTask } = await supabase.from('tasks').insert({
+      titolo: quickTitle.trim(),
+      stato: 'da_fare',
+      priorita: 'media',
+      scadenza: quickAdd.date,
+      creato_da: user?.id,
+    }).select().single()
+    if (newTask) {
+      setEvents(prev => [...prev, {
+        id: newTask.id,
+        tipo: 'task',
+        titolo: newTask.titolo,
+        data: newTask.scadenza,
+        stato: 'da_fare',
+        priorita: 'media',
+      } as AgendaEvent])
+      showToast(`Task "${newTask.titolo}" aggiunto`)
+    }
+    setQuickTitle('')
+    setQuickAdd(null)
+    setQuickSaving(false)
+  }
 
   // Toast
   const [toast, setToast] = useState<ToastState | null>(null)
@@ -516,13 +574,54 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                   </p>
                 )}
 
+                {/* Creazione rapida */}
+                {quickAdd?.date === viewDay ? (
+                  <div className="card border-gold/20 bg-gold/5">
+                    <div className="flex items-center gap-2">
+                      <input
+                        autoFocus
+                        type="text"
+                        placeholder="Titolo task…"
+                        value={quickTitle}
+                        onChange={e => setQuickTitle(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') handleQuickAdd()
+                          if (e.key === 'Escape') { setQuickAdd(null); setQuickTitle('') }
+                        }}
+                        className="input flex-1 text-sm py-1.5"
+                      />
+                      <button
+                        onClick={handleQuickAdd}
+                        disabled={!quickTitle.trim() || quickSaving}
+                        className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50 flex-shrink-0"
+                      >
+                        {quickSaving ? '…' : 'Aggiungi'}
+                      </button>
+                      <button
+                        onClick={() => { setQuickAdd(null); setQuickTitle('') }}
+                        className="p-1.5 text-stone hover:text-cream transition-colors"
+                      >
+                        <X size={14} />
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-stone/40 mt-2">Premi Invio per salvare · Esc per annullare</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setQuickAdd({ date: viewDay })}
+                    className="flex items-center gap-1.5 text-xs text-stone/40 hover:text-stone transition-colors py-1"
+                  >
+                    <Plus size={12} /> Aggiungi task rapido
+                  </button>
+                )}
+
                 {/* Nessun evento */}
                 {dayViewEvents.length === 0 && dayViewRicorrenti.length === 0 && (
                   <div className="card text-center py-14">
                     <CalendarDays size={28} className="text-stone/30 mx-auto mb-3" />
                     <p className="text-sm text-stone">Nessun evento per questo giorno</p>
                     <button onClick={() => setTab('aggiungi')} className="mt-4 btn-primary text-xs">
-                      + Aggiungi
+                      + Aggiungi evento completo
                     </button>
                   </div>
                 )}
