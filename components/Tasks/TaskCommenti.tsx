@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Send, Trash2, MessageSquare, Loader2 } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import type { TaskCommento } from '@/types'
 
 interface Props {
@@ -30,7 +31,21 @@ export default function TaskCommenti({ taskId, userId, userNome, isAdmin }: Prop
     }
   }, [taskId])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`task-commenti-${taskId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'task_commenti', filter: `task_id=eq.${taskId}` },
+        () => { load() }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [taskId, load])
 
   async function handleSend() {
     const testo_ = testo.trim()

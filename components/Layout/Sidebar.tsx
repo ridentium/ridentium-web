@@ -48,7 +48,7 @@ const staffNav: NavItem[] = [
   { href:'/staff/notifiche',   label:'Notifiche',   icon:Bell },
 ]
 
-interface SidebarProps { profilo:UserProfile; alertCount?:number; tasksCount?:number; onClose?:()=>void; onSearchOpen?:()=>void }
+interface SidebarProps { profilo:UserProfile; alertCount?:number; tasksCount?:number; ricorrentiCount?:number; onClose?:()=>void; onSearchOpen?:()=>void }
 
 function NavGroup({ label, items, pathname, onClose, badges }: {
   label?:string; items:NavItem[]; pathname:string; onClose?:()=>void; badges?:Record<string,number>
@@ -83,7 +83,7 @@ function NavGroup({ label, items, pathname, onClose, badges }: {
   )
 }
 
-export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose, onSearchOpen }: SidebarProps) {
+export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrentiCount=0, onClose, onSearchOpen }: SidebarProps) {
   const pathname = usePathname()
   const router   = useRouter()
   const supabase = createClient()
@@ -168,7 +168,8 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, onClose, 
         </nav>
       ) : (
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          <NavGroup items={staffNav} pathname={pathname} onClose={onClose} />
+          <NavGroup items={staffNav} pathname={pathname} onClose={onClose}
+            badges={{ '/staff/ricorrenti': ricorrentiCount }} />
         </nav>
       )}
 

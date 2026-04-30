@@ -5,17 +5,7 @@ import OnboardingWizard from '@/components/Onboarding/OnboardingWizard'
 import Link from 'next/link'
 import { Package, CheckSquare, BookOpen, AlertTriangle, RefreshCw } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
-
-function getPeriodoKey(frequenza: string): string {
-  const now = new Date()
-  if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
-  if (frequenza === 'settimanale') {
-    const d = new Date(now); d.setDate(d.getDate() - d.getDay() + 1)
-    return 'W' + d.toISOString().split('T')[0]
-  }
-  if (frequenza === 'mensile') return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-  return now.toISOString().split('T')[0]
-}
+import { getPeriodoKey } from '@/lib/periodo'
 
 export default async function StaffHome() {
   const supabase = createClient()

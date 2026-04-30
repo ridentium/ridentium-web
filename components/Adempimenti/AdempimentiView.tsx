@@ -37,7 +37,13 @@ export default function AdempimentiView({ canEdit }: Props) {
   const [profili, setProfili]             = useState<{ id: string; nome: string; cognome: string; ruolo: string }[]>([])
   const [impostazioni, setImpostazioni]   = useState<ImpostazioniStudio>(DEFAULT_IMPOSTAZIONI)
   const [loading, setLoading]             = useState(true)
-  const [filtroStato, setFiltroStato]     = useState<FiltroStato>('tutti')
+  const [filtroStato, setFiltroStato]     = useState<FiltroStato>(() => {
+    if (typeof window === 'undefined') return 'tutti'
+    const f = new URL(window.location.href).searchParams.get('filter')
+    if (f === 'scaduto') return 'scaduti'
+    if (f === 'in_scadenza') return 'in_scadenza'
+    return 'tutti'
+  })
   const [filtroCategoria, setFiltroCategoria] = useState<'' | CategoriaAdempimento>('')
   const [search, setSearch]               = useState('')
   const [view, setView]                   = useState<ViewMode>('lista')

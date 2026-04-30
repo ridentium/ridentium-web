@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Sidebar from '@/components/Layout/Sidebar'
 import { UserProfile } from '@/types'
+import { getPeriodoKey } from '@/lib/periodo'
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -19,28 +20,24 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   if (!profilo) redirect('/login')
   if (profilo.ruolo === 'admin') redirect('/admin')
 
-  const { data: alertData } = await supabase
-    .from('magazzino')
-    .select('id, quantita, soglia_minima, scadenza')
-
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const in30 = new Date(today)
-  in30.setDate(in30.getDate() + 30)
+  const [{ data: alertData }, { data: ricorrenti }] = await Promise.all([
+    supabase.from('magazzino').select('id, quantita, soglia_minima, scadenza'),
+    supabase.from('ricorrenti').select('frequenza, completamenti').eq('attiva', true),
+  ])
 
   const alertCount = (alertData ?? []).filter(
     (item: any) => item.quantita < item.soglia_minima
   ).length
 
-  const scadenzaCount = (alertData ?? []).filter((item: any) => {
-    if (!item.scadenza) return false
-    const d = new Date(item.scadenza)
-    return d <= in30
+  const ricorrentiCount = (ricorrenti ?? []).filter((r: any) => {
+    const key = getPeriodoKey(r.frequenza)
+    const completamenti: any[] = r.completamenti ?? []
+    return !completamenti.some((c: any) => c.userId === user.id && c.periodoKey === key)
   }).length
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} scadenzaCount={scadenzaCount} />
+      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} ricorrentiCount={ricorrentiCount} />
       <main className="flex-1 overflow-auto">
         <div className="md:hidden h-14 border-b border-obsidian-light/50 flex items-center px-14 bg-obsidian/95 sticky top-0 z-30">
           <h2 className="font-serif text-cream tracking-[0.2em] text-sm font-light">RIDENTIUM</h2>
