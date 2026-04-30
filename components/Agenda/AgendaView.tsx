@@ -98,7 +98,7 @@ function scadenzaLabel(data: string | null): { text: string; color: string } {
 interface Props { isAdmin: boolean; userId: string }
 
 export default function AgendaView({ isAdmin, userId }: Props) {
-  const [tab, setTab] = useState<Tab>('lista')
+  const [tab, setTab] = useState<Tab>('calendario')
   const [events, setEvents] = useState<AgendaEvent[]>([])
   const [profili, setProfili] = useState<Profilo[]>([])
   const [loading, setLoading] = useState(true)
@@ -111,10 +111,27 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
   // Calendario
   const now = new Date()
-  const [calView, setCalView] = useState<'mese' | 'settimana'>('settimana')
+  const [calView, setCalView] = useState<'giorno' | 'settimana' | 'mese'>('settimana')
   const [calYear, setCalYear] = useState(now.getFullYear())
   const [calMonth, setCalMonth] = useState(now.getMonth())
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  // Giorno
+  const [viewDay, setViewDay] = useState<string>(toISO(now.getFullYear(), now.getMonth(), now.getDate()))
+
+  function prevDay() {
+    const d = new Date(viewDay + 'T00:00:00')
+    d.setDate(d.getDate() - 1)
+    setViewDay(toISO(d.getFullYear(), d.getMonth(), d.getDate()))
+  }
+  function nextDay() {
+    const d = new Date(viewDay + 'T00:00:00')
+    d.setDate(d.getDate() + 1)
+    setViewDay(toISO(d.getFullYear(), d.getMonth(), d.getDate()))
+  }
+  function goToToday() { setViewDay(toISO(now.getFullYear(), now.getMonth(), now.getDate())) }
+
+  function goToDay(iso: string) { setViewDay(iso); setCalView('giorno') }
 
   // Settimana: lunedì della settimana corrente come ISO
   function getMondayISO(d: Date): string {
@@ -156,6 +173,14 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     }
     return m
   }, [events, weekDays])
+
+  const dayViewEvents = useMemo(() =>
+    events.filter(e => e.data === viewDay),
+  [events, viewDay])
+
+  const dayViewRicorrenti = useMemo(() =>
+    events.filter(e => e.tipo === 'ricorrente'),
+  [events])
 
   // Edit
   const [editTarget, setEditTarget] = useState<AgendaEvent | null>(null)
@@ -438,19 +463,89 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {/* ════════════════════════════════════════════════ CALENDARIO ══════ */}
       {tab === 'calendario' && !loading && (
         <div className="space-y-4">
-          {/* Toggle mese / settimana */}
+          {/* Toggle Giorno / Settimana / Mese */}
           <div className="flex items-center justify-between">
             <div className="flex rounded-lg overflow-hidden border border-obsidian-light/50">
-              {(['settimana', 'mese'] as const).map(v => (
-                <button key={v} onClick={() => setCalView(v)}
+              {([
+                { id: 'giorno',    label: 'Giorno' },
+                { id: 'settimana', label: 'Settimana' },
+                { id: 'mese',      label: 'Mese' },
+              ] as const).map(({ id, label }) => (
+                <button key={id} onClick={() => setCalView(id)}
                   className={`text-xs px-3 py-1.5 transition-colors ${
-                    calView === v ? 'bg-gold/20 text-gold' : 'text-stone hover:text-cream'
+                    calView === id ? 'bg-gold/20 text-gold' : 'text-stone hover:text-cream'
                   }`}>
-                  {v === 'settimana' ? 'Settimana' : 'Mese'}
+                  {label}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* ── Vista giorno ── */}
+          {calView === 'giorno' && (() => {
+            const vd = new Date(viewDay + 'T00:00:00')
+            const isOggiView = viewDay === oggiStr
+            const label = vd.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+            return (
+              <div className="space-y-4">
+                {/* Navigazione */}
+                <div className="flex items-center justify-between">
+                  <button onClick={prevDay} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div className="text-center">
+                    <h2 className={`text-sm font-medium ${isOggiView ? 'text-red-400' : 'text-cream'}`}>
+                      {isOggiView ? '🔴 ' : ''}{label.charAt(0).toUpperCase() + label.slice(1)}
+                    </h2>
+                    {!isOggiView && (
+                      <button onClick={goToToday} className="text-[10px] text-gold/60 hover:text-gold transition-colors mt-0.5">
+                        → Vai a oggi
+                      </button>
+                    )}
+                  </div>
+                  <button onClick={nextDay} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                {/* Contatore */}
+                {(dayViewEvents.length > 0 || dayViewRicorrenti.length > 0) && (
+                  <p className="text-[10px] text-stone/50 uppercase tracking-widest">
+                    {dayViewEvents.length} event{dayViewEvents.length === 1 ? 'o' : 'i'}
+                    {dayViewRicorrenti.length > 0 && ` · ${dayViewRicorrenti.length} ricorrent${dayViewRicorrenti.length === 1 ? 'e' : 'i'}`}
+                  </p>
+                )}
+
+                {/* Nessun evento */}
+                {dayViewEvents.length === 0 && dayViewRicorrenti.length === 0 && (
+                  <div className="card text-center py-14">
+                    <CalendarDays size={28} className="text-stone/30 mx-auto mb-3" />
+                    <p className="text-sm text-stone">Nessun evento per questo giorno</p>
+                    <button onClick={() => setTab('aggiungi')} className="mt-4 btn-primary text-xs">
+                      + Aggiungi
+                    </button>
+                  </div>
+                )}
+
+                {/* Eventi del giorno */}
+                {dayViewEvents.length > 0 && (
+                  <div className="card p-0 divide-y divide-obsidian-light/30">
+                    {dayViewEvents.map(e => <EventRow key={e.id} event={e} {...rowProps} />)}
+                  </div>
+                )}
+
+                {/* Azioni ricorrenti attive */}
+                {dayViewRicorrenti.length > 0 && (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-widest text-stone/50 mb-2">Azioni ricorrenti</p>
+                    <div className="card p-0 divide-y divide-obsidian-light/30">
+                      {dayViewRicorrenti.map(e => <EventRow key={e.id} event={e} {...rowProps} />)}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })()}
 
           {/* ── Vista settimana ── */}
           {calView === 'settimana' && (() => {
@@ -493,9 +588,13 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                           <p className={`text-[9px] uppercase tracking-wider ${isOggi ? 'text-red-400' : 'text-stone/50'}`}>
                             {GIORNI_IT[i === 6 ? 6 : i]}
                           </p>
-                          <p className={`text-sm font-medium ${isOggi ? 'text-red-400' : isPast ? 'text-stone/40' : 'text-cream/80'}`}>
+                          <button
+                            onClick={() => goToDay(iso)}
+                            title="Vai alla vista giornaliera"
+                            className={`text-sm font-medium w-7 h-7 rounded-full flex items-center justify-center mx-auto hover:bg-obsidian-light/50 transition-colors ${isOggi ? 'text-red-400 bg-red-400/10' : isPast ? 'text-stone/40' : 'text-cream/80'}`}
+                          >
                             {d.getDate()}
-                          </p>
+                          </button>
                         </div>
                         <div className="space-y-1">
                           {dayEvs.slice(0, 4).map(e => {
@@ -583,12 +682,11 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                 const hasPast = (diffDays(iso) ?? 0) < 0
                 const tipos = Array.from(new Set<AgendaTipo>(dayEvs.map(e => e.tipo)))
                 return (
-                  <button key={idx} onClick={() => setSelectedDay(isSelected ? null : iso)}
+                  <button key={idx} onClick={() => goToDay(iso)}
                     className={`flex flex-col items-center rounded py-1.5 px-0.5 transition-colors min-h-[52px] ${
-                      isSelected ? 'bg-gold/20 ring-1 ring-gold/50'
-                      : isOggi ? 'bg-red-400/10 ring-1 ring-red-400/30'
+                      isOggi ? 'bg-red-400/10 ring-1 ring-red-400/30'
                       : dayEvs.length > 0 ? 'hover:bg-obsidian-light/30' : 'hover:bg-obsidian-light/10'}`}>
-                    <span className={`text-xs font-medium ${isOggi ? 'text-red-400' : isSelected ? 'text-gold' : hasPast ? 'text-stone/50' : 'text-cream/80'}`}>
+                    <span className={`text-xs font-medium ${isOggi ? 'text-red-400' : hasPast ? 'text-stone/50' : 'text-cream/80'}`}>
                       {day}
                     </span>
                     {tipos.length > 0 && (
@@ -613,49 +711,36 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             </div>
           </div>
 
-          {selectedDay && (
-            <div className="space-y-2">
-              <h3 className="text-xs uppercase tracking-widest text-stone/60">{formatData(selectedDay)}</h3>
-              {(dayEventMap.get(selectedDay) ?? []).length === 0 ? (
-                <div className="card py-6 text-center text-stone text-sm">Nessun evento in questa data.</div>
-              ) : (
-                <div className="card p-0 divide-y divide-obsidian-light/30">
-                  {(dayEventMap.get(selectedDay) ?? []).map(e => <EventRow key={e.id} event={e} {...rowProps} />)}
-                </div>
-              )}
-            </div>
-          )}
-
-          {!selectedDay && (
+          {/* Riepilogo mese — click su riga → vista giorno */}
+          {dayEventMap.size === 0 ? (
+            <p className="text-sm text-stone text-center py-4">Nessun evento questo mese.</p>
+          ) : (
             <div className="card">
               <p className="text-xs text-stone/60 mb-3 uppercase tracking-wider">Riepilogo {MESI_IT[calMonth]}</p>
-              {dayEventMap.size === 0 ? (
-                <p className="text-sm text-stone text-center py-4">Nessun evento questo mese.</p>
-              ) : (
-                <div className="space-y-1">
-                  {Array.from(dayEventMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([iso, evs]) => {
-                    const isOggi = iso === oggiStr; const passato = (diffDays(iso) ?? 0) < 0
-                    return (
-                      <button key={iso} onClick={() => setSelectedDay(iso)}
-                        className="w-full flex items-center gap-3 py-2 px-1 rounded hover:bg-obsidian-light/20 transition-colors text-left">
-                        <span className={`text-xs font-medium w-24 flex-shrink-0 ${isOggi ? 'text-red-400' : passato ? 'text-stone/50' : 'text-stone'}`}>
-                          {isOggi ? '🔴 Oggi' : formatData(iso)}
-                        </span>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {evs.map((e, i) => {
-                            const cfg = TIPO_CONFIG[e.tipo]; const Icon = cfg.icon
-                            return (
-                              <span key={i} className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border ${cfg.bg} ${cfg.color}`}>
-                                <Icon size={9} />{e.titolo.length > 25 ? e.titolo.slice(0, 25) + '…' : e.titolo}
-                              </span>
-                            )
-                          })}
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
+              <div className="space-y-1">
+                {Array.from(dayEventMap.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([iso, evs]) => {
+                  const isOggi = iso === oggiStr; const passato = (diffDays(iso) ?? 0) < 0
+                  return (
+                    <button key={iso} onClick={() => goToDay(iso)}
+                      className="w-full flex items-center gap-3 py-2 px-1 rounded hover:bg-obsidian-light/20 transition-colors text-left">
+                      <span className={`text-xs font-medium w-24 flex-shrink-0 ${isOggi ? 'text-red-400' : passato ? 'text-stone/50' : 'text-stone'}`}>
+                        {isOggi ? '🔴 Oggi' : formatData(iso)}
+                      </span>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        {evs.map((e, i) => {
+                          const cfg = TIPO_CONFIG[e.tipo]; const Icon = cfg.icon
+                          return (
+                            <span key={i} className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border ${cfg.bg} ${cfg.color}`}>
+                              <Icon size={9} />{e.titolo.length > 25 ? e.titolo.slice(0, 25) + '…' : e.titolo}
+                            </span>
+                          )
+                        })}
+                      </div>
+                      <ChevronRight size={11} className="text-stone/30 ml-auto flex-shrink-0" />
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
           </>)}
@@ -665,7 +750,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {/* ════════════════════════════════════════════════ AGGIUNGI ═══════ */}
       {tab === 'aggiungi' && (
         <AggiungiPanel isAdmin={isAdmin} userId={userId} profili={profili} loading={loading}
-          onSuccess={() => { load(); setTab('lista'); showToast('Elemento aggiunto!') }} />
+          onSuccess={() => { load(); setTab('calendario'); showToast('Elemento aggiunto!') }} />
       )}
 
       {/* ════════════════════════════════════════════════ EDIT MODAL ═════ */}
