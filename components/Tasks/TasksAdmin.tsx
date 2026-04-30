@@ -40,8 +40,14 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
 
-  // Filtri
-  const [filterStato, setFilterStato] = useState<string>(() => getLS('tasks_filter', 'tutti'))
+  // Filtri — legge ?filter=aperti dall'URL al primo render
+  const [filterStato, setFilterStato] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const f = new URL(window.location.href).searchParams.get('filter')
+      if (f === 'aperti') return 'da_fare'
+    }
+    return getLS('tasks_filter', 'tutti')
+  })
   useEffect(() => { localStorage.setItem('tasks_filter', filterStato) }, [filterStato])
   const [filterPriorita, setFilterPriorita] = useState<string>('tutte')
   const [filterScadenza, setFilterScadenza] = useState<string>('tutte')
@@ -379,7 +385,7 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
       {viewMode === 'kanban' && (
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {STATI.map(stato => {
-            const colTasks = tasks.filter(t => t.stato === stato)
+            const colTasks = filtered.filter(t => t.stato === stato)
             return (
               <div key={stato}>
                 {/* Intestazione colonna */}

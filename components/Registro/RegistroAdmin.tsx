@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { RegistroEntry } from '@/types'
-import { ClipboardList, X, ChevronDown, Download } from 'lucide-react'
+import { ClipboardList, X, ChevronDown, Download, Search } from 'lucide-react'
 
 const PAGE_SIZE = 50
 
@@ -34,6 +34,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
   const [filterUtente, setFilterUtente] = useState<string>('tutti')
   const [dataDa, setDataDa] = useState('')
   const [dataA, setDataA] = useState('')
+  const [cerca, setCerca] = useState('')
   const [page, setPage] = useState(1)
 
   const utenti = useMemo(() => {
@@ -42,6 +43,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
   }, [entries])
 
   const filtered = useMemo(() => {
+    const q = cerca.toLowerCase().trim()
     return entries.filter(e => {
       if (filterCat !== 'tutte' && e.categoria !== filterCat) return false
       if (filterUtente !== 'tutti' && e.user_nome !== filterUtente) return false
@@ -53,17 +55,18 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
         const ts = new Date(e.created_at).toISOString().slice(0, 10)
         if (ts > dataA) return false
       }
+      if (q && !e.azione.toLowerCase().includes(q) && !(e.dettaglio ?? '').toLowerCase().includes(q)) return false
       return true
     })
-  }, [entries, filterCat, filterUtente, dataDa, dataA])
+  }, [entries, filterCat, filterUtente, dataDa, dataA, cerca])
 
   const counts: Record<string, number> = {}
   entries.forEach(e => { counts[e.categoria] = (counts[e.categoria] ?? 0) + 1 })
 
-  const hasFilters = filterCat !== 'tutte' || filterUtente !== 'tutti' || dataDa || dataA
+  const hasFilters = filterCat !== 'tutte' || filterUtente !== 'tutti' || dataDa || dataA || cerca !== ''
 
   // Reset paginazione quando cambiano i filtri
-  useEffect(() => { setPage(1) }, [filterCat, filterUtente, dataDa, dataA])
+  useEffect(() => { setPage(1) }, [filterCat, filterUtente, dataDa, dataA, cerca])
 
   function exportCSV() {
     const rows = [
@@ -92,6 +95,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
     setFilterUtente('tutti')
     setDataDa('')
     setDataA('')
+    setCerca('')
   }
 
   const paginated = filtered.slice(0, page * PAGE_SIZE)
@@ -119,8 +123,18 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
         })}
       </div>
 
-      {/* Filtri utente + date */}
+      {/* Filtri utente + date + ricerca */}
       <div className="flex flex-wrap items-center gap-3">
+        <div className="relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone/40 pointer-events-none" />
+          <input
+            type="text"
+            value={cerca}
+            onChange={e => setCerca(e.target.value)}
+            placeholder="Cerca azione o dettaglio…"
+            className="input text-xs py-1.5 pl-7 w-52"
+          />
+        </div>
         <div>
           <select
             value={filterUtente}

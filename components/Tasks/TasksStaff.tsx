@@ -141,12 +141,16 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
         <CheckCircle2 size={40} className="text-green-400 mb-4" />
         <p className="text-cream/70 font-medium">Nessun task assegnato</p>
         <p className="text-stone text-sm mt-1">Ottimo lavoro, sei in pari!</p>
+        <p className="text-stone/40 text-xs mt-3">I task vengono assegnati dall&apos;admin o dal manager</p>
       </div>
     )
   }
 
   return (
     <div className="space-y-6">
+      <p className="text-[11px] text-stone/40 px-1">
+        I task vengono assegnati dall&apos;admin o dal manager. Contattali per aggiungerne di nuovi.
+      </p>
       {daFare.length > 0 && (
         <section>
           <h2 className="text-[10px] uppercase tracking-[0.2em] text-stone/60 mb-3 px-1">

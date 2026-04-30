@@ -34,6 +34,7 @@ export async function GET(_req: NextRequest) {
   const { data: profili } = await adminDb
     .from('profili')
     .select('id, nome, cognome, ruolo')
+    .eq('attivo', true)
     .order('nome')
 
   return NextResponse.json({ adempimenti: adempimenti ?? [], consulenti: consulenti ?? [], profili: profili ?? [] })

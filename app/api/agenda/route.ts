@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AgendaEvent } from '@/types/agenda'
+import { getPeriodoKey } from '@/lib/periodo'
 
 /**
  * GET /api/agenda
@@ -12,16 +13,6 @@ import { AgendaEvent } from '@/types/agenda'
  *   - tutti   (default false per staff, true per admin/manager):
  *             se "false" mostra solo gli eventi assegnati all'utente corrente
  */
-function getPeriodoKey(frequenza: string): string {
-  const now = new Date()
-  if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
-  if (frequenza === 'settimanale') {
-    const d = new Date(now)
-    d.setDate(d.getDate() - d.getDay() + 1)
-    return 'W' + d.toISOString().split('T')[0]
-  }
-  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-}
 
 export async function GET(req: NextRequest) {
   const supabase = createClient()
