@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import { RegistroEntry } from '@/types'
-import { ClipboardList, X, ChevronDown } from 'lucide-react'
+import { ClipboardList, X, ChevronDown, Download } from 'lucide-react'
 
 const PAGE_SIZE = 50
 
@@ -64,6 +64,28 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
 
   // Reset paginazione quando cambiano i filtri
   useEffect(() => { setPage(1) }, [filterCat, filterUtente, dataDa, dataA])
+
+  function exportCSV() {
+    const rows = [
+      ['Data', 'Ora', 'Utente', 'Categoria', 'Azione', 'Dettaglio'],
+      ...filtered.map(e => [
+        new Date(e.created_at).toLocaleDateString('it-IT'),
+        new Date(e.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+        e.user_nome,
+        e.categoria,
+        e.azione,
+        e.dettaglio ?? '',
+      ]),
+    ]
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `registro_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   function resetFilters() {
     setFilterCat('tutte')
@@ -134,9 +156,18 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
             <X size={11} /> Reset
           </button>
         )}
-        <span className="text-xs text-stone/50 ml-auto">
-          {filtered.length} {filtered.length === 1 ? 'voce' : 'voci'}
-        </span>
+        <div className="flex items-center gap-3 ml-auto">
+          <span className="text-xs text-stone/50">
+            {filtered.length} {filtered.length === 1 ? 'voce' : 'voci'}
+          </span>
+          <button
+            onClick={exportCSV}
+            disabled={filtered.length === 0}
+            className="flex items-center gap-1 text-xs text-stone hover:text-cream transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <Download size={11} /> CSV
+          </button>
+        </div>
       </div>
 
       {/* Log entries */}

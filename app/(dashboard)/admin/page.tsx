@@ -7,6 +7,7 @@ import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
 import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
+import OggiWidget from '@/components/Dashboard/OggiWidget'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 
 // ── Calcola periodo corrente per ricorrenti ───────────────────────────────────
@@ -151,6 +152,33 @@ export default async function AdminHome() {
 
   const scadutiCount  = adempimentiUrgenti.filter(a => a._stato === 'scaduto').length
 
+  // ── Widget Oggi ────────────────────────────────────────────────────────────
+  const oggiISO = new Date().toISOString().split('T')[0]
+  const oggiItems: Array<{ id: string; tipo: 'task' | 'adempimento' | 'ricorrente'; titolo: string; href: string; urgente?: boolean }> = []
+
+  // Task con scadenza oggi e non completati
+  ;(tasksOpen ?? []).forEach((t: any) => {
+    if (t.scadenza === oggiISO) {
+      oggiItems.push({ id: t.id, tipo: 'task', titolo: t.titolo, href: '/admin/tasks', urgente: t.priorita === 'alta' })
+    }
+  })
+
+  // Adempimenti scaduti o in scadenza oggi
+  adempimentiUrgenti.forEach(a => {
+    if (a._gg <= 0) {
+      oggiItems.push({ id: a.id, tipo: 'adempimento', titolo: a.titolo, href: '/admin/adempimenti', urgente: a._stato === 'scaduto' })
+    }
+  })
+
+  // Ricorrenti non completate oggi
+  const ricorrentiOggi = (ricorrenti ?? []).filter((r: any) => {
+    const key = getPeriodoKey(r.frequenza)
+    return !((r.completamenti ?? []).some((c: any) => c.periodoKey === key))
+  }).slice(0, 3)
+  ricorrentiOggi.forEach((r: any) => {
+    oggiItems.push({ id: r.id, tipo: 'ricorrente', titolo: r.titolo ?? r.nome, href: '/admin/ricorrenti' })
+  })
+
   const briefing = generateBriefing(firstName, alertCount, tasksCount, riordiniCount, ricorrentiPending, scadutiCount)
 
   const oggi = new Date().toLocaleDateString('it-IT', {
@@ -174,6 +202,13 @@ export default async function AdminHome() {
       <QuickActionsBar />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* ── Widget Oggi ── */}
+        {oggiItems.length > 0 && (
+          <div id="widget-oggi" className="lg:col-span-2">
+            <OggiWidget items={oggiItems} />
+          </div>
+        )}
 
         {/* ── Lina briefing card ── */}
         <div id="widget-lina">

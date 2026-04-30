@@ -13,7 +13,7 @@ import {
   CheckCircle2, Clock, AlertCircle, ChevronDown, Filter, X,
   AlertTriangle, FileText, ShieldCheck, RefreshCw,
   LayoutList, CalendarDays, AlignLeft, UserCircle2,
-  Pencil, Trash2, Check, Loader2, Search,
+  Pencil, Trash2, Check, Loader2, Search, Upload, Paperclip,
 } from 'lucide-react'
 import AdempimentiCalendario from './AdempimentiCalendario'
 import AdempimentiTimeline from './AdempimentiTimeline'
@@ -597,8 +597,10 @@ function CompletaModal({
 }) {
   const [note, setNote]       = useState('')
   const [evidenza, setEvidenza] = useState('')
+  const [file, setFile]       = useState<File | null>(null)
   const [saving, setSaving]   = useState(false)
   const [error, setError]     = useState<string | null>(null)
+  const supabase = useMemo(() => createBrowserClient(), [])
 
   // Escape key
   useEffect(() => {
@@ -613,10 +615,27 @@ function CompletaModal({
     if (saving) return
     setSaving(true)
     setError(null)
+
+    let evidenza_url: string | null = null
+    if (file) {
+      const ext = file.name.split('.').pop() ?? 'bin'
+      const path = `${adempimento.id}/${Date.now()}.${ext}`
+      const { data: uploaded, error: uploadErr } = await supabase.storage
+        .from('evidenze')
+        .upload(path, file, { upsert: false })
+      if (uploadErr) {
+        setError(`Errore upload file: ${uploadErr.message}`)
+        setSaving(false)
+        return
+      }
+      const { data: { publicUrl } } = supabase.storage.from('evidenze').getPublicUrl(uploaded.path)
+      evidenza_url = publicUrl
+    }
+
     const res = await fetch(`/api/adempimenti/${adempimento.id}/completa`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ note: note || null, evidenza_descrizione: evidenza || null }),
+      body: JSON.stringify({ note: note || null, evidenza_descrizione: evidenza || null, evidenza_url }),
     })
     if (res.ok) {
       onDone()
@@ -670,6 +689,39 @@ function CompletaModal({
               placeholder="Identifica il documento prodotto"
               className="input w-full"
             />
+          </div>
+          <div>
+            <label className="block text-xs text-stone mb-1.5">
+              Allega file <span className="text-stone/40">(opzionale)</span>
+            </label>
+            <label className={`flex items-center gap-2.5 cursor-pointer px-3 py-2.5 rounded border transition-colors ${
+              file ? 'border-green-400/40 bg-green-400/5' : 'border-obsidian-light/60 hover:border-stone/40 bg-obsidian/40'
+            }`}>
+              <input
+                type="file"
+                className="sr-only"
+                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx"
+                onChange={e => setFile(e.target.files?.[0] ?? null)}
+              />
+              {file ? (
+                <>
+                  <Paperclip size={13} className="text-green-400 flex-shrink-0" />
+                  <span className="text-xs text-green-400 truncate flex-1">{file.name}</span>
+                  <button
+                    type="button"
+                    onClick={e => { e.preventDefault(); setFile(null) }}
+                    className="text-stone/50 hover:text-red-400 transition-colors flex-shrink-0"
+                  >
+                    <X size={12} />
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Upload size={13} className="text-stone/50 flex-shrink-0" />
+                  <span className="text-xs text-stone/60">Seleziona PDF, immagine o documento…</span>
+                </>
+              )}
+            </label>
           </div>
           <div>
             <label className="block text-xs text-stone mb-1.5">
