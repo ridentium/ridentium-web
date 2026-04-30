@@ -29,6 +29,7 @@ export default async function AIPage() {
     supabase.from('tasks')
       .select('id, titolo, priorita, scadenza')
       .neq('stato', 'completato')
+      .is('deleted_at', null)
       .order('priorita', { ascending: false })
       .order('scadenza', { ascending: true }),
     supabase.from('riordini')

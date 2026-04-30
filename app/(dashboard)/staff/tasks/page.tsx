@@ -13,6 +13,7 @@ export default async function StaffTasksPage() {
       .from('tasks')
       .select('*')
       .eq('assegnato_a', user!.id)
+      .is('deleted_at', null)
       .order('stato')
       .order('priorita', { ascending: false })
       .order('scadenza', { ascending: true, nullsFirst: false }),

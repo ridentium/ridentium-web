@@ -179,6 +179,7 @@ async function executeTool(
       case 'get_tasks': {
         let q = db.from('tasks')
           .select('id, titolo, descrizione, stato, priorita, scadenza, assegnato_a_profilo:profili!tasks_assegnato_a_fkey(nome, cognome)')
+          .is('deleted_at', null)
           .order('priorita', { ascending: false }).order('created_at', { ascending: false })
         if (input.stato) q = (q as any).eq('stato', input.stato)
         const { data } = await q
@@ -283,6 +284,7 @@ async function executeTool(
         let tasksQ = db.from('tasks')
           .select('id, titolo, stato, priorita, scadenza, assegnato_a, profili!tasks_assegnato_a_fkey(nome, cognome)')
           .in('stato', ['da_fare', 'in_corso'])
+          .is('deleted_at', null)
           .lte('scadenza', finoStr)
           .gte('scadenza', oggiStr)
           .order('scadenza')
