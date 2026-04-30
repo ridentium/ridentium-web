@@ -67,5 +67,58 @@ export async function GET(req: NextRequest) {
     sent++
   }
 
+  // ── Report settimanale del lunedì ─────────────────────────────────────────
+  if (oggi.getDay() === 1) {
+    const { data: scadutiAll } = await adminDb
+      .from('adempimenti')
+      .select('id, titolo, prossima_scadenza, preavviso_giorni')
+      .eq('attivo', true)
+      .not('prossima_scadenza', 'is', null)
+
+    const scadutiCount = (scadutiAll ?? []).filter(a => {
+      const scad = new Date(a.prossima_scadenza!)
+      scad.setHours(0, 0, 0, 0)
+      return Math.ceil((scad.getTime() - oggi.getTime()) / 86400000) < 0
+    }).length
+
+    const inScadenzaCount = (scadutiAll ?? []).filter(a => {
+      const scad = new Date(a.prossima_scadenza!)
+      scad.setHours(0, 0, 0, 0)
+      const gg = Math.ceil((scad.getTime() - oggi.getTime()) / 86400000)
+      return gg >= 0 && gg <= (a.preavviso_giorni ?? 30)
+    }).length
+
+    const { data: tasksOpen } = await adminDb
+      .from('tasks')
+      .select('id')
+      .neq('stato', 'completato')
+
+    const { data: magazzinoAlert } = await adminDb
+      .from('magazzino')
+      .select('id, quantita, soglia_minima')
+
+    const sottoSogliaCount = (magazzinoAlert ?? []).filter((i: any) => i.quantita < i.soglia_minima).length
+    const tasksCount = tasksOpen?.length ?? 0
+
+    const parti: string[] = []
+    if (scadutiCount > 0) parti.push(`${scadutiCount} adempiment${scadutiCount === 1 ? 'o scaduto' : 'i scaduti'}`)
+    if (inScadenzaCount > 0) parti.push(`${inScadenzaCount} in scadenza`)
+    if (tasksCount > 0) parti.push(`${tasksCount} task apert${tasksCount === 1 ? 'o' : 'i'}`)
+    if (sottoSogliaCount > 0) parti.push(`${sottoSogliaCount} prodott${sottoSogliaCount === 1 ? 'o' : 'i'} sotto soglia`)
+
+    const corpo = parti.length > 0
+      ? `Questa settimana: ${parti.join(', ')}.`
+      : 'Tutto in ordine — nessuna urgenza questa settimana.'
+
+    await createNotifica({
+      ruoli: ['admin', 'manager'],
+      tipo: 'messaggio',
+      titolo: '📋 Report settimanale RIDENTIUM',
+      corpo,
+      url: '/admin',
+      push: true,
+    }).catch(() => {})
+  }
+
   return NextResponse.json({ sent, checked: adempimenti.length })
 }

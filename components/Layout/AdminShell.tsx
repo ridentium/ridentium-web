@@ -8,6 +8,7 @@ import NotificheBell from '@/components/Notifiche/NotificheBell'
 import NotifichePanel from '@/components/Notifiche/NotifichePanel'
 import { NotificheProvider } from '@/components/Notifiche/NotificheProvider'
 import SearchModal from './SearchModal'
+import BottomNav from './BottomNav'
 import { UserProfile } from '@/types'
 import PushInit from '@/components/Push/PushInit'
 
@@ -119,12 +120,13 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
               paddingRight: 'env(safe-area-inset-right)',
             }}
           >
-            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-safe-or-4">
+            <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-24 md:pb-8">
               {children}
             </div>
           </main>
         </div>
 
+        <BottomNav isAdmin={isAdmin} onSearchOpen={() => setSearchOpen(true)} />
         <ChatWidget userName={userName} userRole={userRole} alertCount={alertCount} tasksCount={tasksCount} />
         <PushInit />
         <NotifichePanel isAdmin={isAdmin} />

@@ -6,7 +6,7 @@ import { Task, UserProfile } from '@/types'
 import { formatDate, roleLabel } from '@/lib/utils'
 import {
   Plus, X, CheckCircle2, Circle, Clock, ChevronUp, AlertCircle,
-  LayoutList, Columns3, Download, Trash2, CheckCheck,
+  LayoutList, Columns3, Download, Trash2, CheckCheck, Search,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
@@ -40,9 +40,13 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
 
-  // Filtri persistenti
+  // Filtri
   const [filterStato, setFilterStato] = useState<string>(() => getLS('tasks_filter', 'tutti'))
   useEffect(() => { localStorage.setItem('tasks_filter', filterStato) }, [filterStato])
+  const [filterPriorita, setFilterPriorita] = useState<string>('tutte')
+  const [filterScadenza, setFilterScadenza] = useState<string>('tutte')
+  const [filterAssegnato, setFilterAssegnato] = useState<string>('')
+  const [cerca, setCerca] = useState('')
 
   // Vista persistente
   const [viewMode, setViewMode] = useState<'lista' | 'kanban'>(() => getLS('tasks_view', 'lista'))
@@ -80,7 +84,39 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   }
 
   // Filtraggio
-  const filtered = tasks.filter(t => filterStato === 'tutti' || t.stato === filterStato)
+  const filtered = tasks.filter(t => {
+    if (filterStato !== 'tutti' && t.stato !== filterStato) return false
+    if (filterPriorita !== 'tutte' && t.priorita !== filterPriorita) return false
+    if (filterAssegnato && t.assegnato_a !== filterAssegnato) return false
+    if (cerca.trim()) {
+      const q = cerca.toLowerCase()
+      if (!t.titolo?.toLowerCase().includes(q) && !t.descrizione?.toLowerCase().includes(q)) return false
+    }
+    if (filterScadenza !== 'tutte') {
+      const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+      const fine = new Date(oggi); fine.setDate(oggi.getDate() + 6)
+      if (filterScadenza === 'senza') { if (t.scadenza) return false }
+      else if (filterScadenza === 'scaduto') {
+        if (!t.scadenza) return false
+        const d = new Date(t.scadenza); d.setHours(0, 0, 0, 0)
+        if (d >= oggi || t.stato === 'completato') return false
+      } else if (filterScadenza === 'oggi') {
+        if (!t.scadenza) return false
+        const d = new Date(t.scadenza); d.setHours(0, 0, 0, 0)
+        if (d.getTime() !== oggi.getTime()) return false
+      } else if (filterScadenza === 'questa_settimana') {
+        if (!t.scadenza) return false
+        const d = new Date(t.scadenza); d.setHours(0, 0, 0, 0)
+        if (d < oggi || d > fine) return false
+      }
+    }
+    return true
+  })
+
+  const hasFilters = filterStato !== 'tutti' || filterPriorita !== 'tutte' || filterScadenza !== 'tutte' || filterAssegnato || cerca.trim()
+  function resetFilters() {
+    setFilterStato('tutti'); setFilterPriorita('tutte'); setFilterScadenza('tutte'); setFilterAssegnato(''); setCerca('')
+  }
 
   async function updateStato(id: string, stato: string) {
     await supabase.from('tasks').update({ stato, updated_at: new Date().toISOString() }).eq('id', id)
@@ -166,6 +202,57 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
             <Plus size={13} /> Nuovo task
           </button>
         </div>
+      </div>
+
+      {/* Filtri avanzati */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone/40" />
+          <input
+            type="text"
+            placeholder="Cerca task…"
+            value={cerca}
+            onChange={e => setCerca(e.target.value)}
+            className="input text-xs py-1.5 pl-7 w-40"
+          />
+        </div>
+        <select
+          value={filterPriorita}
+          onChange={e => setFilterPriorita(e.target.value)}
+          className="input text-xs py-1.5"
+        >
+          <option value="tutte">Priorità: tutte</option>
+          <option value="alta">Alta</option>
+          <option value="media">Media</option>
+          <option value="bassa">Bassa</option>
+        </select>
+        <select
+          value={filterScadenza}
+          onChange={e => setFilterScadenza(e.target.value)}
+          className="input text-xs py-1.5"
+        >
+          <option value="tutte">Scadenza: tutte</option>
+          <option value="scaduto">Scaduti</option>
+          <option value="oggi">Oggi</option>
+          <option value="questa_settimana">Questa settimana</option>
+          <option value="senza">Senza scadenza</option>
+        </select>
+        <select
+          value={filterAssegnato}
+          onChange={e => setFilterAssegnato(e.target.value)}
+          className="input text-xs py-1.5"
+        >
+          <option value="">Assegnato: tutti</option>
+          {staff.map(s => (
+            <option key={s.id} value={s.id}>{s.nome} {s.cognome}</option>
+          ))}
+        </select>
+        {hasFilters && (
+          <button onClick={resetFilters} className="flex items-center gap-1 text-xs text-stone hover:text-cream transition-colors">
+            <X size={11} /> Reset
+          </button>
+        )}
+        <span className="text-xs text-stone/40 ml-auto">{filtered.length} task</span>
       </div>
 
       {/* Barra azioni bulk (appare con selezione) */}

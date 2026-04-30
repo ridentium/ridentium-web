@@ -3,8 +3,9 @@
 import { useState, useTransition } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Fornitore, FornitoreContatto, MagazzinoItem, CanaleOrdine } from '@/types'
-import { Plus, Trash2, MessageCircle, Mail, Globe, Phone, Edit2, Check, X, Star, ChevronDown, ChevronUp, UserPlus } from 'lucide-react'
+import { Plus, Trash2, MessageCircle, Mail, Globe, Phone, Edit2, Check, X, Star, ChevronDown, ChevronUp, UserPlus, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { logActivity } from '@/lib/registro'
 
 interface Props {
@@ -307,6 +308,10 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                       <span className="text-xs text-stone/60">{contatti.length}</span>
                       {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                     </button>
+
+                    <Link href={`/admin/fornitori/${f.id}`} className="p-1.5 rounded text-stone hover:text-cream transition-colors flex-shrink-0" title="Scheda fornitore">
+                      <ExternalLink size={13} />
+                    </Link>
 
                     {canEdit && (
                       <>
