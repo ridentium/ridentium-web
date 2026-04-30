@@ -206,15 +206,18 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   async function handleQuickComplete(event: AgendaEvent) {
     if (event.tipo === 'task') {
       if (event.stato === 'completato') return
+      // Ottimistico: aggiorna subito la UI, poi rollback se l'API fallisce
+      const prevStato = event.stato ?? 'da_fare'
+      handleStatoChange(event.id, 'completato')
       const r = await fetch(`/api/tasks/${event.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ stato: 'completato' }),
       })
       if (r.ok) {
-        handleStatoChange(event.id, 'completato')
         showToast(`"${event.titolo}" segnato come fatto`)
       } else {
+        handleStatoChange(event.id, prevStato as 'da_fare' | 'in_corso' | 'completato')
         showToast('Errore aggiornamento', 'error')
       }
     } else if (event.tipo === 'adempimento') {
@@ -667,6 +670,10 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           userId={userId}
           onClose={() => setEditTarget(null)}
           onSaved={() => { setEditTarget(null); load(); showToast('Modifiche salvate!') }}
+          onQuickComplete={async (e) => {
+            await handleQuickComplete(e)
+            setEditTarget(null)
+          }}
         />
       )}
 
@@ -909,10 +916,11 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
 // ─── EditModal ────────────────────────────────────────────────────────────────
 
 function EditModal({
-  event: e, profili, isAdmin, userId, onClose, onSaved,
+  event: e, profili, isAdmin, userId, onClose, onSaved, onQuickComplete,
 }: {
   event: AgendaEvent; profili: Profilo[]; isAdmin: boolean; userId: string
   onClose: () => void; onSaved: () => void
+  onQuickComplete?: (e: AgendaEvent) => Promise<void>
 }) {
   const [titolo, setTitolo] = useState(e.titolo)
   const [descrizione, setDescrizione] = useState(e.descrizione ?? '')
@@ -953,6 +961,17 @@ function EditModal({
     document.addEventListener('keydown', handleKey)
     return () => document.removeEventListener('keydown', handleKey)
   }, [onClose])
+
+  const [completando, setCompletando] = useState(false)
+  const canFatto = (e.tipo === 'task' && e.stato !== 'completato') || e.tipo === 'adempimento'
+  const isTaskDone = e.tipo === 'task' && e.stato === 'completato'
+
+  async function handleFatto() {
+    if (!onQuickComplete || completando) return
+    setCompletando(true)
+    await onQuickComplete(e)
+    setCompletando(false)
+  }
 
   async function handleSave() {
     if (!titolo.trim()) { setErrore('Il titolo è obbligatorio'); return }
@@ -1161,7 +1180,20 @@ function EditModal({
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 justify-end px-5 pb-5">
+        <div className="flex gap-3 justify-end px-5 pb-5 flex-wrap">
+          {/* Bottone Fatto — visibile su mobile, utile ovunque */}
+          {canFatto && onQuickComplete && (
+            <button onClick={handleFatto} disabled={completando}
+              className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50">
+              {completando ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
+              {completando ? 'Completamento…' : e.tipo === 'adempimento' ? 'Segna come completato' : 'Segna come fatto'}
+            </button>
+          )}
+          {isTaskDone && (
+            <span className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-green-500/20 text-green-400/60">
+              <Check size={13} /> Già completato
+            </span>
+          )}
           <button onClick={onClose} className="btn-secondary text-xs px-4">Annulla</button>
           <button onClick={handleSave} disabled={saving}
             className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-gold/40 bg-gold/15 text-gold hover:bg-gold/25 transition-colors disabled:opacity-50">
