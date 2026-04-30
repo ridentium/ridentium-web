@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivityServer } from '@/lib/registro-server'
 
 // POST /api/ricorrenti — crea una nuova azione ricorrente (solo admin/manager)
 export async function POST(req: NextRequest) {
@@ -10,11 +11,12 @@ export async function POST(req: NextRequest) {
 
   const adminDb = createAdminClient()
   const { data: profilo } = await adminDb
-    .from('profili').select('ruolo').eq('id', user.id).single()
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
 
   if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   const body = await req.json()
   const { titolo, descrizione, frequenza, assegnato_a } = body
@@ -43,6 +45,13 @@ export async function POST(req: NextRequest) {
     console.error('[ricorrenti POST]', error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await logActivityServer(
+    user.id, userNome,
+    'Azione ricorrente creata',
+    `"${titolo.trim()}" — ${frequenza}`,
+    'ricorrenti'
+  )
 
   return NextResponse.json({ ricorrente: data }, { status: 201 })
 }

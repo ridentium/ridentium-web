@@ -117,6 +117,33 @@ export interface Ricorrente {
   completamenti: Completamento[]
   created_at: string
 }
+// ── Registro attività ──────────────────────────────────────────────────────────
+
+export type CategoriaRegistro =
+  | 'todo' | 'magazzino' | 'ordini' | 'fornitori' | 'staff'
+  | 'ricorrenti' | 'crm' | 'sistema' | 'tasks' | 'adempimenti' | 'altro'
+
+export interface RegistroEntry {
+  id: string
+  user_id: string
+  user_nome: string
+  azione: string
+  dettaglio?: string | null
+  categoria: CategoriaRegistro
+  created_at: string
+}
+
+// ── Commenti task ──────────────────────────────────────────────────────────────
+
+export interface TaskCommento {
+  id: string
+  task_id: string
+  utente_id: string
+  utente_nome: string
+  testo: string
+  created_at: string
+}
+
 export type CRMStato = 'nuovo' | 'contattato' | 'appuntamento' | 'cliente' | 'perso'
 
 export interface CRMContatto {
