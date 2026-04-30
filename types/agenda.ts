@@ -16,11 +16,16 @@ export interface AgendaEvent {
   priorita?: 'bassa' | 'media' | 'alta' | null
   /** solo per adempimenti */
   categoria?: string | null
-  /** solo per ricorrenti */
+  /** ricorrenti e adempimenti */
   frequenza?: string | null
   /** profilo assegnatario (null = nessuno / tutti) */
   assegnato_a_id?: string | null
   assegnato_a_nome?: string | null
+  /** solo per ricorrenti */
+  attiva?: boolean | null
+  /** solo per adempimenti */
+  preavviso_giorni?: number | null
+  responsabile_etichetta?: string | null
   /** link diretto per aprire il record */
   href: string
 }
