@@ -26,6 +26,8 @@ export interface AgendaEvent {
   /** solo per adempimenti */
   preavviso_giorni?: number | null
   responsabile_etichetta?: string | null
+  /** ricorrenti: true se completata per il periodo corrente */
+  completata_oggi?: boolean
   /** link diretto per aprire il record */
   href: string
 }

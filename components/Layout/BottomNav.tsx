@@ -7,17 +7,19 @@ import { LayoutDashboard, CalendarDays, CheckSquare, Package, Search } from 'luc
 interface BottomNavProps {
   isAdmin: boolean
   onSearchOpen: () => void
+  alertCount?: number
+  tasksCount?: number
 }
 
-export default function BottomNav({ isAdmin, onSearchOpen }: BottomNavProps) {
+export default function BottomNav({ isAdmin, onSearchOpen, alertCount = 0, tasksCount = 0 }: BottomNavProps) {
   const pathname = usePathname()
   const base = isAdmin ? '/admin' : '/staff'
 
   const tabs = [
-    { href: base, label: 'Home', icon: LayoutDashboard, exact: true },
-    { href: `${base}/agenda`, label: 'Agenda', icon: CalendarDays },
-    { href: `${base}/tasks`, label: 'Task', icon: CheckSquare },
-    { href: `${base}/magazzino`, label: 'Magazzino', icon: Package },
+    { href: base, label: 'Home', icon: LayoutDashboard, exact: true, badge: 0 },
+    { href: `${base}/agenda`, label: 'Agenda', icon: CalendarDays, badge: 0 },
+    { href: `${base}/tasks`, label: 'Task', icon: CheckSquare, badge: tasksCount },
+    { href: `${base}/magazzino`, label: 'Magazzino', icon: Package, badge: alertCount },
   ]
 
   function isActive(href: string, exact: boolean = false) {
@@ -34,16 +36,32 @@ export default function BottomNav({ isAdmin, onSearchOpen }: BottomNavProps) {
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
-      {tabs.map(({ href, label, icon: Icon, exact }) => {
+      {tabs.map(({ href, label, icon: Icon, exact, badge }) => {
         const active = isActive(href, exact)
         return (
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-colors"
+            className="flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-colors relative"
             style={{ color: active ? '#C9A96E' : 'rgba(160,144,126,0.6)', minHeight: 56 }}
           >
-            <Icon size={20} strokeWidth={active ? 2 : 1.5} />
+            <div className="relative">
+              <Icon size={20} strokeWidth={active ? 2 : 1.5} />
+              {badge > 0 && (
+                <span
+                  className="absolute -top-1 -right-1.5 flex items-center justify-center rounded-full text-[9px] font-bold leading-none"
+                  style={{
+                    background: label === 'Magazzino' ? '#F87171' : '#C9A96E',
+                    color: '#1A1208',
+                    minWidth: 14,
+                    height: 14,
+                    padding: '0 3px',
+                  }}
+                >
+                  {badge > 99 ? '99+' : badge}
+                </span>
+              )}
+            </div>
             <span style={{ fontSize: 10, letterSpacing: '0.05em', fontWeight: active ? 500 : 400 }}>
               {label}
             </span>
