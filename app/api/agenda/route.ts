@@ -51,6 +51,7 @@ export async function GET(req: NextRequest) {
         assegnato_a_profilo:profili!tasks_assegnato_a_fkey(id, nome, cognome)
       `)
       .in('stato', ['da_fare', 'in_corso'])
+      .is('deleted_at', null)
       .order('scadenza', { ascending: true, nullsFirst: false })
 
     if (!mostraTutti) {
