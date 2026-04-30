@@ -549,6 +549,27 @@ export default function AdempimentiView({ canEdit }: Props) {
                               {new Date(a.ultima_esecuzione).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' })}
                             </div>
                           )}
+                          {(a.evidenza_descrizione || a.evidenza_url) && (
+                            <div className="flex items-start gap-2 text-xs pt-1 border-t border-obsidian-light/20">
+                              <Paperclip size={12} className="text-gold/60 mt-0.5 flex-shrink-0" />
+                              <div className="min-w-0">
+                                <span className="text-stone/60 block text-[10px] uppercase tracking-wider mb-0.5">Ultima evidenza</span>
+                                {a.evidenza_descrizione && (
+                                  <p className="text-cream/70 text-xs">{a.evidenza_descrizione}</p>
+                                )}
+                                {a.evidenza_url && (
+                                  <a
+                                    href={a.evidenza_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 underline text-[11px] break-all transition-colors"
+                                  >
+                                    Apri file allegato →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
