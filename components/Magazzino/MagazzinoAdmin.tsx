@@ -84,6 +84,10 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   const [showOrdineRapido, setShowOrdineRapido] = useState(false)
   const [storico, setStorico] = useState<StoricoEntry[]>([])
   const [showStorico, setShowStorico] = useState(false)
+  const [loadingStorico, setLoadingStorico] = useState(false)
+  const [storicoDb, setStoricoDb] = useState<Array<{
+    id: string; azione: string; dettaglio: string; user_nome: string; created_at: string
+  }> | null>(null)
   const router = useRouter()
   const supabase = createClient()
   const [, startTransition] = useTransition()
@@ -144,6 +148,22 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
 
   const alertItems = items.filter(i => i.quantita < i.soglia_minima)
   const alertCount = alertItems.length
+
+  async function caricaStoricoDb() {
+    setLoadingStorico(true)
+    try {
+      const { data } = await supabase
+        .from('registro')
+        .select('id, azione, dettaglio, user_nome, created_at')
+        .eq('categoria', 'magazzino')
+        .order('created_at', { ascending: false })
+        .limit(60)
+      setStoricoDb(data ?? [])
+      setShowStorico(true)
+    } finally {
+      setLoadingStorico(false)
+    }
+  }
 
   function addStorico(prodotto: string, azione: string) {
     setStorico(prev => [{
@@ -526,36 +546,79 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         />
       )}
 
-      {/* Storico movimenti sessione */}
-      {storico.length > 0 && (
-        <div className="card border-obsidian-light/50">
+      {/* Storico movimenti */}
+      <div className="card border-obsidian-light/50">
+        <div className="flex items-center justify-between">
           <button
             onClick={() => setShowStorico(v => !v)}
-            className="flex items-center justify-between w-full"
+            className="flex items-center gap-2"
           >
-            <div className="flex items-center gap-2">
-              <History size={13} className="text-stone/60" />
-              <h3 className="text-xs uppercase tracking-widest text-stone">
-                Storico movimenti ({storico.length})
-              </h3>
-            </div>
+            <History size={13} className="text-stone/60" />
+            <h3 className="text-xs uppercase tracking-widest text-stone">
+              Storico movimenti
+              {storico.length > 0 && <span className="ml-1 text-stone/40">({storico.length} questa sessione)</span>}
+            </h3>
             {showStorico
-              ? <ChevronUp size={13} className="text-stone/40" />
-              : <ChevronDown size={13} className="text-stone/40" />}
+              ? <ChevronUp size={13} className="text-stone/40 ml-1" />
+              : <ChevronDown size={13} className="text-stone/40 ml-1" />}
           </button>
-          {showStorico && (
-            <div className="mt-3 space-y-1">
-              {storico.map(s => (
-                <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
-                  <span className="text-[10px] text-stone/40 w-10 flex-shrink-0 pt-0.5">{s.ora}</span>
-                  <span className="text-xs text-cream/80 font-medium flex-shrink-0 max-w-[180px] truncate">{s.prodotto}</span>
-                  <span className="text-xs text-stone">{s.azione}</span>
-                </div>
-              ))}
-            </div>
+          {storicoDb === null && (
+            <button
+              onClick={caricaStoricoDb}
+              disabled={loadingStorico}
+              className="text-[10px] text-gold/70 hover:text-gold transition-colors disabled:opacity-40"
+            >
+              {loadingStorico ? 'Caricamento…' : 'Carica storico completo →'}
+            </button>
           )}
         </div>
-      )}
+
+        {showStorico && (
+          <div className="mt-3 space-y-1">
+            {/* Storico sessione corrente */}
+            {storico.length > 0 && (
+              <div className="mb-3">
+                <p className="text-[9px] uppercase tracking-widest text-stone/40 mb-1.5">Questa sessione</p>
+                {storico.map(s => (
+                  <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                    <span className="text-[10px] text-stone/40 w-10 flex-shrink-0 pt-0.5">{s.ora}</span>
+                    <span className="text-xs text-cream/80 font-medium flex-shrink-0 max-w-[160px] truncate">{s.prodotto}</span>
+                    <span className="text-xs text-stone">{s.azione}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Storico DB */}
+            {storicoDb !== null && (
+              <div>
+                {storico.length > 0 && <p className="text-[9px] uppercase tracking-widest text-stone/40 mb-1.5 mt-3">Precedenti</p>}
+                {storicoDb.length === 0 ? (
+                  <p className="text-xs text-stone/40 py-3 text-center italic">Nessun movimento registrato</p>
+                ) : (
+                  storicoDb.map(s => (
+                    <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                      <span className="text-[10px] text-stone/40 w-24 flex-shrink-0 pt-0.5">
+                        {new Date(s.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                        {' '}{new Date(s.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="text-[10px] text-stone/50 flex-shrink-0 max-w-[100px] truncate">{s.user_nome}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-cream/80 truncate">{s.azione.replace(/^Quantità aggiornata: |^Merce ricevuta: /, '')}</p>
+                        {s.dettaglio && <p className="text-[10px] text-stone/60">{s.dettaglio}</p>}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+            {storico.length === 0 && storicoDb === null && (
+              <p className="text-xs text-stone/40 py-3 text-center italic">
+                Nessun movimento in questa sessione. Carica lo storico completo per vedere i precedenti.
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
     </div>

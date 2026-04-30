@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
 import MagazzinoAdmin from '@/components/Magazzino/MagazzinoAdmin'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 
 export default async function MagazzinoPage() {
   const supabase = createClient()
@@ -46,14 +47,16 @@ export default async function MagazzinoPage() {
         title="Magazzino"
         subtitle="Gestione scorte e riordini"
       />
-      <MagazzinoAdmin
-        items={items ?? []}
-        riordini={riordini ?? []}
-        fornitori={fornitori ?? []}
-        userId={user!.id}
-        userNome={userNome}
-        orderedItemIds={orderedItemIds}
-      />
+      <ErrorBoundary fallback="Errore nel caricamento del magazzino">
+        <MagazzinoAdmin
+          items={items ?? []}
+          riordini={riordini ?? []}
+          fornitori={fornitori ?? []}
+          userId={user!.id}
+          userNome={userNome}
+          orderedItemIds={orderedItemIds}
+        />
+      </ErrorBoundary>
     </div>
   )
 }
