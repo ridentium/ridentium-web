@@ -6,11 +6,19 @@ import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
 import {
   AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
-  ChevronsUpDown, Plus, Pencil, Search, X, Zap
+  ChevronsUpDown, Plus, Pencil, Search, X, Zap, History
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 import Toast, { type ToastState } from '@/components/ui/Toast'
+import { logActivity } from '@/lib/registro'
+
+interface StoricoEntry {
+  id: string
+  prodotto: string
+  azione: string
+  ora: string
+}
 
 const CATEGORIE = [
   'Tutte', 'Impianti', 'Componentistica Protesica', 'Materiali Chirurgici',
@@ -64,6 +72,8 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   const [editItem, setEditItem] = useState<MagazzinoItem | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [showOrdineRapido, setShowOrdineRapido] = useState(false)
+  const [storico, setStorico] = useState<StoricoEntry[]>([])
+  const [showStorico, setShowStorico] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const [, startTransition] = useTransition()
@@ -125,6 +135,15 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   const alertItems = items.filter(i => i.quantita < i.soglia_minima)
   const alertCount = alertItems.length
 
+  function addStorico(prodotto: string, azione: string) {
+    setStorico(prev => [{
+      id: crypto.randomUUID(),
+      prodotto,
+      azione,
+      ora: new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+    }, ...prev].slice(0, 20))
+  }
+
   async function saveQuantita(id: string, nuovaQuantita: number) {
     const item = items.find(i => i.id === id)
     const eraOk = item ? item.quantita >= item.soglia_minima : true
@@ -136,6 +155,11 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       showToast('Errore aggiornamento quantità', 'error')
     } else {
       showToast(saraAlert ? `Sotto soglia — verifica il riordino` : `Quantità aggiornata: ${nuovaQuantita}`)
+      if (item) {
+        const azione = `${item.quantita} → ${nuovaQuantita} ${item.unita ?? 'pz'}`
+        addStorico(item.prodotto, azione)
+        logActivity(userId, userNome, `Quantità aggiornata: ${item.prodotto}`, azione, 'magazzino').catch(() => {})
+      }
     }
 
     // Notifica soglia solo quando si PASSA da ok → alert (non ad ogni modifica sotto soglia)
@@ -173,6 +197,9 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         i.id === evadisciModal!.magazzinoId ? { ...i, quantita: nuovaQty } : i
       ))
       showToast(`Merce ricevuta — giacenza aggiornata a ${nuovaQty}`)
+      const azione = `Ricevute ${qtyRicevuta} pz → giacenza ${nuovaQty}`
+      addStorico(evadisciModal.prodotto, azione)
+      logActivity(userId, userNome, `Merce ricevuta: ${evadisciModal.prodotto}`, azione, 'magazzino').catch(() => {})
     }
     setEvadisciModal(null)
     startTransition(() => router.refresh())
@@ -432,6 +459,37 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             startTransition(() => router.refresh())
           }}
         />
+      )}
+
+      {/* Storico movimenti sessione */}
+      {storico.length > 0 && (
+        <div className="card border-obsidian-light/50">
+          <button
+            onClick={() => setShowStorico(v => !v)}
+            className="flex items-center justify-between w-full"
+          >
+            <div className="flex items-center gap-2">
+              <History size={13} className="text-stone/60" />
+              <h3 className="text-xs uppercase tracking-widest text-stone">
+                Storico movimenti ({storico.length})
+              </h3>
+            </div>
+            {showStorico
+              ? <ChevronUp size={13} className="text-stone/40" />
+              : <ChevronDown size={13} className="text-stone/40" />}
+          </button>
+          {showStorico && (
+            <div className="mt-3 space-y-1">
+              {storico.map(s => (
+                <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                  <span className="text-[10px] text-stone/40 w-10 flex-shrink-0 pt-0.5">{s.ora}</span>
+                  <span className="text-xs text-cream/80 font-medium flex-shrink-0 max-w-[180px] truncate">{s.prodotto}</span>
+                  <span className="text-xs text-stone">{s.azione}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
