@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck, CalendarClock } from 'lucide-react'
+import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck, CalendarClock, UserPlus } from 'lucide-react'
 import LinaBriefingCard from '@/components/Dashboard/LinaBriefingCard'
 import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
@@ -32,6 +32,7 @@ function generateBriefing(
   riordiniCount: number,
   ricorrentiCount: number,
   scadutiCount: number,
+  crmLeadsCount: number = 0,
 ): string {
   const h = new Date().getHours()
   const day = new Date().getDay()
@@ -44,6 +45,8 @@ function generateBriefing(
   if (alertCount > 0) urgenze.push(`${alertCount} prodott${alertCount === 1 ? 'o' : 'i'} sotto soglia`)
   if (tasksCount > 0) urgenze.push(`${tasksCount} task apert${tasksCount === 1 ? 'o' : 'i'}`)
   if (riordiniCount > 0) urgenze.push(`${riordiniCount} riordine${riordiniCount === 1 ? '' : 'i'} da evadere`)
+
+  if (crmLeadsCount > 0) urgenze.push(`${crmLeadsCount} lead CRM da contattare`)
 
   if (urgenze.length === 0 && ricorrentiCount === 0) {
     const chiusura = isVenerdi
@@ -95,6 +98,7 @@ export default async function AdminHome() {
     { data: ricorrenti },
     { data: profilo },
     { data: adempimentiAll },
+    { data: crmNuovi },
   ] = await Promise.all([
     supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria'),
     supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a, stato').neq('stato', 'completato').is('deleted_at', null),
@@ -103,11 +107,13 @@ export default async function AdminHome() {
     supabase.from('ricorrenti').select('*').eq('attiva', true).order('created_at', { ascending: true }),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
     supabase.from('adempimenti').select('id, titolo, categoria, frequenza, prossima_scadenza, preavviso_giorni, evidenza_richiesta').eq('attivo', true),
+    adminDb.from('crm_contatti').select('id, nome, cognome, created_at').eq('stato', 'nuovo').order('created_at', { ascending: false }).limit(5),
   ])
 
   const alertCount    = (magazzinoAll ?? []).filter((i: any) => i.quantita < i.soglia_minima).length
   const tasksCount    = tasksOpen?.length ?? 0
   const riordiniCount = riordiniAperti?.length ?? 0
+  const crmLeadsCount = crmNuovi?.length ?? 0
   const userNome      = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
   const firstName     = profilo?.nome ?? 'Mariano'
 
@@ -185,7 +191,7 @@ export default async function AdminHome() {
     }
   })
 
-  const briefing = generateBriefing(firstName, alertCount, tasksCount, riordiniCount, ricorrentiPending, scadutiCount)
+  const briefing = generateBriefing(firstName, alertCount, tasksCount, riordiniCount, ricorrentiPending, scadutiCount, crmLeadsCount)
 
   const oggi = new Date().toLocaleDateString('it-IT', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -253,7 +259,7 @@ export default async function AdminHome() {
         </div>
 
         {/* ── KPI cards ── */}
-        <div id="widget-kpi" className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div id="widget-kpi" className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-4">
           <StatCard
             label="Adempimenti scaduti"
             value={scadutiCount}
@@ -292,7 +298,43 @@ export default async function AdminHome() {
             href="/admin/staff"
             note="Membri"
           />
+          <StatCard
+            label="Lead CRM"
+            value={crmLeadsCount}
+            icon={UserPlus}
+            href="/admin/crm"
+            alert={crmLeadsCount > 0}
+            note={crmLeadsCount > 0 ? 'Da contattare' : 'Nessun lead nuovo'}
+          />
         </div>
+
+        {/* ── Lead CRM recenti ── */}
+        {crmLeadsCount > 0 && (
+          <div id="widget-crm" className="lg:col-span-2 card">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <UserPlus size={14} className="text-gold/70" />
+                <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Nuovi Lead CRM</h3>
+              </div>
+              <Link href="/admin/crm" className="text-xs text-gold hover:text-gold-light transition-colors">
+                Gestisci →
+              </Link>
+            </div>
+            <div className="space-y-1">
+              {(crmNuovi ?? []).map((c: any) => (
+                <div key={c.id} className="flex items-center gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0" />
+                  <span className="flex-1 text-sm text-cream/80">
+                    {c.nome} {c.cognome}
+                  </span>
+                  <span className="text-[10px] text-stone/40">
+                    {new Date(c.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ── Adempimenti urgenti (scaduti + in scadenza) ── */}
         {adempimentiUrgenti.length > 0 && (
