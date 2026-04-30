@@ -110,9 +110,51 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
   // Calendario
   const now = new Date()
+  const [calView, setCalView] = useState<'mese' | 'settimana'>('settimana')
   const [calYear, setCalYear] = useState(now.getFullYear())
   const [calMonth, setCalMonth] = useState(now.getMonth())
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  // Settimana: lunedì della settimana corrente come ISO
+  function getMondayISO(d: Date): string {
+    const day = new Date(d)
+    const dow = day.getDay()
+    const offset = dow === 0 ? -6 : 1 - dow
+    day.setDate(day.getDate() + offset)
+    return toISO(day.getFullYear(), day.getMonth(), day.getDate())
+  }
+  const [weekStart, setWeekStart] = useState<string>(() => getMondayISO(now))
+
+  function prevWeek() {
+    const d = new Date(weekStart + 'T00:00:00')
+    d.setDate(d.getDate() - 7)
+    setWeekStart(toISO(d.getFullYear(), d.getMonth(), d.getDate()))
+  }
+  function nextWeek() {
+    const d = new Date(weekStart + 'T00:00:00')
+    d.setDate(d.getDate() + 7)
+    setWeekStart(toISO(d.getFullYear(), d.getMonth(), d.getDate()))
+  }
+  function goToCurrentWeek() { setWeekStart(getMondayISO(now)) }
+
+  const weekDays = useMemo(() => {
+    const days: string[] = []
+    const d = new Date(weekStart + 'T00:00:00')
+    for (let i = 0; i < 7; i++) {
+      days.push(toISO(d.getFullYear(), d.getMonth(), d.getDate()))
+      d.setDate(d.getDate() + 1)
+    }
+    return days
+  }, [weekStart])
+
+  const weekEventMap = useMemo(() => {
+    const m = new Map<string, AgendaEvent[]>()
+    for (const d of weekDays) m.set(d, [])
+    for (const e of events) {
+      if (e.data && m.has(e.data)) m.get(e.data)!.push(e)
+    }
+    return m
+  }, [events, weekDays])
 
   // Edit
   const [editTarget, setEditTarget] = useState<AgendaEvent | null>(null)
@@ -339,6 +381,108 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {/* ════════════════════════════════════════════════ CALENDARIO ══════ */}
       {tab === 'calendario' && !loading && (
         <div className="space-y-4">
+          {/* Toggle mese / settimana */}
+          <div className="flex items-center justify-between">
+            <div className="flex rounded-lg overflow-hidden border border-obsidian-light/50">
+              {(['settimana', 'mese'] as const).map(v => (
+                <button key={v} onClick={() => setCalView(v)}
+                  className={`text-xs px-3 py-1.5 transition-colors ${
+                    calView === v ? 'bg-gold/20 text-gold' : 'text-stone hover:text-cream'
+                  }`}>
+                  {v === 'settimana' ? 'Settimana' : 'Mese'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* ── Vista settimana ── */}
+          {calView === 'settimana' && (() => {
+            const weekEndDate = new Date(weekDays[6] + 'T00:00:00')
+            const weekStartDate = new Date(weekDays[0] + 'T00:00:00')
+            const isCurrentWeek = weekDays.includes(oggiStr)
+            return (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <button onClick={prevWeek} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <div className="text-center">
+                    <h2 className="text-sm font-medium text-cream">
+                      {weekStartDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} –{' '}
+                      {weekEndDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </h2>
+                    {!isCurrentWeek && (
+                      <button onClick={goToCurrentWeek} className="text-[10px] text-gold/60 hover:text-gold transition-colors mt-0.5">
+                        → Vai a questa settimana
+                      </button>
+                    )}
+                  </div>
+                  <button onClick={nextWeek} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-7 gap-1.5">
+                  {weekDays.map((iso, i) => {
+                    const d = new Date(iso + 'T00:00:00')
+                    const dayEvs = weekEventMap.get(iso) ?? []
+                    const isOggi = iso === oggiStr
+                    const isPast = iso < oggiStr
+                    return (
+                      <div key={iso} className={`rounded-xl border p-2 min-h-[100px] transition-colors ${
+                        isOggi ? 'border-red-400/30 bg-red-400/5' : 'border-obsidian-light/30 bg-obsidian-light/5'
+                      }`}>
+                        <div className="text-center mb-2">
+                          <p className={`text-[9px] uppercase tracking-wider ${isOggi ? 'text-red-400' : 'text-stone/50'}`}>
+                            {GIORNI_IT[i === 6 ? 6 : i]}
+                          </p>
+                          <p className={`text-sm font-medium ${isOggi ? 'text-red-400' : isPast ? 'text-stone/40' : 'text-cream/80'}`}>
+                            {d.getDate()}
+                          </p>
+                        </div>
+                        <div className="space-y-1">
+                          {dayEvs.slice(0, 4).map(e => {
+                            const cfg = TIPO_CONFIG[e.tipo]
+                            const Icon = cfg.icon
+                            const isCompleted = e.stato === 'completato'
+                            return (
+                              <button key={e.id}
+                                onClick={() => setEditTarget(e)}
+                                className={`w-full text-left text-[9px] px-1.5 py-1 rounded border transition-colors ${
+                                  isCompleted ? 'opacity-40 line-through' : ''
+                                } ${cfg.bg} ${cfg.color} hover:opacity-80`}
+                              >
+                                <span className="flex items-center gap-1 truncate">
+                                  <Icon size={8} className="flex-shrink-0" />
+                                  <span className="truncate">{e.titolo}</span>
+                                </span>
+                              </button>
+                            )
+                          })}
+                          {dayEvs.length > 4 && (
+                            <p className="text-[9px] text-stone/50 text-center">+{dayEvs.length - 4} altri</p>
+                          )}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* Legenda */}
+                <div className="flex items-center gap-4">
+                  {(['task', 'ricorrente', 'adempimento'] as const).map(t => (
+                    <div key={t} className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: TIPO_CONFIG[t].dot }} />
+                      <span className="text-[10px] text-stone/70">{TIPO_CONFIG[t].label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* ── Vista mese ── */}
+          {calView === 'mese' && (<>
           <div className="flex items-center justify-between">
             <button onClick={prevMonth} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
               <ChevronLeft size={16} />
@@ -440,6 +584,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
               )}
             </div>
           )}
+          </>)}
         </div>
       )}
 
