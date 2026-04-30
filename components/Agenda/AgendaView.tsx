@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { AgendaEvent, AgendaTipo } from '@/types/agenda'
 import { CATEGORIA_LABEL, CATEGORIA_COLOR } from '@/types/adempimenti'
 import type { CategoriaAdempimento } from '@/types/adempimenti'
+import Toast, { type ToastState } from '@/components/ui/Toast'
 import {
   CheckSquare, RefreshCw, ShieldCheck, AlertTriangle, Clock,
   ChevronRight, ChevronLeft, Users, User, CalendarDays, Tag,
-  Plus, List, Loader2, Pencil, Trash2, X, Check,
+  Plus, List, Loader2, Pencil, Trash2, X, Check, Search,
+  MoreHorizontal,
 } from 'lucide-react'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,6 +47,16 @@ const FREQ_LABEL: Record<string, string> = {
   giornaliero: 'Ogni giorno', settimanale: 'Ogni settimana', mensile: 'Ogni mese',
   trimestrale: 'Ogni trimestre', semestrale: 'Ogni semestre', annuale: 'Ogni anno',
   biennale: 'Ogni 2 anni', triennale: 'Ogni 3 anni', quinquennale: 'Ogni 5 anni',
+}
+
+const STATO_LABEL: Record<string, string> = {
+  da_fare: 'Da fare', in_corso: 'In corso', completato: 'Completato',
+}
+
+const STATO_COLOR: Record<string, string> = {
+  da_fare:    'text-amber-400 border-amber-400/30 bg-amber-400/10',
+  in_corso:   'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  completato: 'text-emerald-400 border-emerald-400/30 bg-emerald-400/10',
 }
 
 const MESI_IT = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
@@ -93,6 +105,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   // Lista
   const [mostraTutti, setMostraTutti] = useState(isAdmin)
   const [tipoFilter, setTipoFilter] = useState<AgendaTipo | 'tutti'>('tutti')
+  const [search, setSearch] = useState('')
 
   // Calendario
   const now = new Date()
@@ -100,8 +113,14 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   const [calMonth, setCalMonth] = useState(now.getMonth())
   const [selectedDay, setSelectedDay] = useState<string | null>(null)
 
-  // Edit / Delete
+  // Edit
   const [editTarget, setEditTarget] = useState<AgendaEvent | null>(null)
+
+  // Toast
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type })
+  }, [])
 
   const oggiStr = toISO(now.getFullYear(), now.getMonth(), now.getDate())
 
@@ -119,16 +138,28 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
   useEffect(() => { load() }, [load])
 
-  // ── Delete handler ─────────────────────────────────────────────────────────
-  async function handleDelete(event: AgendaEvent) {
-    const apiPath = event.tipo === 'task' ? 'tasks' : event.tipo === 'ricorrente' ? 'ricorrenti' : 'adempimenti'
-    const r = await fetch(`/api/${apiPath}/${event.id}`, { method: 'DELETE' })
-    if (r.ok) setEvents(prev => prev.filter(e => e.id !== event.id))
+  // ── Handlers ───────────────────────────────────────────────────────────────
+  function handleDelete(event: AgendaEvent) {
+    setEvents(prev => prev.filter(e => e.id !== event.id))
+  }
+
+  function handleStatoChange(id: string, nuovoStato: 'da_fare' | 'in_corso' | 'completato') {
+    setEvents(prev => prev.map(e => e.id === id ? { ...e, stato: nuovoStato } : e))
   }
 
   // ── Lista ──────────────────────────────────────────────────────────────────
-  const filtered = useMemo(() =>
-    events.filter(e => tipoFilter === 'tutti' || e.tipo === tipoFilter), [events, tipoFilter])
+  const filtered = useMemo(() => {
+    let list = events.filter(e => tipoFilter === 'tutti' || e.tipo === tipoFilter)
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter(e =>
+        e.titolo.toLowerCase().includes(q) ||
+        (e.descrizione ?? '').toLowerCase().includes(q)
+      )
+    }
+    return list
+  }, [events, tipoFilter, search])
+
   const conData = useMemo(() => filtered.filter(e => e.data !== null), [filtered])
   const senzaData = useMemo(() => filtered.filter(e => e.data === null), [filtered])
   const gruppi = useMemo(() => {
@@ -170,7 +201,13 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   }
 
   // Row props shared
-  const rowProps = { userId, isAdmin, profili, onEdit: setEditTarget, onDelete: handleDelete }
+  const rowProps = {
+    userId, isAdmin, profili,
+    onEdit: setEditTarget,
+    onDelete: handleDelete,
+    onStatoChange: handleStatoChange,
+    onToast: showToast,
+  }
 
   // ─ Render ──────────────────────────────────────────────────────────────────
   return (
@@ -199,7 +236,27 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
       {/* ══════════════════════════════════════════════════════ LISTA ══════ */}
       {tab === 'lista' && !loading && (
-        <div className="space-y-6">
+        <div className="space-y-5">
+
+          {/* Search bar */}
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone/40 pointer-events-none" />
+            <input
+              className="input w-full pl-8 pr-8 text-sm"
+              placeholder="Cerca nell'agenda…"
+              value={search}
+              onChange={ev => setSearch(ev.target.value)}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone/40 hover:text-cream transition-colors"
+              >
+                <X size={13} />
+              </button>
+            )}
+          </div>
+
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-1.5 flex-wrap">
               {(['tutti', 'task', 'ricorrente', 'adempimento'] as const).map(t => {
@@ -228,7 +285,9 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           </div>
 
           {filtered.length === 0 && (
-            <div className="card text-center py-10 text-stone text-sm">Nessun evento nel periodo selezionato.</div>
+            <div className="card text-center py-10 text-stone text-sm">
+              {search ? `Nessun risultato per "${search}".` : 'Nessun evento nel periodo selezionato.'}
+            </div>
           )}
 
           {senzaData.length > 0 && (tipoFilter === 'tutti' || tipoFilter === 'ricorrente') && (
@@ -374,7 +433,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {/* ════════════════════════════════════════════════ AGGIUNGI ═══════ */}
       {tab === 'aggiungi' && (
         <AggiungiPanel isAdmin={isAdmin} userId={userId} profili={profili} loading={loading}
-          onSuccess={() => { load(); setTab('lista') }} />
+          onSuccess={() => { load(); setTab('lista'); showToast('Elemento aggiunto!') }} />
       )}
 
       {/* ════════════════════════════════════════════════ EDIT MODAL ═════ */}
@@ -384,8 +443,25 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           profili={profili}
           isAdmin={isAdmin}
           onClose={() => setEditTarget(null)}
-          onSaved={() => { setEditTarget(null); load() }}
+          onSaved={() => { setEditTarget(null); load(); showToast('Modifiche salvate!') }}
         />
+      )}
+
+      {/* FAB — aggiungi rapido */}
+      {tab !== 'aggiungi' && (
+        <button
+          onClick={() => setTab('aggiungi')}
+          className="fixed bottom-6 right-5 z-[100] w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95"
+          style={{ backgroundColor: '#C9A84C', color: '#1A1009' }}
+          title="Aggiungi elemento"
+        >
+          <Plus size={24} />
+        </button>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
     </div>
   )
@@ -400,28 +476,74 @@ interface EventRowProps {
   profili: Profilo[]
   onEdit: (e: AgendaEvent) => void
   onDelete: (e: AgendaEvent) => void
+  onStatoChange: (id: string, stato: 'da_fare' | 'in_corso' | 'completato') => void
+  onToast: (msg: string, type?: 'success' | 'error') => void
 }
 
-function EventRow({ event: e, userId, isAdmin, onEdit, onDelete }: EventRowProps) {
+function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, onToast }: EventRowProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [cyclingStato, setCyclingStato] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const cfg = TIPO_CONFIG[e.tipo]
   const Icon = cfg.icon
   const scad = scadenzaLabel(e.data)
   const isOwn = e.assegnato_a_id === userId || !e.assegnato_a_id
 
-  // Chi può modificare/eliminare
   const canEdit = isAdmin || (e.tipo === 'task' && isOwn)
   const canDelete = isAdmin || (e.tipo === 'task' && isOwn)
 
-  async function confirmDelete() {
+  // Click-outside per chiudere il menu
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleClick(ev: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(ev.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [menuOpen])
+
+  async function cycleStato() {
+    if (e.tipo !== 'task' || !e.stato || cyclingStato) return
+    const cycle: Record<string, 'da_fare' | 'in_corso' | 'completato'> = {
+      da_fare: 'in_corso', in_corso: 'completato', completato: 'da_fare',
+    }
+    const nuovoStato = cycle[e.stato] as 'da_fare' | 'in_corso' | 'completato' | undefined
+    if (!nuovoStato) return
+    setCyclingStato(true)
+    const r = await fetch(`/api/tasks/${e.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stato: nuovoStato }),
+    })
+    if (r.ok) {
+      onStatoChange(e.id, nuovoStato)
+      onToast(`Stato: ${STATO_LABEL[nuovoStato]}`)
+    } else {
+      onToast('Errore aggiornamento stato', 'error')
+    }
+    setCyclingStato(false)
+  }
+
+  async function doDelete() {
     setDeleting(true)
-    await onDelete(e)
+    const apiPath = e.tipo === 'task' ? 'tasks' : e.tipo === 'ricorrente' ? 'ricorrenti' : 'adempimenti'
+    const r = await fetch(`/api/${apiPath}/${e.id}`, { method: 'DELETE' })
+    if (r.ok) {
+      onDelete(e)
+      onToast('Elemento eliminato')
+    } else {
+      onToast('Errore durante l\'eliminazione', 'error')
+    }
+    setDeleting(false)
   }
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 group hover:bg-obsidian-light/20 transition-colors">
+    <div className="flex items-start gap-3 px-4 py-3 hover:bg-obsidian-light/20 transition-colors">
       {/* Tipo icon */}
       <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded flex items-center justify-center border ${cfg.bg}`}>
         <Icon size={12} className={cfg.color} />
@@ -435,7 +557,7 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete }: EventRowProps
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold/80 border border-gold/20 flex-shrink-0">mio</span>
           )}
         </div>
-        <div className="flex flex-wrap items-center gap-3 mt-1">
+        <div className="flex flex-wrap items-center gap-2 mt-1">
           <span className={`text-[10px] flex items-center gap-1 ${cfg.color}`}><Icon size={9} />{cfg.label}</span>
           {e.tipo === 'ricorrente' && e.frequenza && (
             <span className="text-[10px] text-stone flex items-center gap-1"><RefreshCw size={9} />{FREQ_LABEL[e.frequenza] ?? e.frequenza}</span>
@@ -449,7 +571,14 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete }: EventRowProps
             <span className={`text-[10px] flex items-center gap-1 ${PRIORITA_COLOR[e.priorita]}`}><AlertTriangle size={9} />{e.priorita}</span>
           )}
           {e.tipo === 'task' && e.stato && (
-            <span className="text-[10px] text-stone capitalize">{e.stato.replace('_', ' ')}</span>
+            <button
+              onClick={ev => { ev.preventDefault(); cycleStato() }}
+              disabled={cyclingStato}
+              title="Tocca per cambiare stato"
+              className={`text-[10px] px-1.5 py-0.5 rounded border transition-colors disabled:opacity-50 ${STATO_COLOR[e.stato] ?? 'text-stone border-stone/30'}`}
+            >
+              {cyclingStato ? '…' : (STATO_LABEL[e.stato] ?? e.stato)}
+            </button>
           )}
           {e.assegnato_a_nome && (
             <span className="text-[10px] text-stone flex items-center gap-1"><User size={9} />{e.assegnato_a_nome}</span>
@@ -461,47 +590,52 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete }: EventRowProps
       </Link>
 
       {/* Actions */}
-      <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-        {!confirmDel ? (
-          <>
-            {canEdit && (
-              <button
-                onClick={() => onEdit(e)}
-                title="Modifica"
-                className="p-1.5 rounded text-stone/40 hover:text-gold hover:bg-gold/10 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <Pencil size={12} />
-              </button>
-            )}
-            {canDelete && (
-              <button
-                onClick={() => setConfirmDel(true)}
-                title="Elimina"
-                className="p-1.5 rounded text-stone/40 hover:text-red-400 hover:bg-red-400/10 transition-colors opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 size={12} />
-              </button>
-            )}
-            {!canEdit && !canDelete && <ChevronRight size={13} className="text-stone/30" />}
-          </>
-        ) : (
+      <div className="flex items-center flex-shrink-0 ml-1">
+        {confirmDel ? (
           <div className="flex items-center gap-1 bg-red-400/10 border border-red-400/20 rounded px-2 py-1">
             <span className="text-[10px] text-red-400/80 mr-1">Elimina?</span>
-            <button
-              onClick={confirmDelete}
-              disabled={deleting}
-              className="text-[10px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50"
-            >
+            <button onClick={doDelete} disabled={deleting}
+              className="text-[10px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50">
               {deleting ? '…' : 'Sì'}
             </button>
             <span className="text-stone/40 text-[10px]">/</span>
-            <button
-              onClick={() => setConfirmDel(false)}
-              className="text-[10px] text-stone hover:text-cream"
-            >
-              No
-            </button>
+            <button onClick={() => setConfirmDel(false)} className="text-[10px] text-stone hover:text-cream">No</button>
           </div>
+        ) : (canEdit || canDelete) ? (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setMenuOpen(v => !v)}
+              className={`p-1.5 rounded transition-colors ${menuOpen ? 'bg-gold/10 text-gold' : 'text-stone/50 hover:text-cream hover:bg-obsidian-light/40'}`}
+              title="Azioni"
+            >
+              <MoreHorizontal size={15} />
+            </button>
+            {menuOpen && (
+              <div
+                className="absolute right-0 top-full mt-1 z-[100] min-w-[130px] rounded-lg border shadow-2xl overflow-hidden"
+                style={{ backgroundColor: '#1A1009', borderColor: 'rgba(74,59,44,0.7)' }}
+              >
+                {canEdit && (
+                  <button
+                    onClick={() => { setMenuOpen(false); onEdit(e) }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-stone hover:text-gold hover:bg-gold/8 transition-colors text-left"
+                  >
+                    <Pencil size={11} /> Modifica
+                  </button>
+                )}
+                {canDelete && (
+                  <button
+                    onClick={() => { setMenuOpen(false); setConfirmDel(true) }}
+                    className="flex items-center gap-2.5 w-full px-3 py-2.5 text-xs text-stone hover:text-red-400 hover:bg-red-400/8 transition-colors text-left"
+                  >
+                    <Trash2 size={11} /> Elimina
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <ChevronRight size={13} className="text-stone/30" />
         )}
       </div>
     </div>
@@ -542,6 +676,15 @@ function EditModal({
   const [respEtichetta, setRespEtichetta] = useState(e.responsabile_etichetta ?? '')
 
   const cfg = TIPO_CONFIG[e.tipo]
+
+  // Escape key
+  useEffect(() => {
+    function handleKey(ev: KeyboardEvent) {
+      if (ev.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => document.removeEventListener('keydown', handleKey)
+  }, [onClose])
 
   async function handleSave() {
     if (!titolo.trim()) { setErrore('Il titolo è obbligatorio'); return }
@@ -818,7 +961,7 @@ function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuc
       const r = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const data = await r.json()
       if (!r.ok) { setErrore(data.error ?? 'Errore durante il salvataggio') }
-      else { setSuccesso(true); setTimeout(onSuccess, 800) }
+      else { setSuccesso(true); setTimeout(onSuccess, 600) }
     } catch { setErrore('Errore di rete') }
     finally { setSaving(false) }
   }
