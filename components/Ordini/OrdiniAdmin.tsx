@@ -21,17 +21,21 @@ interface Props {
 type Filtro = 'tutti' | 'aperti' | 'ricevuti' | 'annullati'
 
 const STATO_LABEL: Record<string, string> = {
-  inviato: 'Inviato',
-  ricevuto: 'Ricevuto',
-  parziale: 'Parz. ricevuto',
-  annullato: 'Annullato',
+  inviato:               'Inviato',
+  confermato_fornitore:  'Confermato',
+  in_consegna:           'In consegna',
+  ricevuto:              'Ricevuto',
+  parziale:              'Parz. ricevuto',
+  annullato:             'Annullato',
 }
 
 const STATO_COLOR: Record<string, string> = {
-  inviato:   'text-gold border-gold/30 bg-gold/10',
-  ricevuto:  'text-green-400 border-green-500/30 bg-green-500/10',
-  parziale:  'text-blue-400 border-blue-500/30 bg-blue-500/10',
-  annullato: 'text-stone border-stone/30 bg-stone/10',
+  inviato:              'text-gold border-gold/30 bg-gold/10',
+  confermato_fornitore: 'text-amber-400 border-amber-400/30 bg-amber-400/10',
+  in_consegna:          'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  ricevuto:             'text-green-400 border-green-500/30 bg-green-500/10',
+  parziale:             'text-teal-400 border-teal-500/30 bg-teal-500/10',
+  annullato:            'text-stone border-stone/30 bg-stone/10',
 }
 
 // Estende OrdineRiga con il campo quantita_ricevuta salvato durante la ricezione
@@ -81,7 +85,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
   const [magazzino, setMagazzino] = useState<MagazzinoItem[]>([])
   const [magazzinoLoaded, setMagazzinoLoaded] = useState(false)
 
-  const aperti    = ordini.filter(o => o.stato === 'inviato' || o.stato === 'parziale')
+  const aperti    = ordini.filter(o => ['inviato', 'confermato_fornitore', 'in_consegna', 'parziale'].includes(o.stato))
   const ricevuti  = ordini.filter(o => o.stato === 'ricevuto')
   const annullati = ordini.filter(o => o.stato === 'annullato')
 
@@ -215,6 +219,17 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     setAnnullaNote('')
     setAnnullaSaving(false)
     router.refresh()
+  }
+
+  async function cambiaStatoSemplice(ordineId: string, nuovoStato: string) {
+    setLoading(ordineId)
+    const { error } = await supabase.from('ordini').update({ stato: nuovoStato }).eq('id', ordineId)
+    if (!error) {
+      setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, stato: nuovoStato as Ordine['stato'] } : o))
+      const ordine = ordini.find(o => o.id === ordineId)
+      await logActivity(userId, userNome, `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}: ${ordine?.fornitore_nome ?? ''}`, undefined, 'ordini')
+    }
+    setLoading(null)
   }
 
   async function apriNuovoOrdine() {
@@ -380,7 +395,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
           {filtered.map(ordine => {
             const isExpanded = expandedId === ordine.id
             const isLoading  = loading === ordine.id
-            const aperto     = ordine.stato === 'inviato' || ordine.stato === 'parziale'
+            const aperto     = ['inviato', 'confermato_fornitore', 'in_consegna', 'parziale'].includes(ordine.stato)
 
             return (
               <div key={ordine.id} className="card">
@@ -486,6 +501,26 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                       )}
 
                       <div className="flex-1" />
+
+                      {/* Transizioni stato progressive */}
+                      {ordine.stato === 'inviato' && (
+                        <button
+                          onClick={() => cambiaStatoSemplice(ordine.id, 'confermato_fornitore')}
+                          disabled={isLoading}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-amber-400/10 border border-amber-400/30 text-amber-400 hover:bg-amber-400/20 transition-colors disabled:opacity-50"
+                        >
+                          <Check size={11} /> Fornitore confermato
+                        </button>
+                      )}
+                      {ordine.stato === 'confermato_fornitore' && (
+                        <button
+                          onClick={() => cambiaStatoSemplice(ordine.id, 'in_consegna')}
+                          disabled={isLoading}
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                        >
+                          <Package size={11} /> In consegna
+                        </button>
+                      )}
 
                       <button
                         onClick={() => apriRicezione(ordine)}

@@ -37,9 +37,18 @@ interface ItemModalProps {
   onSave: (updated?: MagazzinoItem) => void
 }
 
+interface EvadisciModalState {
+  riordineId: string
+  magazzinoId: string
+  prodotto: string
+  unitaMisura: string
+  quantitaAttuale: number
+}
+
 export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '', orderedItemIds = [] }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
+  const [evadisciModal, setEvadisciModal] = useState<EvadisciModalState | null>(null)
   // Se l'URL contiene ?filter=alert (es. da tap su "19 sotto soglia" nel dashboard),
   // la pagina apre già filtrata sui prodotti sotto soglia.
   const initialSoloAlert = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('filter') === 'alert'
@@ -129,8 +138,28 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     }
   }
 
-  async function evadiRiordine(riordineId: string) {
-    await supabase.from('riordini').update({ stato: 'evasa' }).eq('id', riordineId)
+  function apriEvadisci(riordine: any) {
+    const item = items.find(i => i.id === riordine.magazzino_id)
+    setEvadisciModal({
+      riordineId: riordine.id,
+      magazzinoId: riordine.magazzino_id,
+      prodotto: item?.prodotto ?? riordine.magazzino?.prodotto ?? 'Prodotto',
+      unitaMisura: item?.unita ?? 'pz',
+      quantitaAttuale: item?.quantita ?? 0,
+    })
+  }
+
+  async function confermaEvadisci(qtyRicevuta: number) {
+    if (!evadisciModal) return
+    const nuovaQty = evadisciModal.quantitaAttuale + qtyRicevuta
+    await Promise.all([
+      supabase.from('riordini').update({ stato: 'evasa' }).eq('id', evadisciModal.riordineId),
+      supabase.from('magazzino').update({ quantita: nuovaQty, updated_at: new Date().toISOString() }).eq('id', evadisciModal.magazzinoId),
+    ])
+    setItems(prev => prev.map(i =>
+      i.id === evadisciModal.magazzinoId ? { ...i, quantita: nuovaQty } : i
+    ))
+    setEvadisciModal(null)
     startTransition(() => router.refresh())
   }
 
@@ -144,22 +173,26 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             Richieste di Riordino ({riordini.length})
           </h3>
           <div className="space-y-2">
-            {riordini.map((r: any) => (
-              <div key={r.id} className="flex items-center justify-between py-2
-                                          border-b border-obsidian-light/30 last:border-0">
-                <div>
-                  <p className="text-sm text-cream">{r.magazzino_id}</p>
-                  <p className="text-xs text-stone">
-                    da {r.profili?.nome} {r.profili?.cognome} · {formatDate(r.created_at)}
-                  </p>
-                  {r.note && <p className="text-xs text-stone/70 italic mt-0.5">{r.note}</p>}
+            {riordini.map((r: any) => {
+              const item = items.find(i => i.id === r.magazzino_id)
+              const prodotto = item?.prodotto ?? r.magazzino?.prodotto ?? '—'
+              return (
+                <div key={r.id} className="flex items-center justify-between py-2.5
+                                            border-b border-obsidian-light/30 last:border-0">
+                  <div>
+                    <p className="text-sm text-cream font-medium">{prodotto}</p>
+                    <p className="text-xs text-stone mt-0.5">
+                      da {r.profili?.nome} {r.profili?.cognome} · {formatDate(r.created_at)}
+                    </p>
+                    {r.note && <p className="text-xs text-stone/70 italic mt-0.5">"{r.note}"</p>}
+                  </div>
+                  <button onClick={() => apriEvadisci(r)}
+                          className="btn-primary text-xs py-1.5 px-3 whitespace-nowrap">
+                    Merce arrivata
+                  </button>
                 </div>
-                <button onClick={() => evadiRiordine(r.id)}
-                        className="btn-primary text-xs py-1.5 px-3">
-                  Evadi
-                </button>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}
@@ -352,6 +385,17 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         </div>
       </div>
 
+      {/* Modal merce arrivata */}
+      {evadisciModal && (
+        <EvadisciModal
+          prodotto={evadisciModal.prodotto}
+          unitaMisura={evadisciModal.unitaMisura}
+          quantitaAttuale={evadisciModal.quantitaAttuale}
+          onClose={() => setEvadisciModal(null)}
+          onConferma={confermaEvadisci}
+        />
+      )}
+
       {/* Modal modifica/aggiunta */}
       {(editItem || showAddForm) && (
         <ItemModal
@@ -373,6 +417,76 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
           }}
         />
       )}
+    </div>
+  )
+}
+
+function EvadisciModal({
+  prodotto, unitaMisura, quantitaAttuale, onClose, onConferma,
+}: {
+  prodotto: string
+  unitaMisura: string
+  quantitaAttuale: number
+  onClose: () => void
+  onConferma: (qty: number) => Promise<void>
+}) {
+  const [qty, setQty] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function handleConferma() {
+    const n = Number(qty)
+    if (!n || n <= 0) return
+    setSaving(true)
+    await onConferma(n)
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="card w-full max-w-sm">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="section-title text-base">Merce arrivata</h3>
+          <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
+        </div>
+
+        <div className="mb-1">
+          <p className="text-sm text-cream font-medium">{prodotto}</p>
+          <p className="text-xs text-stone mt-1">
+            Giacenza attuale: <span className="text-cream">{quantitaAttuale} {unitaMisura}</span>
+          </p>
+        </div>
+
+        <div className="mt-4">
+          <label className="label-field block mb-1.5">Quantità ricevuta ({unitaMisura})</label>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            className="input text-lg text-center font-medium"
+            value={qty}
+            onChange={e => setQty(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') handleConferma() }}
+            placeholder="0"
+            autoFocus
+          />
+          {qty && Number(qty) > 0 && (
+            <p className="text-xs text-stone/60 mt-2 text-center">
+              Nuova giacenza: <span className="text-green-400 font-medium">{quantitaAttuale + Number(qty)} {unitaMisura}</span>
+            </p>
+          )}
+        </div>
+
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="btn-secondary flex-1">Annulla</button>
+          <button
+            onClick={handleConferma}
+            disabled={!qty || Number(qty) <= 0 || saving}
+            className="btn-primary flex-1 disabled:opacity-50"
+          >
+            {saving ? 'Salvataggio…' : 'Conferma ricezione'}
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
