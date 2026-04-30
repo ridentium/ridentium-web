@@ -99,7 +99,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
 
   async function onCheckTask(task: CompletableTask) {
     if (completedTaskIds.has(task.id)) return
-    setCompletedTaskIds(prev => new Set([...prev, task.id]))
+    setCompletedTaskIds(prev => new Set([...Array.from(prev), task.id]))
     setNoteFor({ type: 'task', id: task.id })
   }
 
@@ -115,7 +115,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
 
   async function onCheckRicorrente(r: CompletableRicorrente) {
     if (completedRicorrentiIds.has(r.id)) return
-    setCompletedRicorrentiIds(prev => new Set([...prev, r.id]))
+    setCompletedRicorrentiIds(prev => new Set([...Array.from(prev), r.id]))
     setNoteFor({ type: 'ricorrente', id: r.id })
   }
 

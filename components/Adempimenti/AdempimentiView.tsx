@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createClient as createBrowserClient } from '@/lib/supabase/client'
 import {
   Adempimento, Consulente, CATEGORIA_LABEL, CATEGORIA_COLOR,
   FREQUENZA_LABEL, calcolaStato, scadenzaLabel,
@@ -52,6 +53,22 @@ export default function AdempimentiView({ canEdit }: Props) {
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
   }, [])
+
+  const supabase = useMemo(() => createBrowserClient(), [])
+
+  // Realtime: sincronizza automaticamente quando altri modificano adempimenti
+  useEffect(() => {
+    const channel = supabase
+      .channel('adempimenti-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'adempimenti' }, () => {
+        fetch('/api/adempimenti', { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .then(d => { if (d) setAdempimenti(d.adempimenti ?? []) })
+          .catch(() => {})
+      })
+      .subscribe()
+    return () => { supabase.removeChannel(channel) }
+  }, [supabase])
 
   useEffect(() => {
     let alive = true

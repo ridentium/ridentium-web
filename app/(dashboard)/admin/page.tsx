@@ -1,9 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { Package, CheckSquare, Users, AlertTriangle } from 'lucide-react'
+import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck } from 'lucide-react'
 import LinaBriefingCard from '@/components/Dashboard/LinaBriefingCard'
 import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
+import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
+import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 
 // ── Calcola periodo corrente per ricorrenti ───────────────────────────────────
 function getPeriodoKey(frequenza: string): string {
@@ -17,21 +19,36 @@ function getPeriodoKey(frequenza: string): string {
   return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
 }
 
-// ── Genera briefing testuale da dati reali (nessuna chiamata AI) ──────────────
+// ── Calcola stato adempimento ─────────────────────────────────────────────────
+function calcolaStatoAdempimento(prossima_scadenza: string | null, preavviso_giorni: number): StatoAdempimento {
+  if (!prossima_scadenza) return 'ok'
+  const oggi = new Date()
+  oggi.setHours(0, 0, 0, 0)
+  const scad = new Date(prossima_scadenza)
+  scad.setHours(0, 0, 0, 0)
+  const gg = Math.ceil((scad.getTime() - oggi.getTime()) / 86400000)
+  if (gg < 0) return 'scaduto'
+  if (gg <= preavviso_giorni) return 'in_scadenza'
+  return 'ok'
+}
+
+// ── Genera briefing testuale da dati reali ────────────────────────────────────
 function generateBriefing(
   firstName: string,
   alertCount: number,
   tasksCount: number,
   riordiniCount: number,
   ricorrentiCount: number,
+  scadutiCount: number,
 ): string {
   const h = new Date().getHours()
-  const day = new Date().getDay() // 0=dom, 1=lun, ..., 5=ven, 6=sab
+  const day = new Date().getDay()
   const saluto = h < 12 ? 'Buongiorno' : h < 18 ? 'Buon pomeriggio' : 'Buonasera'
   const isLunedi = day === 1
   const isVenerdi = day === 5
 
   const urgenze: string[] = []
+  if (scadutiCount > 0) urgenze.push(`${scadutiCount} adempiment${scadutiCount === 1 ? 'o scaduto' : 'i scaduti'}`)
   if (alertCount > 0) urgenze.push(`${alertCount} prodott${alertCount === 1 ? 'o' : 'i'} sotto soglia`)
   if (tasksCount > 0) urgenze.push(`${tasksCount} task apert${tasksCount === 1 ? 'o' : 'i'}`)
   if (riordiniCount > 0) urgenze.push(`${riordiniCount} riordine${riordiniCount === 1 ? '' : 'i'} da evadere`)
@@ -42,7 +59,7 @@ function generateBriefing(
       : isLunedi
       ? 'Buona settimana — tutto in ordine per iniziare bene.'
       : 'Nessuna urgenza, buona giornata!'
-    return `${saluto} ${firstName}! Tutto sotto controllo: nessuna scorta in esaurimento, nessun task aperto. ${chiusura}`
+    return `${saluto} ${firstName}! Tutto sotto controllo. ${chiusura}`
   }
 
   const intro = isLunedi
@@ -52,21 +69,23 @@ function generateBriefing(
     : `${saluto} ${firstName}.`
 
   if (urgenze.length === 0) {
-    return `${intro} Hai ${ricorrentiCount} azion${ricorrentiCount === 1 ? 'e ricorrente' : 'i ricorrenti'} ancora da completare oggi.`
+    return `${intro} Hai ${ricorrentiCount} azion${ricorrentiCount === 1 ? 'e ricorrente' : 'i ricorrenti'} ancora da completare.`
   }
 
   const lista = urgenze.join(', ')
-  const priorita = alertCount > 0
+  const priorita = scadutiCount > 0
+    ? 'Parti dagli adempimenti scaduti — sono la priorità.'
+    : alertCount > 0
     ? 'Dai un\'occhiata al magazzino per prima cosa.'
     : tasksCount > 0
     ? 'Hai task in attesa — parti da quelli urgenti.'
     : 'Ci sono riordini da evadere nel magazzino.'
 
   const extra = ricorrentiCount > 0
-    ? ` Inoltre ${ricorrentiCount} azion${ricorrentiCount === 1 ? 'e ricorrente' : 'i ricorrenti'} non ancora completat${ricorrentiCount === 1 ? 'a' : 'e'}.`
+    ? ` Inoltre ${ricorrentiCount} azion${ricorrentiCount === 1 ? 'e ricorrente' : 'i ricorrenti'} non completat${ricorrentiCount === 1 ? 'a' : 'e'}.`
     : ''
 
-  return `${intro} Oggi hai ${lista}.${extra} ${priorita}`
+  return `${intro} Oggi: ${lista}.${extra} ${priorita}`
 }
 
 // ── Pagina ────────────────────────────────────────────────────────────────────
@@ -83,6 +102,7 @@ export default async function AdminHome() {
     { data: riordiniAperti },
     { data: ricorrenti },
     { data: profilo },
+    { data: adempimentiAll },
   ] = await Promise.all([
     supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria'),
     supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a, stato').neq('stato', 'completato'),
@@ -90,13 +110,14 @@ export default async function AdminHome() {
     supabase.from('riordini').select('id, created_at, magazzino(prodotto)').eq('stato', 'aperta'),
     supabase.from('ricorrenti').select('*').eq('attiva', true).order('created_at', { ascending: true }),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
+    supabase.from('adempimenti').select('id, titolo, categoria, frequenza, prossima_scadenza, preavviso_giorni, evidenza_richiesta').eq('attivo', true),
   ])
 
-  const alertCount = (magazzinoAll ?? []).filter((i: any) => i.quantita < i.soglia_minima).length
-  const tasksCount = tasksOpen?.length ?? 0
+  const alertCount    = (magazzinoAll ?? []).filter((i: any) => i.quantita < i.soglia_minima).length
+  const tasksCount    = tasksOpen?.length ?? 0
   const riordiniCount = riordiniAperti?.length ?? 0
-  const userNome = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
-  const firstName = profilo?.nome ?? 'Mariano'
+  const userNome      = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
+  const firstName     = profilo?.nome ?? 'Mariano'
 
   // Ricorrenti non ancora completate per il periodo corrente
   const ricorrentiPending = (ricorrenti ?? []).filter((r: any) => {
@@ -104,7 +125,31 @@ export default async function AdminHome() {
     return !((r.completamenti ?? []).some((c: any) => c.periodoKey === key))
   }).length
 
-  const briefing = generateBriefing(firstName, alertCount, tasksCount, riordiniCount, ricorrentiPending)
+  // Adempimenti urgenti (scaduti + in_scadenza)
+  const adempimentiUrgenti = (adempimentiAll ?? [])
+    .map((a: any) => {
+      const stato = calcolaStatoAdempimento(a.prossima_scadenza, a.preavviso_giorni ?? 30)
+      const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+      const scad = a.prossima_scadenza ? new Date(a.prossima_scadenza) : null
+      scad?.setHours(0, 0, 0, 0)
+      const gg = scad ? Math.ceil((scad.getTime() - oggi.getTime()) / 86400000) : 999
+      return { ...a, _stato: stato, _gg: gg }
+    })
+    .filter((a: any) => a._stato !== 'ok')
+    .sort((a: any, b: any) => a._gg - b._gg) as Array<{
+      id: string
+      titolo: string
+      categoria: CategoriaAdempimento
+      frequenza: string
+      prossima_scadenza: string | null
+      evidenza_richiesta: string | null
+      _stato: StatoAdempimento
+      _gg: number
+    }>
+
+  const scadutiCount  = adempimentiUrgenti.filter(a => a._stato === 'scaduto').length
+
+  const briefing = generateBriefing(firstName, alertCount, tasksCount, riordiniCount, ricorrentiPending, scadutiCount)
 
   const oggi = new Date().toLocaleDateString('it-IT', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -113,7 +158,7 @@ export default async function AdminHome() {
   return (
     <div className="space-y-6">
 
-      {/* Intestazione discreta */}
+      {/* Intestazione */}
       <div>
         <p className="text-xs text-stone uppercase tracking-widest">
           {oggi.charAt(0).toUpperCase() + oggi.slice(1)}
@@ -133,7 +178,15 @@ export default async function AdminHome() {
         />
 
         {/* ── KPI cards ── */}
-        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-5 gap-4">
+          <StatCard
+            label="Adempimenti scaduti"
+            value={scadutiCount}
+            icon={ShieldCheck}
+            href="/admin/adempimenti"
+            alert={scadutiCount > 0}
+            note={scadutiCount > 0 ? '⚠ Intervento richiesto' : 'Tutto in regola'}
+          />
           <StatCard
             label="Sotto soglia"
             value={alertCount}
@@ -165,6 +218,11 @@ export default async function AdminHome() {
             note="Membri"
           />
         </div>
+
+        {/* ── Adempimenti urgenti (scaduti + in scadenza) ── */}
+        {adempimentiUrgenti.length > 0 && (
+          <ScadenzeUrgentiWidget adempimenti={adempimentiUrgenti} />
+        )}
 
         {/* ── Task & Azioni Ricorrenti spuntabili ── */}
         <div className="card lg:col-span-2">
