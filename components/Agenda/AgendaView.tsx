@@ -107,6 +107,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   const [mostraTutti, setMostraTutti] = useState(isAdmin)
   const [tipoFilter, setTipoFilter] = useState<AgendaTipo | 'tutti'>('tutti')
   const [search, setSearch] = useState('')
+  const [soloAperti, setSoloAperti] = useState(false)
 
   // Calendario
   const now = new Date()
@@ -202,9 +203,41 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     setEvents(prev => prev.map(e => e.id === id ? { ...e, stato: nuovoStato } : e))
   }
 
+  async function handleQuickComplete(event: AgendaEvent) {
+    if (event.tipo === 'task') {
+      if (event.stato === 'completato') return
+      const r = await fetch(`/api/tasks/${event.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stato: 'completato' }),
+      })
+      if (r.ok) {
+        handleStatoChange(event.id, 'completato')
+        showToast(`"${event.titolo}" segnato come fatto`)
+      } else {
+        showToast('Errore aggiornamento', 'error')
+      }
+    } else if (event.tipo === 'adempimento') {
+      const r = await fetch(`/api/adempimenti/${event.id}/completa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+      if (r.ok) {
+        showToast(`"${event.titolo}" completato — scadenza rinnovata`)
+        load()
+      } else {
+        showToast('Errore completamento adempimento', 'error')
+      }
+    }
+  }
+
   // ── Lista ──────────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     let list = events.filter(e => tipoFilter === 'tutti' || e.tipo === tipoFilter)
+    if (soloAperti) {
+      list = list.filter(e => e.tipo !== 'task' || e.stato !== 'completato')
+    }
     if (search.trim()) {
       const q = search.toLowerCase()
       list = list.filter(e =>
@@ -213,7 +246,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       )
     }
     return list
-  }, [events, tipoFilter, search])
+  }, [events, tipoFilter, soloAperti, search])
 
   const conData = useMemo(() => filtered.filter(e => e.data !== null), [filtered])
   const senzaData = useMemo(() => filtered.filter(e => e.data === null), [filtered])
@@ -261,6 +294,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     onEdit: setEditTarget,
     onDelete: handleDelete,
     onStatoChange: handleStatoChange,
+    onQuickComplete: handleQuickComplete,
     onToast: showToast,
   }
 
@@ -329,14 +363,27 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                 )
               })}
             </div>
-            {isAdmin && (
-              <button onClick={() => setMostraTutti(v => !v)}
-                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ml-auto ${
-                  mostraTutti ? 'bg-stone/10 border-stone/30 text-cream' : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'}`}>
-                {mostraTutti ? <Users size={11} /> : <User size={11} />}
-                {mostraTutti ? 'Tutto il team' : 'Solo miei'}
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => setSoloAperti(v => !v)}
+                className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+                  soloAperti
+                    ? 'bg-green-500/10 border-green-500/30 text-green-400'
+                    : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                }`}
+              >
+                <Check size={11} />
+                Da completare
               </button>
-            )}
+              {isAdmin && (
+                <button onClick={() => setMostraTutti(v => !v)}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+                    mostraTutti ? 'bg-stone/10 border-stone/30 text-cream' : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'}`}>
+                  {mostraTutti ? <Users size={11} /> : <User size={11} />}
+                  {mostraTutti ? 'Team' : 'Solo miei'}
+                </button>
+              )}
+            </div>
           </div>
 
           {filtered.length === 0 && (
@@ -445,18 +492,35 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                             const cfg = TIPO_CONFIG[e.tipo]
                             const Icon = cfg.icon
                             const isCompleted = e.stato === 'completato'
+                            const canFatto = (e.tipo === 'task' && !isCompleted) || e.tipo === 'adempimento'
                             return (
-                              <button key={e.id}
-                                onClick={() => setEditTarget(e)}
-                                className={`w-full text-left text-[9px] px-1.5 py-1 rounded border transition-colors ${
-                                  isCompleted ? 'opacity-40 line-through' : ''
-                                } ${cfg.bg} ${cfg.color} hover:opacity-80`}
+                              <div key={e.id}
+                                className={`w-full flex items-center gap-0.5 text-[9px] rounded border transition-colors ${
+                                  isCompleted ? 'opacity-40' : ''
+                                } ${cfg.bg} ${cfg.color}`}
                               >
-                                <span className="flex items-center gap-1 truncate">
+                                <button
+                                  onClick={() => setEditTarget(e)}
+                                  className="flex-1 flex items-center gap-1 px-1.5 py-1 min-w-0 hover:opacity-80 transition-opacity"
+                                >
                                   <Icon size={8} className="flex-shrink-0" />
-                                  <span className="truncate">{e.titolo}</span>
-                                </span>
-                              </button>
+                                  <span className={`truncate ${isCompleted ? 'line-through' : ''}`}>{e.titolo}</span>
+                                </button>
+                                {canFatto && (
+                                  <button
+                                    onClick={async (ev) => { ev.stopPropagation(); await handleQuickComplete(e) }}
+                                    title="Segna come fatto"
+                                    className="flex-shrink-0 px-1 py-1 hover:bg-green-400/20 rounded-r transition-colors border-l border-current/20"
+                                  >
+                                    <Check size={7} />
+                                  </button>
+                                )}
+                                {isCompleted && (
+                                  <span className="flex-shrink-0 px-1 py-1">
+                                    <Check size={7} className="text-green-400" />
+                                  </span>
+                                )}
+                              </div>
                             )
                           })}
                           {dayEvs.length > 4 && (
@@ -636,14 +700,16 @@ interface EventRowProps {
   onEdit: (e: AgendaEvent) => void
   onDelete: (e: AgendaEvent) => void
   onStatoChange: (id: string, stato: 'da_fare' | 'in_corso' | 'completato') => void
+  onQuickComplete: (e: AgendaEvent) => Promise<void>
   onToast: (msg: string, type?: 'success' | 'error') => void
 }
 
-function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, onToast }: EventRowProps) {
+function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, onQuickComplete, onToast }: EventRowProps) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDel, setConfirmDel] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [cyclingStato, setCyclingStato] = useState(false)
+  const [completing, setCompleting] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   const cfg = TIPO_CONFIG[e.tipo]
@@ -688,6 +754,17 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
     setCyclingStato(false)
   }
 
+  async function quickComplete(ev: React.MouseEvent) {
+    ev.stopPropagation()
+    if (completing) return
+    setCompleting(true)
+    await onQuickComplete(e)
+    setCompleting(false)
+  }
+
+  const isTaskDone = e.tipo === 'task' && e.stato === 'completato'
+  const showFattoBtn = (e.tipo === 'task' && e.stato !== 'completato') || e.tipo === 'adempimento'
+
   async function doDelete() {
     setDeleting(true)
     const apiPath = e.tipo === 'task' ? 'tasks' : e.tipo === 'ricorrente' ? 'ricorrenti' : 'adempimenti'
@@ -702,11 +779,29 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
   }
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3 hover:bg-obsidian-light/20 transition-colors">
-      {/* Tipo icon */}
-      <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded flex items-center justify-center border ${cfg.bg}`}>
-        <Icon size={12} className={cfg.color} />
-      </div>
+    <div className={`flex items-start gap-3 px-4 py-3 hover:bg-obsidian-light/20 transition-colors ${isTaskDone ? 'opacity-50' : ''}`}>
+      {/* Bottone Fatto — visibile direttamente */}
+      {showFattoBtn ? (
+        <button
+          onClick={quickComplete}
+          disabled={completing}
+          title="Segna come fatto"
+          className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-dashed border-stone/30 flex items-center justify-center text-stone/40 hover:border-green-400/60 hover:text-green-400 hover:bg-green-400/8 transition-all disabled:opacity-30 group"
+        >
+          {completing
+            ? <Loader2 size={11} className="animate-spin" />
+            : <Check size={11} className="group-hover:scale-110 transition-transform" />
+          }
+        </button>
+      ) : isTaskDone ? (
+        <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-green-500/30 bg-green-500/10 flex items-center justify-center">
+          <Check size={11} className="text-green-400" />
+        </div>
+      ) : (
+        <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded flex items-center justify-center border ${cfg.bg}`}>
+          <Icon size={12} className={cfg.color} />
+        </div>
+      )}
 
       {/* Content — clicca per modificare direttamente */}
       <button
@@ -715,7 +810,7 @@ function EventRow({ event: e, userId, isAdmin, onEdit, onDelete, onStatoChange, 
         title="Clicca per modificare"
       >
         <div className="flex items-start gap-2 flex-wrap">
-          <p className={`text-sm font-medium truncate ${isOwn ? 'text-cream' : 'text-cream/70'}`}>{e.titolo}</p>
+          <p className={`text-sm font-medium truncate ${isTaskDone ? 'line-through text-stone' : isOwn ? 'text-cream' : 'text-cream/70'}`}>{e.titolo}</p>
           {isOwn && e.tipo !== 'ricorrente' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold/80 border border-gold/20 flex-shrink-0">mio</span>
           )}
