@@ -6,6 +6,7 @@ import LinaBriefingCard from '@/components/Dashboard/LinaBriefingCard'
 import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
 import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
+import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 
 // ── Calcola periodo corrente per ricorrenti ───────────────────────────────────
@@ -160,10 +161,11 @@ export default async function AdminHome() {
     <div className="space-y-6">
 
       {/* Intestazione */}
-      <div>
+      <div className="flex items-center justify-between">
         <p className="text-xs text-stone uppercase tracking-widest">
           {oggi.charAt(0).toUpperCase() + oggi.slice(1)}
         </p>
+        <DashboardPersonalizza />
       </div>
 
       <QuickActionsBar />
@@ -171,17 +173,19 @@ export default async function AdminHome() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
         {/* ── Lina briefing card ── */}
-        <LinaBriefingCard
-          briefingFallback={briefing}
-          firstName={firstName}
-          alertCount={alertCount}
-          tasksCount={tasksCount}
-          riordiniCount={riordiniCount}
-          ricorrentiCount={ricorrentiPending}
-        />
+        <div id="widget-lina">
+          <LinaBriefingCard
+            briefingFallback={briefing}
+            firstName={firstName}
+            alertCount={alertCount}
+            tasksCount={tasksCount}
+            riordiniCount={riordiniCount}
+            ricorrentiCount={ricorrentiPending}
+          />
+        </div>
 
         {/* ── KPI cards ── */}
-        <div className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-5 gap-4">
+        <div id="widget-kpi" className="lg:col-span-2 grid grid-cols-2 sm:grid-cols-5 gap-4">
           <StatCard
             label="Adempimenti scaduti"
             value={scadutiCount}
@@ -224,11 +228,13 @@ export default async function AdminHome() {
 
         {/* ── Adempimenti urgenti (scaduti + in scadenza) ── */}
         {adempimentiUrgenti.length > 0 && (
-          <ScadenzeUrgentiWidget adempimenti={adempimentiUrgenti} />
+          <div id="widget-scadenze" className="lg:col-span-2">
+            <ScadenzeUrgentiWidget adempimenti={adempimentiUrgenti} />
+          </div>
         )}
 
         {/* ── Task & Azioni Ricorrenti spuntabili ── */}
-        <div className="card lg:col-span-2">
+        <div id="widget-tasks" className="card lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-xs font-medium text-cream uppercase tracking-widest">
               Task & Azioni Ricorrenti
@@ -251,7 +257,7 @@ export default async function AdminHome() {
 
         {/* ── Riordini aperti (compatto, solo se presenti) ── */}
         {riordiniCount > 0 && (
-          <div className="card lg:col-span-2">
+          <div id="widget-riordini" className="card lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-medium text-cream uppercase tracking-widest">
                 Richieste Riordino
