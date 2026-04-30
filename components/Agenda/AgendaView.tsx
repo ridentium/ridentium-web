@@ -113,6 +113,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   // FAB type picker
   const [fabOpen, setFabOpen] = useState(false)
   const [fabTipo, setFabTipo] = useState<TipoNuovo>('task')
+  const [previousTab, setPreviousTab] = useState<Tab>('calendario')
 
   // Calendario
   const now = new Date()
@@ -690,7 +691,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                   <div className="card text-center py-14">
                     <CalendarDays size={28} className="text-stone/30 mx-auto mb-3" />
                     <p className="text-sm text-stone">Nessun evento per questo giorno</p>
-                    <button onClick={() => setTab('aggiungi')} className="mt-4 btn-primary text-xs">
+                    <button onClick={() => { setPreviousTab(tab); setTab('aggiungi') }} className="mt-4 btn-primary text-xs">
                       + Aggiungi evento completo
                     </button>
                   </div>
@@ -927,7 +928,8 @@ export default function AgendaView({ isAdmin, userId }: Props) {
       {tab === 'aggiungi' && (
         <AggiungiPanel key={fabTipo} isAdmin={isAdmin} userId={userId} profili={profili} loading={loading}
           initialTipo={fabTipo}
-          onSuccess={() => { load(); setTab('lista'); showToast('Elemento aggiunto!') }} />
+          initialDate={viewDay}
+          onSuccess={() => { load(); setTab(previousTab); showToast('Elemento aggiunto!') }} />
       )}
 
       {/* ════════════════════════════════════════════════ EDIT MODAL ═════ */}
@@ -971,7 +973,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                   const cfg = TIPO_CONFIG[tipo]
                   return (
                     <button key={tipo}
-                      onClick={() => { setFabTipo(tipo); setFabOpen(false); setTab('aggiungi') }}
+                      onClick={() => { setFabTipo(tipo); setFabOpen(false); setPreviousTab(tab); setTab('aggiungi') }}
                       className={`flex items-center gap-3 w-full px-4 py-3 text-sm ${cfg.color} hover:bg-obsidian-light/30 transition-colors text-left`}
                     >
                       <Icon size={15} />{label}
@@ -1541,9 +1543,10 @@ interface AggiungiPanelProps {
   isAdmin: boolean; userId: string; profili: Profilo[]
   loading: boolean; onSuccess: () => void
   initialTipo?: TipoNuovo
+  initialDate?: string
 }
 
-function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuccess, initialTipo = 'task' }: AggiungiPanelProps) {
+function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuccess, initialTipo = 'task', initialDate }: AggiungiPanelProps) {
   const [tipo, setTipo] = useState<TipoNuovo>(initialTipo)
   const [saving, setSaving] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
@@ -1552,7 +1555,7 @@ function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuc
   const [titolo, setTitolo] = useState('')
   const [descrizione, setDescrizione] = useState('')
   const [priorita, setPriorita] = useState<'bassa' | 'media' | 'alta'>('media')
-  const [scadenza, setScadenza] = useState('')
+  const [scadenza, setScadenza] = useState(initialDate ?? '')
   const [assegnaMode, setAssegnaMode] = useState<'io' | 'altro'>('io')
   const [filtroRuolo, setFiltroRuolo] = useState('')
   const [assegnatoA, setAssegnatoA] = useState('')
@@ -1560,7 +1563,7 @@ function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuc
   const [assegnaTutti, setAssegnaTutti] = useState(false)
   const [categoriaAd, setCategoriaAd] = useState<CategoriaAdempimento>('altro')
   const [frequenzaAd, setFrequenzaAd] = useState('annuale')
-  const [scadenzaAd, setScadenzaAd] = useState('')
+  const [scadenzaAd, setScadenzaAd] = useState(initialDate ?? '')
   const [preavvisoGiorni, setPreavvisoGiorni] = useState(30)
   const [respMode, setRespMode] = useState<'profilo' | 'etichetta'>('profilo')
   const [respProfiloId, setRespProfiloId] = useState('')
@@ -1570,10 +1573,10 @@ function AggiungiPanel({ isAdmin, userId, profili, loading: parentLoading, onSuc
   const profiliFiltrati = useMemo(() => filtroRuolo ? profili.filter(p => p.ruolo === filtroRuolo) : profili, [profili, filtroRuolo])
 
   function resetForm() {
-    setTitolo(''); setDescrizione(''); setPriorita('media'); setScadenza('')
+    setTitolo(''); setDescrizione(''); setPriorita('media'); setScadenza(initialDate ?? '')
     setAssegnaMode('io'); setFiltroRuolo(''); setAssegnatoA('')
     setFrequenzaRic('settimanale'); setAssegnaTutti(false)
-    setCategoriaAd('altro'); setFrequenzaAd('annuale'); setScadenzaAd('')
+    setCategoriaAd('altro'); setFrequenzaAd('annuale'); setScadenzaAd(initialDate ?? '')
     setPreavvisoGiorni(30); setRespMode('profilo'); setRespProfiloId(''); setRespEtichetta('')
     setErrore(null); setSuccesso(false)
   }
