@@ -699,7 +699,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                           {dayEvs.slice(0, 4).map(e => {
                             const cfg = TIPO_CONFIG[e.tipo]
                             const Icon = cfg.icon
-                            const isCompleted = e.stato === 'completato' || completedIds.has(e.id)
+                            const isCompleted = e.stato === 'completato' || completedIds.has(e.id) || (e.tipo === 'ricorrente' && e.completata_oggi === true)
                             const canFatto = !isCompleted && (e.tipo === 'task' || e.tipo === 'adempimento')
                             return (
                               <div key={e.id}
@@ -734,6 +734,13 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                           {dayEvs.length > 4 && (
                             <p className="text-[9px] text-stone/50 text-center">+{dayEvs.length - 4} altri</p>
                           )}
+                          <button
+                            onClick={() => { goToDay(iso); setQuickAdd({ date: iso }) }}
+                            className="w-full flex items-center justify-center py-0.5 text-stone/20 hover:text-stone/60 transition-colors rounded"
+                            title="Aggiungi task"
+                          >
+                            <Plus size={10} />
+                          </button>
                         </div>
                       </div>
                     )
@@ -961,7 +968,8 @@ function EventRow({ event: e, userId, isAdmin, completedIds, onEdit, onDelete, o
     setCompleting(false)
   }
 
-  const isCompleted = (e.tipo === 'task' && e.stato === 'completato') || completedIds.has(e.id)
+  const isRicorrenteCompletata = e.tipo === 'ricorrente' && e.completata_oggi === true
+  const isCompleted = (e.tipo === 'task' && e.stato === 'completato') || completedIds.has(e.id) || isRicorrenteCompletata
   const isTaskDone = isCompleted
   const showFattoBtn = !isCompleted && (e.tipo === 'task' || e.tipo === 'adempimento')
 
@@ -1016,7 +1024,9 @@ function EventRow({ event: e, userId, isAdmin, completedIds, onEdit, onDelete, o
         <div className="flex items-start gap-2 flex-wrap">
           <p className={`text-sm font-medium truncate ${isCompleted ? 'text-green-400/80' : isOwn ? 'text-cream' : 'text-cream/70'}`}>{e.titolo}</p>
           {isCompleted && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400/80 border border-green-500/20 flex-shrink-0">✓ Fatto</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400/80 border border-green-500/20 flex-shrink-0">
+              {isRicorrenteCompletata ? '✓ Completata' : '✓ Fatto'}
+            </span>
           )}
           {!isCompleted && isOwn && e.tipo !== 'ricorrente' && (
             <span className="text-[10px] px-1.5 py-0.5 rounded bg-gold/10 text-gold/80 border border-gold/20 flex-shrink-0">mio</span>

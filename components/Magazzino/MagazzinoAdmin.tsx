@@ -336,8 +336,63 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         </p>
       )}
 
-      {/* Tabella — scrollabile orizzontalmente su mobile/tablet */}
-      <div className="card p-0 overflow-hidden">
+      {/* ── Vista card su mobile ── */}
+      <div className="md:hidden space-y-2">
+        {filtered.length === 0 ? (
+          <div className="card text-center py-8 text-stone text-sm">
+            {cerca ? `Nessun prodotto trovato per "${cerca}"` : 'Nessun prodotto trovato'}
+          </div>
+        ) : filtered.map(item => {
+          const isAlert = item.quantita < item.soglia_minima
+          return (
+            <div key={item.id} className={`card p-4 ${isAlert ? 'border-red-400/20 bg-red-400/5' : ''}`}>
+              <div className="flex items-start justify-between gap-3 mb-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-cream leading-snug">{item.prodotto}</p>
+                  <p className="text-xs text-stone mt-0.5">
+                    {item.azienda ?? ''}{item.azienda && item.categoria ? ' · ' : ''}{item.categoria}
+                  </p>
+                  {(item.diametro || item.lunghezza) && (
+                    <p className="text-xs text-stone/60 mt-0.5">
+                      {item.diametro ? `ø${item.diametro}` : ''}{item.diametro && item.lunghezza ? ' ' : ''}{item.lunghezza ? `${item.lunghezza}mm` : ''}
+                    </p>
+                  )}
+                </div>
+                <button onClick={() => setEditItem(item)} className="p-1.5 text-stone/50 hover:text-gold transition-colors flex-shrink-0">
+                  <Pencil size={14} />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div>
+                    <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Qtà</p>
+                    <QuantitaEditor value={item.quantita} onChange={val => saveQuantita(item.id, val)} />
+                  </div>
+                  <div>
+                    <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Min.</p>
+                    <p className="text-xs text-stone">{item.soglia_minima}</p>
+                  </div>
+                  {item.scadenza && (
+                    <div>
+                      <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Scad.</p>
+                      <p className={`text-xs ${new Date(item.scadenza) < new Date() ? 'text-red-400' : 'text-stone'}`}>
+                        {formatDate(item.scadenza)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {isAlert
+                  ? <span className="badge-alert text-[10px]"><AlertTriangle size={9} /> Sotto soglia</span>
+                  : <span className="badge-ok text-[10px]"><CheckCircle size={9} /> OK</span>
+                }
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── Tabella su desktop ── */}
+      <div className="hidden md:block card p-0 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="table-ridentium" style={{ minWidth: '860px' }}>
             <thead>

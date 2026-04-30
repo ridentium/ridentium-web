@@ -7,7 +7,7 @@ import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
 import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
-import OggiWidget from '@/components/Dashboard/OggiWidget'
+import OggiWidget, { type OggiItem } from '@/components/Dashboard/OggiWidget'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 
 // ── Calcola periodo corrente per ricorrenti ───────────────────────────────────
@@ -154,7 +154,7 @@ export default async function AdminHome() {
 
   // ── Widget Oggi ────────────────────────────────────────────────────────────
   const oggiISO = new Date().toISOString().split('T')[0]
-  const oggiItems: Array<{ id: string; tipo: 'task' | 'adempimento' | 'ricorrente'; titolo: string; href: string; urgente?: boolean }> = []
+  const oggiItems: OggiItem[] = []
 
   // Task con scadenza oggi e non completati
   ;(tasksOpen ?? []).forEach((t: any) => {
