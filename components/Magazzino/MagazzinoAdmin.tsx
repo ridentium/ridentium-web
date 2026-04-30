@@ -13,6 +13,16 @@ import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 import Toast, { type ToastState } from '@/components/ui/Toast'
 import { logActivity } from '@/lib/registro'
 
+function scadenzaColor(scadenza: string | null | undefined): string {
+  if (!scadenza) return ''
+  const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
+  const scad = new Date(scadenza); scad.setHours(0, 0, 0, 0)
+  const giorni = Math.ceil((scad.getTime() - oggi.getTime()) / 86400000)
+  if (giorni < 0) return 'text-red-400'
+  if (giorni <= 30) return 'text-amber-400'
+  return 'text-emerald-400'
+}
+
 interface StoricoEntry {
   id: string
   prodotto: string
@@ -375,7 +385,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                   {item.scadenza && (
                     <div>
                       <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Scad.</p>
-                      <p className={`text-xs ${new Date(item.scadenza) < new Date() ? 'text-red-400' : 'text-stone'}`}>
+                      <p className={`text-xs ${scadenzaColor(item.scadenza) || 'text-stone'}`}>
                         {formatDate(item.scadenza)}
                       </p>
                     </div>
@@ -466,7 +476,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                         : <span className="badge-ok"><CheckCircle size={10} /> OK</span>
                       }
                     </td>
-                    <td className={item.scadenza && new Date(item.scadenza) < new Date() ? 'text-red-400' : ''}>
+                    <td className={scadenzaColor(item.scadenza)}>
                       {formatDate(item.scadenza ?? undefined)}
                     </td>
                     <td>

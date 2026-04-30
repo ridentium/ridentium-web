@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck, CalendarClock } from 'lucide-react'
 import LinaBriefingCard from '@/components/Dashboard/LinaBriefingCard'
 import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
@@ -9,18 +9,7 @@ import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
 import OggiWidget, { type OggiItem } from '@/components/Dashboard/OggiWidget'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
-
-// ── Calcola periodo corrente per ricorrenti ───────────────────────────────────
-function getPeriodoKey(frequenza: string): string {
-  const now = new Date()
-  if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
-  if (frequenza === 'settimanale') {
-    const d = new Date(now)
-    d.setDate(d.getDate() - d.getDay() + 1)
-    return 'W' + d.toISOString().split('T')[0]
-  }
-  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-}
+import { getPeriodoKey } from '@/lib/periodo'
 
 // ── Calcola stato adempimento ─────────────────────────────────────────────────
 function calcolaStatoAdempimento(prossima_scadenza: string | null, preavviso_giorni: number): StatoAdempimento {
@@ -179,6 +168,23 @@ export default async function AdminHome() {
     oggiItems.push({ id: r.id, tipo: 'ricorrente', titolo: r.titolo ?? r.nome, href: '/admin/ricorrenti' })
   })
 
+  // ── Prossimi 3 giorni ────────────────────────────────────────────────────────
+  const prossimiItems: OggiItem[] = []
+  const domani1 = new Date(); domani1.setHours(0,0,0,0); domani1.setDate(domani1.getDate() + 1)
+  const domani4 = new Date(); domani4.setHours(23,59,59,999); domani4.setDate(domani4.getDate() + 3)
+  ;(tasksOpen ?? []).forEach((t: any) => {
+    if (!t.scadenza || t.scadenza === oggiISO) return
+    const d = new Date(t.scadenza)
+    if (d >= domani1 && d <= domani4) {
+      prossimiItems.push({ id: t.id, tipo: 'task', titolo: t.titolo, href: '/admin/tasks', urgente: t.priorita === 'alta' })
+    }
+  })
+  adempimentiUrgenti.forEach(a => {
+    if (a._gg > 0 && a._gg <= 3) {
+      prossimiItems.push({ id: a.id, tipo: 'adempimento', titolo: a.titolo, href: '/admin/adempimenti' })
+    }
+  })
+
   const briefing = generateBriefing(firstName, alertCount, tasksCount, riordiniCount, ricorrentiPending, scadutiCount)
 
   const oggi = new Date().toLocaleDateString('it-IT', {
@@ -210,6 +216,30 @@ export default async function AdminHome() {
           </div>
         )}
 
+        {/* ── Prossimi 3 giorni ── */}
+        {prossimiItems.length > 0 && (
+          <div className="lg:col-span-2 card">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <CalendarClock size={14} className="text-gold/70" />
+                <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Prossimi 3 giorni</h3>
+              </div>
+              <span className="text-[10px] text-stone/40">{prossimiItems.length} element{prossimiItems.length === 1 ? 'o' : 'i'}</span>
+            </div>
+            <div className="space-y-1">
+              {prossimiItems.map(item => (
+                <a key={item.id} href={item.href} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-obsidian-light/20 transition-colors group">
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.tipo === 'adempimento' ? 'bg-amber-400' : 'bg-blue-400'}`} />
+                  <span className={`flex-1 text-sm truncate ${item.urgente ? 'text-red-400' : 'text-cream/70'} group-hover:text-cream transition-colors`}>
+                    {item.titolo}
+                  </span>
+                  <span className="text-[10px] text-stone/40 capitalize">{item.tipo}</span>
+                </a>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Lina briefing card ── */}
         <div id="widget-lina">
           <LinaBriefingCard
@@ -228,7 +258,7 @@ export default async function AdminHome() {
             label="Adempimenti scaduti"
             value={scadutiCount}
             icon={ShieldCheck}
-            href="/admin/adempimenti"
+            href="/admin/adempimenti?filter=scaduto"
             alert={scadutiCount > 0}
             note={scadutiCount > 0 ? '⚠ Intervento richiesto' : 'Tutto in regola'}
           />
@@ -236,7 +266,7 @@ export default async function AdminHome() {
             label="Sotto soglia"
             value={alertCount}
             icon={AlertTriangle}
-            href="/admin/magazzino"
+            href="/admin/magazzino?filter=alert"
             alert={alertCount > 0}
             note={alertCount > 0 ? 'Vai al magazzino' : 'Tutto ok'}
           />
@@ -244,14 +274,14 @@ export default async function AdminHome() {
             label="Task aperti"
             value={tasksCount}
             icon={CheckSquare}
-            href="/admin/tasks"
+            href="/admin/tasks?filter=aperti"
             note={tasksCount > 0 ? 'Gestisci task' : 'Nessun task'}
           />
           <StatCard
             label="Riordini aperti"
             value={riordiniCount}
             icon={Package}
-            href="/admin/magazzino"
+            href="/admin/magazzino?filter=riordini"
             alert={riordiniCount > 0}
             note={riordiniCount > 0 ? 'Da evadere' : 'Nessun riordine'}
           />

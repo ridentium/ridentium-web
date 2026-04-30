@@ -1,17 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import AiChatPage from '@/components/AI/AiChatPage'
-
-function getPeriodoKey(frequenza: string): string {
-  const now = new Date()
-  if (frequenza === 'giornaliero') return now.toISOString().split('T')[0]
-  if (frequenza === 'settimanale') {
-    const d = new Date(now)
-    d.setDate(d.getDate() - d.getDay() + 1)
-    return 'W' + d.toISOString().split('T')[0]
-  }
-  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0')
-}
+import { getPeriodoKey } from '@/lib/periodo'
 
 export default async function AIPage() {
   const supabase = createClient()

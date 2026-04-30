@@ -99,15 +99,11 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
     setSaving('test')
     setTestResult(null)
     try {
-      const res = await fetch('/api/notify/stock')
+      const res = await fetch('/api/notify/test', { method: 'POST' })
       const data = await res.json()
-      if (data.alerts > 0) {
-        setTestResult(`Inviate notifiche per ${data.alerts} prodotti sotto soglia`)
-      } else {
-        setTestResult('Nessun prodotto sotto soglia al momento')
-      }
+      setTestResult(data.message ?? (res.ok ? 'Push inviata' : 'Errore'))
     } catch {
-      setTestResult('Errore durante il controllo')
+      setTestResult('Errore durante l\'invio')
     }
     setSaving(null)
   }
