@@ -8,7 +8,7 @@ import { logActivity } from '@/lib/registro'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
   Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone,
-  Plus, Trash2
+  Plus, Trash2, Copy,
 } from 'lucide-react'
 
 interface Props {
@@ -223,13 +223,44 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
 
   async function cambiaStatoSemplice(ordineId: string, nuovoStato: string) {
     setLoading(ordineId)
-    const { error } = await supabase.from('ordini').update({ stato: nuovoStato }).eq('id', ordineId)
-    if (!error) {
+    const res = await fetch(`/api/ordini/${ordineId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'cambia_stato', stato: nuovoStato }),
+    })
+    if (res.ok) {
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, stato: nuovoStato as Ordine['stato'] } : o))
       const ordine = ordini.find(o => o.id === ordineId)
       await logActivity(userId, userNome, `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}: ${ordine?.fornitore_nome ?? ''}`, undefined, 'ordini')
     }
     setLoading(null)
+  }
+
+  async function apriDuplicaOrdine(ordine: Ordine) {
+    setNuovoModal(true)
+    setNuovoFornitore(ordine.fornitore_nome)
+    setNuovoCanale(ordine.canale ?? 'whatsapp')
+    setNuovoNote(ordine.note ?? '')
+    setNuovoRighe(
+      (ordine.righe ?? []).length > 0
+        ? ordine.righe!.map(r => ({
+            magazzino_id: r.magazzino_id ?? '',
+            prodotto_nome: r.prodotto_nome,
+            quantita: r.quantita_ordinata,
+            unita: r.unita ?? 'pz',
+          }))
+        : [{ magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }]
+    )
+    if (!magazzinoLoaded) {
+      const { data } = await supabase
+        .from('magazzino')
+        .select('id, prodotto, unita, azienda')
+        .order('prodotto', { ascending: true })
+      if (data) {
+        setMagazzino(data as MagazzinoItem[])
+        setMagazzinoLoaded(true)
+      }
+    }
   }
 
   async function apriNuovoOrdine() {
@@ -424,17 +455,26 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
                       <p className="text-xs text-stone/70 mt-1 italic">"{ordine.note}"</p>
                     )}
                   </div>
-                  {/* Toggle righe */}
-                  {ordine.righe && ordine.righe.length > 0 && (
+                  {/* Azioni header: duplica + toggle righe */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => setExpandedId(isExpanded ? null : ordine.id)}
-                      className="text-stone hover:text-cream transition-colors p-1 flex-shrink-0 flex items-center gap-1"
+                      onClick={() => apriDuplicaOrdine(ordine)}
+                      className="text-stone/40 hover:text-gold transition-colors p-1"
+                      title="Duplica ordine"
                     >
-                      <Package size={12} />
-                      <span className="text-[10px]">{ordine.righe.length}</span>
-                      {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      <Copy size={12} />
                     </button>
-                  )}
+                    {ordine.righe && ordine.righe.length > 0 && (
+                      <button
+                        onClick={() => setExpandedId(isExpanded ? null : ordine.id)}
+                        className="text-stone hover:text-cream transition-colors p-1 flex items-center gap-1"
+                      >
+                        <Package size={12} />
+                        <span className="text-[10px]">{ordine.righe.length}</span>
+                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Righe prodotti (espandibile) */}

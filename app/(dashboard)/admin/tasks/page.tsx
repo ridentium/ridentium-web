@@ -6,6 +6,8 @@ import ErrorBoundary from '@/components/ui/ErrorBoundary'
 export default async function TasksAdminPage() {
   const supabase = createClient()
 
+  const { data: { user } } = await supabase.auth.getUser()
+
   const [{ data: tasks }, { data: staff }] = await Promise.all([
     supabase
       .from('tasks')
@@ -20,7 +22,7 @@ export default async function TasksAdminPage() {
     <div>
       <PageHeader title="Task" subtitle="Gestione attività e assegnazioni" />
       <ErrorBoundary fallback="Errore nel caricamento dei task">
-        <TasksAdmin tasks={tasks ?? []} staff={staff ?? []} />
+        <TasksAdmin tasks={tasks ?? []} staff={staff ?? []} currentUserId={user?.id ?? ''} />
       </ErrorBoundary>
     </div>
   )
