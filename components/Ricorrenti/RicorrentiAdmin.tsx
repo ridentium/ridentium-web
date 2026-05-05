@@ -1,17 +1,21 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Ricorrente, UserProfile } from '@/types'
 import { Plus, Trash2, Power, RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { logActivity } from '@/lib/registro'
 import { getPeriodoKey } from '@/lib/periodo'
 
 const FREQ_LABEL: Record<string, string> = {
-  giornaliero: 'Giornaliero',
-  settimanale: 'Settimanale',
-  mensile: 'Mensile',
+  giornaliero:  'Giornaliero',
+  settimanale:  'Settimanale',
+  mensile:      'Mensile',
+  trimestrale:  'Trimestrale',
+  semestrale:   'Semestrale',
+  annuale:      'Annuale',
+  biennale:     'Biennale',
+  triennale:    'Triennale',
+  quinquennale: 'Quinquennale',
 }
 
 interface Props {
@@ -22,74 +26,73 @@ interface Props {
 }
 
 export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, currentUserNome }: Props) {
-  const supabase = createClient()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
   const [newTitolo, setNewTitolo] = useState('')
   const [newDesc, setNewDesc] = useState('')
-  const [newFreq, setNewFreq] = useState<'giornaliero' | 'settimanale' | 'mensile'>('giornaliero')
+  const [newFreq, setNewFreq] = useState<Ricorrente['frequenza']>('giornaliero')
   const [newAssignee, setNewAssignee] = useState<string>('null')
   const [saving, setSaving] = useState(false)
   const [toggling, setToggling] = useState<string | null>(null)
 
+  // Toggle completamento via API atomica (RPC Postgres FOR UPDATE)
   async function toggleCompletamento(az: Ricorrente) {
-    if (toggling === az.id) return // guard doppio-click: evita duplicati nel JSON completamenti
+    if (toggling === az.id) return
     setToggling(az.id)
     try {
-      const key = getPeriodoKey(az.frequenza)
-      const completamenti = [...az.completamenti]
-      const idx = completamenti.findIndex(c => c.userId === currentUserId && c.periodoKey === key)
-      if (idx >= 0) {
-        completamenti.splice(idx, 1)
-      } else {
-        completamenti.push({ userId: currentUserId, userName: currentUserNome, periodoKey: key, data: new Date().toISOString() })
+      const res = await fetch(`/api/ricorrenti/${az.id}/completamento`, { method: 'POST' })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: 'Errore sconosciuto' }))
+        console.error('[toggleCompletamento]', error)
       }
-      await supabase.from('ricorrenti').update({ completamenti }).eq('id', az.id)
-      await logActivity(currentUserId, currentUserNome,
-        idx >= 0 ? 'Azione ricorrente rimossa' : 'Azione ricorrente completata',
-        az.titolo, 'ricorrenti')
       startTransition(() => router.refresh())
     } finally {
       setToggling(null)
     }
   }
 
+  // Attiva/disattiva tramite PATCH /api/ricorrenti/[id]
   async function toggleAttiva(az: Ricorrente) {
-    await supabase.from('ricorrenti').update({ attiva: !az.attiva }).eq('id', az.id)
-    await logActivity(currentUserId, currentUserNome,
-      az.attiva ? 'Azione ricorrente disattivata' : 'Azione ricorrente attivata',
-      az.titolo, 'ricorrenti')
+    await fetch(`/api/ricorrenti/${az.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ attiva: !az.attiva }),
+    })
     startTransition(() => router.refresh())
   }
 
+  // Elimina (soft delete) tramite DELETE /api/ricorrenti/[id]
   async function deleteAzione(az: Ricorrente) {
     if (!confirm(`Eliminare "${az.titolo}"?`)) return
-    await supabase.from('ricorrenti').delete().eq('id', az.id)
-    await logActivity(currentUserId, currentUserNome,
-      'Azione ricorrente eliminata', az.titolo, 'ricorrenti')
+    await fetch(`/api/ricorrenti/${az.id}`, { method: 'DELETE' })
     startTransition(() => router.refresh())
   }
 
+  // Crea nuova azione tramite POST /api/ricorrenti
   async function addAzione() {
-    if (saving) return // guard doppio-click
+    if (saving) return
     if (!newTitolo.trim()) return
     setSaving(true)
     try {
-      const nuova = {
-        titolo: newTitolo.trim(),
-        descrizione: newDesc.trim() || null,
-        frequenza: newFreq,
-        assegnato_a: newAssignee === 'null' ? null : newAssignee,
-        attiva: true,
-        completamenti: [],
+      const res = await fetch('/api/ricorrenti', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titolo:      newTitolo.trim(),
+          descrizione: newDesc.trim() || null,
+          frequenza:   newFreq,
+          assegnato_a: newAssignee === 'null' ? null : newAssignee,
+        }),
+      })
+      if (res.ok) {
+        setNewTitolo(''); setNewDesc(''); setNewFreq('giornaliero'); setNewAssignee('null')
+        setShowForm(false)
+        startTransition(() => router.refresh())
+      } else {
+        const { error } = await res.json().catch(() => ({ error: 'Errore sconosciuto' }))
+        console.error('[addAzione]', error)
       }
-      await supabase.from('ricorrenti').insert(nuova)
-      await logActivity(currentUserId, currentUserNome,
-        'Azione ricorrente creata', `${newTitolo} (${newFreq})`, 'ricorrenti')
-      setNewTitolo(''); setNewDesc(''); setNewFreq('giornaliero'); setNewAssignee('null')
-      setShowForm(false)
-      startTransition(() => router.refresh())
     } finally {
       setSaving(false)
     }
@@ -116,10 +119,10 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
           <input className="input" placeholder="Titolo" value={newTitolo} onChange={e => setNewTitolo(e.target.value)} />
           <input className="input" placeholder="Descrizione (opzionale)" value={newDesc} onChange={e => setNewDesc(e.target.value)} />
           <div className="flex gap-3">
-            <select className="input" value={newFreq} onChange={e => setNewFreq(e.target.value as any)}>
-              <option value="giornaliero">Giornaliero</option>
-              <option value="settimanale">Settimanale</option>
-              <option value="mensile">Mensile</option>
+            <select className="input" value={newFreq} onChange={e => setNewFreq(e.target.value as Ricorrente['frequenza'])}>
+              {Object.entries(FREQ_LABEL).map(([val, label]) => (
+                <option key={val} value={val}>{label}</option>
+              ))}
             </select>
             <select className="input" value={newAssignee} onChange={e => setNewAssignee(e.target.value)}>
               <option value="null">Tutti lo staff</option>
@@ -168,7 +171,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                   {az.descrizione && <p className="text-xs text-stone mt-0.5">{az.descrizione}</p>}
                   <div className="flex items-center gap-2 mt-2 flex-wrap">
                     <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">
-                      {FREQ_LABEL[az.frequenza]}
+                      {FREQ_LABEL[az.frequenza] ?? az.frequenza}
                     </span>
                     <span className="text-xs text-stone">
                       {assigneeUser ? `${assigneeUser.nome} ${assigneeUser.cognome}` : 'Tutti'}
