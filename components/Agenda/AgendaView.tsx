@@ -188,12 +188,13 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     return days
   }, [weekStart])
 
-  // Sincronizza URL con vista corrente
+  // Sincronizza URL con vista corrente (solo quando si è sul calendario)
   useEffect(() => {
     if (typeof window === 'undefined') return
+    if (tab !== 'calendario') return // non cancellare params: bookmark lista/focus funziona
     const url = new URL(window.location.href)
-    if (tab !== 'calendario') { url.searchParams.delete('view'); url.searchParams.delete('data') }
-    else { url.searchParams.set('view', calView); url.searchParams.set('data', viewDay) }
+    url.searchParams.set('view', calView)
+    url.searchParams.set('data', viewDay)
     window.history.replaceState(null, '', url.toString())
   }, [tab, calView, viewDay])
 
