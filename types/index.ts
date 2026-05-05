@@ -7,6 +7,8 @@ export interface UserProfile {
   cognome: string
   ruolo: UserRole
   avatar_url?: string
+  attivo?: boolean
+  telefono?: string | null
   created_at: string
 }
 
@@ -145,6 +147,56 @@ export interface TaskCommento {
   testo: string
   created_at: string
 }
+
+// ── KPI clinici ───────────────────────────────────────────────────────────────
+
+export interface KPI {
+  id: number
+  pazienti_oggi: number
+  pazienti_settimana: number
+  pazienti_mese: number
+  appuntamenti_oggi: number
+  fatturato_mese: number
+  tasso_presenze: number
+  updated_at?: string
+}
+
+// ── Ordini ────────────────────────────────────────────────────────────────────
+
+export type StatoOrdine =
+  | 'inviato'
+  | 'confermato_fornitore'
+  | 'in_consegna'
+  | 'ricevuto'
+  | 'parziale'
+  | 'annullato'
+
+export interface OrdineRiga {
+  id: string
+  ordine_id: string
+  magazzino_id?: string | null
+  prodotto_nome: string
+  quantita_ordinata: number
+  unita?: string | null
+  quantita_ricevuta?: number | null
+  created_at?: string
+}
+
+export interface Ordine {
+  id: string
+  fornitore_id?: string | null
+  fornitore_nome: string
+  canale?: CanaleOrdine | null
+  stato: StatoOrdine
+  note?: string | null
+  data_invio: string
+  data_ricezione?: string | null
+  created_by?: string
+  created_at: string
+  righe?: OrdineRiga[]
+}
+
+// ── CRM ───────────────────────────────────────────────────────────────────────
 
 export type CRMStato = 'nuovo' | 'contattato' | 'appuntamento' | 'cliente' | 'perso'
 
