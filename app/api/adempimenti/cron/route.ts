@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
       .from('tasks')
       .select('id')
       .neq('stato', 'completato')
+      .is('deleted_at', null)
 
     const { data: magazzinoAlert } = await adminDb
       .from('magazzino')
