@@ -113,33 +113,28 @@ export async function PATCH(
   }
 
   // ── Ripristino ricezione (annulla ricezione → torna inviato) ──────────────
+  // Usa ripristina_ricezione_tx per eseguire l'operazione in modo atomico:
+  // scala le quantità dal magazzino E aggiorna lo stato ordine in una sola transazione.
   if (action === 'ripristina_ricezione') {
     const { note, righe } = body as {
       note?: string
       righe: Array<{ id: string; magazzino_id?: string | null; quantita_ricevuta?: number | null; quantita_ordinata?: number }>
     }
 
-    // Scala le quantità aggiunte al magazzino durante la ricezione
-    for (const r of righe ?? []) {
-      if (!r.magazzino_id) continue
-      const qtyDaScalare = Number(r.quantita_ricevuta ?? r.quantita_ordinata ?? 0)
-      if (qtyDaScalare <= 0) continue
-      const { data: item } = await adminDb.from('magazzino').select('quantita').eq('id', r.magazzino_id).single()
-      if (item) {
-        await adminDb.from('magazzino')
-          .update({ quantita: Math.max(0, (item as any).quantita - qtyDaScalare) })
-          .eq('id', r.magazzino_id)
-      }
-    }
+    // Costruisce il JSON per la RPC
+    const righeTx = (righe ?? []).map(r => ({
+      magazzino_id: r.magazzino_id ?? null,
+      qty: Number(r.quantita_ricevuta ?? r.quantita_ordinata ?? 0),
+    }))
 
-    // Riporta l'ordine a stato 'inviato' e cancella data_ricezione
-    const { error } = await adminDb
-      .from('ordini')
-      .update({ stato: 'inviato', data_ricezione: null, note: note || null })
-      .eq('id', params.id)
+    const { error } = await adminDb.rpc('ripristina_ricezione_tx', {
+      p_ordine_id: params.id,
+      p_righe:     righeTx,
+      p_note:      note || null,
+    })
 
     if (error) {
-      console.error('[ordini ripristina_ricezione]', error)
+      console.error('[ordini ripristina_ricezione] RPC error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
