@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotifica } from '@/lib/notifiche'
+import { createOrdineSchema, zodError } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -18,20 +19,25 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
 
-  const { fornitore_id, fornitore_nome, canale, note, righe } = await req.json()
-
-  if (!fornitore_nome || !righe?.length) {
-    return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 })
+  const rawBody = await req.json().catch(() => null)
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
   }
+
+  const parsed = createOrdineSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json(zodError(parsed), { status: 400 })
+  }
+  const { fornitore_id, fornitore_nome, canale, note, righe } = parsed.data
 
   const { data: ordine, error: errOrdine } = await adminDb
     .from('ordini')
     .insert({
-      fornitore_id: fornitore_id || null,
+      fornitore_id: fornitore_id ?? null,
       fornitore_nome,
-      canale: canale ?? 'whatsapp',
+      canale,
       stato: 'inviato',
-      note: note || null,
+      note: note ?? null,
       data_invio: new Date().toISOString(),
       created_by: user.id,
     })
@@ -42,12 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: errOrdine?.message ?? 'Errore creazione ordine' }, { status: 500 })
   }
 
-  const righeInsert = righe.map((r: {
-    magazzino_id?: string | null
-    prodotto_nome: string
-    quantita_ordinata: number
-    unita?: string | null
-  }) => ({
+  const righeInsert = righe.map((r) => ({
     ordine_id: ordine.id,
     magazzino_id: r.magazzino_id || null,
     prodotto_nome: r.prodotto_nome,
@@ -67,7 +68,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Notifica push: ordine inviato
-  const prodottiStr = righe.slice(0, 3).map((r: any) => r.prodotto_nome).join(', ')
+  const prodottiStr = righe.slice(0, 3).map(r => r.prodotto_nome).join(', ')
   const extra = righe.length > 3 ? ` +${righe.length - 3} altri` : ''
   try {
     await createNotifica({

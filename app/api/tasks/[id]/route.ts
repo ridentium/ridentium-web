@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { createNotifica } from '@/lib/notifiche'
+import { updateTaskSchema, zodError } from '@/lib/validation'
 
 // PATCH /api/tasks/[id] — modifica un task
 export async function PATCH(
@@ -33,10 +34,17 @@ export async function PATCH(
     }
   }
 
-  const body = await req.json()
-  const allowed = ['titolo', 'descrizione', 'stato', 'priorita', 'scadenza', 'assegnato_a']
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  for (const k of allowed) if (k in body) updates[k] = body[k]
+  const rawBody = await req.json().catch(() => null)
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
+  }
+
+  const parsed = updateTaskSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json(zodError(parsed), { status: 400 })
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString(), ...parsed.data }
 
   // Staff non può riassegnare ad altri
   if (!isAdmin && 'assegnato_a' in updates) {
