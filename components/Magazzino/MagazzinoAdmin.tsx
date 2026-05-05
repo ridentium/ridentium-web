@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useCallback } from 'react'
+import { useState, useEffect, useTransition, useCallback } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
@@ -74,8 +74,13 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   }, [])
   // Se l'URL contiene ?filter=alert (es. da tap su "19 sotto soglia" nel dashboard),
   // la pagina apre già filtrata sui prodotti sotto soglia.
-  const initialSoloAlert = typeof window !== 'undefined' && new URL(window.location.href).searchParams.get('filter') === 'alert'
-  const [soloAlert, setSoloAlert] = useState(initialSoloAlert)
+  // Usato useEffect per evitare hydration mismatch (window non disponibile lato server).
+  const [soloAlert, setSoloAlert] = useState(false)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('filter') === 'alert') {
+      setSoloAlert(true)
+    }
+  }, [])
   const [cerca, setCerca] = useState('')
   const [sortField, setSortField] = useState<SortField>('prodotto')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
