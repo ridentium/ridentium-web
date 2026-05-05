@@ -8,6 +8,7 @@ export default async function StaffPage() {
   const { data: staff } = await adminDb
     .from('profili')
     .select('*')
+    .eq('attivo', true)
     .order('ruolo')
     .order('cognome')
 

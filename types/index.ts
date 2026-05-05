@@ -41,6 +41,7 @@ export interface Task {
   stato: 'da_fare' | 'in_corso' | 'completato'
   priorita: 'bassa' | 'media' | 'alta'
   scadenza?: string
+  deleted_at?: string | null
   created_at: string
   updated_at?: string
 }
@@ -111,9 +112,10 @@ export interface Ricorrente {
   id: string
   titolo: string
   descrizione?: string | null
-  frequenza: 'giornaliero' | 'settimanale' | 'mensile'
+  frequenza: 'giornaliero' | 'settimanale' | 'mensile' | 'trimestrale' | 'semestrale' | 'annuale' | 'biennale' | 'triennale' | 'quinquennale'
   assegnato_a?: string | null
   attiva: boolean
+  deleted_at?: string | null
   completamenti: Completamento[]
   created_at: string
 }
