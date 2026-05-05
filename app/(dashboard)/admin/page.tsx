@@ -8,21 +8,9 @@ import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
 import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
 import OggiWidget, { type OggiItem } from '@/components/Dashboard/OggiWidget'
+import { calcolaStato } from '@/types/adempimenti'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 import { getPeriodoKey } from '@/lib/periodo'
-
-// ── Calcola stato adempimento ─────────────────────────────────────────────────
-function calcolaStatoAdempimento(prossima_scadenza: string | null, preavviso_giorni: number): StatoAdempimento {
-  if (!prossima_scadenza) return 'ok'
-  const oggi = new Date()
-  oggi.setHours(0, 0, 0, 0)
-  const scad = new Date(prossima_scadenza)
-  scad.setHours(0, 0, 0, 0)
-  const gg = Math.ceil((scad.getTime() - oggi.getTime()) / 86400000)
-  if (gg < 0) return 'scaduto'
-  if (gg <= preavviso_giorni) return 'in_scadenza'
-  return 'ok'
-}
 
 // ── Genera briefing testuale da dati reali ────────────────────────────────────
 function generateBriefing(
@@ -126,7 +114,7 @@ export default async function AdminHome() {
   // Adempimenti urgenti (scaduti + in_scadenza)
   const adempimentiUrgenti = (adempimentiAll ?? [])
     .map((a: any) => {
-      const stato = calcolaStatoAdempimento(a.prossima_scadenza, a.preavviso_giorni ?? 30)
+      const stato = calcolaStato({ prossima_scadenza: a.prossima_scadenza, preavviso_giorni: a.preavviso_giorni ?? 30 })
       const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
       const scad = a.prossima_scadenza ? new Date(a.prossima_scadenza) : null
       scad?.setHours(0, 0, 0, 0)

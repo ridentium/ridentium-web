@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
+import { updateAdempimentoSchema, zodError } from '@/lib/validation'
 
 // PATCH /api/adempimenti/[id] — aggiorna (solo admin/manager)
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -21,15 +22,17 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   const { data: adempimentoCorrente } = await adminDb
     .from('adempimenti').select('titolo').eq('id', params.id).single()
 
-  const body = await req.json()
-  const allowed = [
-    'titolo','descrizione','categoria','frequenza',
-    'responsabile_profilo_id','consulente_id','responsabile_etichetta',
-    'evidenza_richiesta','riferimento_normativo','preavviso_giorni',
-    'prossima_scadenza','note','attivo',
-  ]
-  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-  for (const k of allowed) if (k in body) updates[k] = body[k]
+  const rawBody = await req.json().catch(() => null)
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
+  }
+
+  const parsed = updateAdempimentoSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json(zodError(parsed), { status: 400 })
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString(), ...parsed.data }
 
   const { data, error } = await adminDb
     .from('adempimenti').update(updates).eq('id', params.id).select().single()
