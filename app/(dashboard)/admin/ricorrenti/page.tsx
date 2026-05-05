@@ -13,7 +13,7 @@ export default async function RicorrentiAdminPage() {
     { data: staff },
     { data: profilo },
   ] = await Promise.all([
-    supabase.from('ricorrenti').select('*').order('created_at', { ascending: true }),
+    supabase.from('ricorrenti').select('*').is('deleted_at', null).order('created_at', { ascending: true }),
     adminDb.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true).neq('ruolo', 'admin'),
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
   ])
