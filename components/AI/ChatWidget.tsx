@@ -548,7 +548,6 @@ export default function ChatWidget({ userName, userRole, alertCount = 0, tasksCo
                   flex: 1, background: 'transparent', border: 'none', outline: 'none',
                   color: '#E8DCC8', fontSize: '0.83rem', resize: 'none',
                   maxHeight: 100, lineHeight: 1.4,
-                  placeholder: 'test',
                 }}
               />
 

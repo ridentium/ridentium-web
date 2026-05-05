@@ -119,7 +119,7 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                   <td>
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => handleToggleAttivo(member.id, member.attivo)}
+                        onClick={() => handleToggleAttivo(member.id, !!member.attivo)}
                         disabled={isPending}
                         className="btn-ghost text-xs px-2 py-1 disabled:opacity-50"
                       >

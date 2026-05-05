@@ -30,7 +30,7 @@ export default async function MagazzinoPage() {
     adminDb
       .from('ordini_righe')
       .select('magazzino_id, ordini!inner(stato)')
-      .in('ordini.stato' as any, ['inviato', 'parziale'])
+      .in('ordini.stato', ['inviato', 'parziale'])
       .not('magazzino_id', 'is', null),
   ])
 
