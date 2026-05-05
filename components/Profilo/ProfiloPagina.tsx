@@ -139,10 +139,10 @@ export default function ProfiloPagina({ profilo }: Props) {
     setPushLoading(true)
     try {
       if (isSubscribed) {
-        await unsubscribeUser(supabase)
+        await unsubscribeUser()
         setIsSubscribed(false)
       } else {
-        await subscribeUser(supabase)
+        await subscribeUser()
         setIsSubscribed(true)
       }
     } catch (e) {

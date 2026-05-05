@@ -53,7 +53,7 @@ export default function InitialLoader() {
           gap: '32px',
           opacity,
           transition: 'opacity 0.4s ease',
-          pointerEvents: phase === 'exit' ? 'none' : 'all',
+          pointerEvents: 'all',
         }}
       >
         {/* Wordmark */}
