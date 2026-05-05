@@ -61,8 +61,9 @@ export async function POST(req: NextRequest) {
     .select()
 
   if (errRighe) {
-    await adminDb.from('ordini').delete().eq('id', ordine.id)
-    return NextResponse.json({ error: errRighe.message }, { status: 500 })
+    const { error: cleanupErr } = await adminDb.from('ordini').delete().eq('id', ordine.id)
+    if (cleanupErr) console.error('[ordini] Cleanup ordine fallito:', cleanupErr.message)
+    return NextResponse.json({ error: 'Errore nel salvataggio delle righe ordine' }, { status: 500 })
   }
 
   // Notifica push: ordine inviato

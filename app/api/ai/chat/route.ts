@@ -376,25 +376,32 @@ ID utente: ${user.id}`,
   const MAX_ITERATIONS = 6
 
   for (let i = 0; i < MAX_ITERATIONS; i++) {
-    const resp = await fetch(GROQ_API, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: conversationMessages,
-        tools,
-        tool_choice: 'auto',
-        max_tokens: 2048,
-        temperature: 0.3,
-      }),
-    })
+    let resp: Response
+    try {
+      resp = await fetch(GROQ_API, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          messages: conversationMessages,
+          tools,
+          tool_choice: 'auto',
+          max_tokens: 2048,
+          temperature: 0.3,
+        }),
+      })
+    } catch (networkErr) {
+      console.error('[ai/chat] Groq network error:', networkErr)
+      return NextResponse.json({ error: 'Servizio AI temporaneamente non disponibile. Riprova tra qualche momento.' }, { status: 503 })
+    }
 
     if (!resp.ok) {
-      const errText = await resp.text()
-      return NextResponse.json({ error: `Errore Groq (${resp.status}): ${errText.substring(0, 200)}` }, { status: 500 })
+      const errText = await resp.text().catch(() => '')
+      console.error(`[ai/chat] Groq error ${resp.status}:`, errText.substring(0, 500))
+      return NextResponse.json({ error: 'Errore nel servizio AI. Riprova tra qualche momento.' }, { status: 500 })
     }
 
     const result = await resp.json()
@@ -411,7 +418,12 @@ ID utente: ${user.id}`,
 
     if (choice.finish_reason === 'tool_calls') {
       for (const toolCall of assistantMessage.tool_calls) {
-        const input = JSON.parse(toolCall.function.arguments ?? '{}')
+        let input: Record<string, unknown> = {}
+        try {
+          input = JSON.parse(toolCall.function.arguments ?? '{}')
+        } catch {
+          console.error('[ai/chat] Invalid tool arguments:', toolCall.function.arguments?.slice(0, 200))
+        }
         const toolResult = await executeTool(toolCall.function.name, input, adminDb, user.id, userRole)
         conversationMessages.push({
           role: 'tool',

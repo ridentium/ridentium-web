@@ -10,6 +10,12 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
+  const { data: profilo } = await supabase
+    .from('profili').select('ruolo').eq('id', user.id).single()
+  if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
+    return NextResponse.json({ error: 'Non autorizzato' }, { status: 403 })
+  }
+
   const { id, prodotto, quantita, soglia_minima } = await req.json()
   if (!prodotto) return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 })
 
