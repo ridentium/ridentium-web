@@ -144,5 +144,18 @@ export async function PATCH(
     })
   }
 
+  // ── Cambio stato semplice (inviato → confermato_fornitore → in_consegna) ──
+  if (action === 'cambia_stato') {
+    const { stato } = body as { stato: string }
+    const STATI_VALIDI = ['inviato', 'confermato_fornitore', 'in_consegna']
+    if (!STATI_VALIDI.includes(stato)) {
+      return NextResponse.json({ error: 'Stato non valido' }, { status: 400 })
+    }
+    const { error } = await adminDb
+      .from('ordini').update({ stato }).eq('id', params.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ ok: true, updates: { stato } })
+  }
+
   return NextResponse.json({ error: 'Azione non riconosciuta' }, { status: 400 })
 }
