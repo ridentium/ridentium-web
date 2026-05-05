@@ -33,7 +33,7 @@ function getLS<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v !== null ? (JSON.parse(v) as T) : fallback } catch { return fallback }
 }
 
-export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: UserProfile[] }) {
+export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks: any[]; staff: UserProfile[]; currentUserId?: string }) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
@@ -94,8 +94,9 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
 
   // Filtraggio
   const filtered = tasks.filter(t => {
-    if (filterStato === 'aperti' && t.stato === 'completato') return false
-    else if (filterStato !== 'tutti' && filterStato !== 'aperti' && t.stato !== filterStato) return false
+    if (filterStato === 'miei' && t.assegnato_a !== currentUserId) return false
+    else if (filterStato === 'aperti' && t.stato === 'completato') return false
+    else if (!['tutti', 'aperti', 'miei'].includes(filterStato) && t.stato !== filterStato) return false
     if (filterPriorita !== 'tutte' && t.priorita !== filterPriorita) return false
     if (filterAssegnato && t.assegnato_a !== filterAssegnato) return false
     if (cerca.trim()) {
@@ -179,6 +180,17 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
             {s === 'tutti' ? `Tutti (${tasks.length})` : `${statoLabel[s]} (${tasks.filter(t => t.stato === s).length})`}
           </button>
         ))}
+        {currentUserId && (
+          <button
+            onClick={() => setFilterStato('miei')}
+            className={`text-xs px-3 py-1.5 rounded border transition-colors ${
+              filterStato === 'miei'
+                ? 'bg-gold text-obsidian border-gold'
+                : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+            }`}>
+            I miei ({tasks.filter(t => t.assegnato_a === currentUserId).length})
+          </button>
+        )}
 
         <div className="flex items-center gap-2 ml-auto">
           {/* Vista toggle */}
@@ -319,7 +331,9 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
                             ? 'Nessun task creato'
                             : filterStato === 'aperti'
                               ? 'Nessun task aperto (da fare o in corso)'
-                              : `Nessun task con stato "${statoLabel[filterStato]}"`}
+                              : filterStato === 'miei'
+                                ? 'Nessun task assegnato a te'
+                                : `Nessun task con stato "${statoLabel[filterStato]}"`}
                         </p>
                         {filterStato !== 'tutti' ? (
                           <button onClick={() => setFilterStato('tutti')} className="mt-2 text-xs text-gold/60 hover:text-gold transition-colors">

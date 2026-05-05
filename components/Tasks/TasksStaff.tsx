@@ -1,10 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Task } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { CheckCircle2, Clock, Circle, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react'
+import { CheckCircle2, Clock, Circle, ChevronDown, ChevronUp } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import TaskCommenti from '@/components/Tasks/TaskCommenti'
 
@@ -13,7 +12,6 @@ const prioritaColor: Record<string, string> = {
 }
 
 export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Task[]; userId: string; userNome?: string }) {
-  const supabase = createClient()
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [expandedId, setExpandedId] = useState<string | null>(null)
@@ -21,7 +19,11 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
 
   async function updateStato(id: string, stato: string) {
     setLoadingId(id)
-    await supabase.from('tasks').update({ stato }).eq('id', id)
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stato }),
+    })
     setLoadingId(null)
     startTransition(() => router.refresh())
   }
