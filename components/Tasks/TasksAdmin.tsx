@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { Task, UserProfile } from '@/types'
+import { UserProfile } from '@/types'
 import { formatDate, roleLabel } from '@/lib/utils'
 import {
   Plus, X, CheckCircle2, Circle, Clock, ChevronUp, AlertCircle,
@@ -35,16 +34,16 @@ function getLS<T>(key: string, fallback: T): T {
 }
 
 export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: UserProfile[] }) {
-  const supabase = createClient()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
 
   // Filtri — legge ?filter=aperti dall'URL al primo render
+  // 'aperti' è un valore speciale: mostra da_fare + in_corso (non completati)
   const [filterStato, setFilterStato] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const f = new URL(window.location.href).searchParams.get('filter')
-      if (f === 'aperti') return 'da_fare'
+      if (f === 'aperti') return 'aperti'
     }
     return getLS('tasks_filter', 'tutti')
   })
@@ -75,7 +74,11 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   async function bulkComplete() {
     const ids = Array.from(selected)
     await Promise.all(ids.map(id =>
-      supabase.from('tasks').update({ stato: 'completato', updated_at: new Date().toISOString() }).eq('id', id)
+      fetch(`/api/tasks/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stato: 'completato' }),
+      })
     ))
     setSelected(new Set())
     startTransition(() => router.refresh())
@@ -84,14 +87,15 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   async function bulkDelete() {
     if (!confirm(`Eliminare ${selected.size} task selezionat${selected.size === 1 ? 'o' : 'i'}?`)) return
     const ids = Array.from(selected)
-    await Promise.all(ids.map(id => supabase.from('tasks').delete().eq('id', id)))
+    await Promise.all(ids.map(id => fetch(`/api/tasks/${id}`, { method: 'DELETE' })))
     setSelected(new Set())
     startTransition(() => router.refresh())
   }
 
   // Filtraggio
   const filtered = tasks.filter(t => {
-    if (filterStato !== 'tutti' && t.stato !== filterStato) return false
+    if (filterStato === 'aperti' && t.stato === 'completato') return false
+    else if (filterStato !== 'tutti' && filterStato !== 'aperti' && t.stato !== filterStato) return false
     if (filterPriorita !== 'tutte' && t.priorita !== filterPriorita) return false
     if (filterAssegnato && t.assegnato_a !== filterAssegnato) return false
     if (cerca.trim()) {
@@ -125,7 +129,11 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
   }
 
   async function updateStato(id: string, stato: string) {
-    await supabase.from('tasks').update({ stato, updated_at: new Date().toISOString() }).eq('id', id)
+    await fetch(`/api/tasks/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stato }),
+    })
     startTransition(() => router.refresh())
   }
 
@@ -309,7 +317,9 @@ export default function TasksAdmin({ tasks, staff }: { tasks: any[]; staff: User
                         <p className="text-stone text-sm">
                           {filterStato === 'tutti'
                             ? 'Nessun task creato'
-                            : `Nessun task con stato "${statoLabel[filterStato]}"`}
+                            : filterStato === 'aperti'
+                              ? 'Nessun task aperto (da fare o in corso)'
+                              : `Nessun task con stato "${statoLabel[filterStato]}"`}
                         </p>
                         {filterStato !== 'tutti' ? (
                           <button onClick={() => setFilterStato('tutti')} className="mt-2 text-xs text-gold/60 hover:text-gold transition-colors">
@@ -439,14 +449,13 @@ function KanbanCard({ task, onStatusChange, onDelete }: {
   onStatusChange: (id: string, stato: string) => void
   onDelete: () => void
 }) {
-  const supabase = createClient()
   const nextStato = task.stato === 'da_fare' ? 'in_corso'
     : task.stato === 'in_corso' ? 'completato' : 'da_fare'
   const Icon = statoIcon[task.stato as keyof typeof statoIcon] ?? Circle
 
   async function del() {
     if (!confirm('Eliminare questo task?')) return
-    await supabase.from('tasks').delete().eq('id', task.id)
+    await fetch(`/api/tasks/${task.id}`, { method: 'DELETE' })
     onDelete()
   }
 
@@ -495,10 +504,9 @@ function KanbanCard({ task, onStatusChange, onDelete }: {
 // ── DeleteTask ─────────────────────────────────────────────────────────────────
 
 function DeleteTask({ id, onDelete }: { id: string; onDelete: () => void }) {
-  const supabase = createClient()
   async function del() {
     if (!confirm('Eliminare questo task?')) return
-    await supabase.from('tasks').delete().eq('id', id)
+    await fetch(`/api/tasks/${id}`, { method: 'DELETE' })
     onDelete()
   }
   return (
@@ -515,7 +523,6 @@ function NewTaskModal({ staff, onClose, onSave }: {
   onClose: () => void
   onSave: () => void
 }) {
-  const supabase = createClient()
   const [form, setForm] = useState({
     titolo: '', descrizione: '', assegnato_a: '',
     priorita: 'media', stato: 'da_fare', scadenza: ''
@@ -537,39 +544,29 @@ function NewTaskModal({ staff, onClose, onSave }: {
     setSaving(true)
     setError(null)
 
-    const { data: { user } } = await supabase.auth.getUser()
-
-    const { data: newTask, error: dbError } = await supabase.from('tasks').insert({
-      titolo: form.titolo.trim(),
-      descrizione: form.descrizione.trim() || null,
-      priorita: form.priorita,
-      stato: form.stato,
-      creato_da: user?.id,
-      assegnato_a: form.assegnato_a || null,
-      scadenza: form.scadenza || null,
-    }).select().single()
-
-    setSaving(false)
-
-    if (dbError) {
-      setError(`Errore nel salvataggio: ${dbError.message}`)
-      return
-    }
-
-    if (form.assegnato_a && newTask?.id) {
-      fetch('/api/notify/task', {
+    try {
+      const r = await fetch('/api/tasks', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: form.assegnato_a,
-          taskId: newTask.id,
           titolo: form.titolo.trim(),
+          descrizione: form.descrizione.trim() || undefined,
           priorita: form.priorita,
+          scadenza: form.scadenza || undefined,
+          assegnato_a: form.assegnato_a || undefined,
         }),
-      }).catch(() => {})
+      })
+      const data = await r.json()
+      if (!r.ok) {
+        setError(data.error ?? 'Errore nel salvataggio')
+        return
+      }
+      onSave()
+    } catch {
+      setError('Errore di rete')
+    } finally {
+      setSaving(false)
     }
-
-    onSave()
   }
 
   return (

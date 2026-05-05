@@ -3,6 +3,9 @@ import { NextResponse } from 'next/server'
 
 export async function GET() {
   const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+
   const { data, error } = await supabase
     .from('impostazioni_studio')
     .select('chiave,valore')

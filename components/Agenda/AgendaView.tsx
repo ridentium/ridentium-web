@@ -228,24 +228,35 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   async function handleQuickAdd() {
     if (!quickTitle.trim() || !quickAdd || quickSaving) return
     setQuickSaving(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: newTask } = await supabase.from('tasks').insert({
-      titolo: quickTitle.trim(),
-      stato: 'da_fare',
-      priorita: 'media',
-      scadenza: quickAdd.date,
-      creato_da: user?.id,
-    }).select().single()
-    if (newTask) {
-      setEvents(prev => [...prev, {
-        id: newTask.id,
-        tipo: 'task',
-        titolo: newTask.titolo,
-        data: newTask.scadenza,
-        stato: 'da_fare',
-        priorita: 'media',
-      } as AgendaEvent])
-      showToast(`Task "${newTask.titolo}" aggiunto`)
+    try {
+      const r = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          titolo: quickTitle.trim(),
+          priorita: 'media',
+          scadenza: quickAdd.date,
+          assegnato_a: userId,
+        }),
+      })
+      if (r.ok) {
+        const { task: newTask } = await r.json()
+        if (newTask) {
+          setEvents(prev => [...prev, {
+            id: newTask.id,
+            tipo: 'task',
+            titolo: newTask.titolo,
+            data: newTask.scadenza,
+            stato: 'da_fare',
+            priorita: 'media',
+          } as AgendaEvent])
+          showToast(`Task "${newTask.titolo}" aggiunto`)
+        }
+      } else {
+        showToast('Errore durante l\'aggiunta del task', 'error')
+      }
+    } catch {
+      showToast('Errore di rete', 'error')
     }
     setQuickTitle('')
     setQuickAdd(null)
