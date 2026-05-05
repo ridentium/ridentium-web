@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
+import { createRicorrenteSchema, zodError } from '@/lib/validation'
 
 // POST /api/ricorrenti — crea una nuova azione ricorrente (solo admin/manager)
 export async function POST(req: NextRequest) {
@@ -18,23 +19,24 @@ export async function POST(req: NextRequest) {
   }
   const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
-  const body = await req.json()
-  const { titolo, descrizione, frequenza, assegnato_a } = body
+  const rawBody = await req.json().catch(() => null)
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
+  }
 
-  if (!titolo?.trim()) {
-    return NextResponse.json({ error: 'Il titolo è obbligatorio' }, { status: 400 })
+  const parsed = createRicorrenteSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json(zodError(parsed), { status: 400 })
   }
-  if (!frequenza) {
-    return NextResponse.json({ error: 'La frequenza è obbligatoria' }, { status: 400 })
-  }
+  const { titolo, descrizione, frequenza, assegnato_a } = parsed.data
 
   const { data, error } = await adminDb
     .from('ricorrenti')
     .insert({
-      titolo: titolo.trim(),
-      descrizione: descrizione?.trim() || null,
+      titolo,
+      descrizione: descrizione ?? null,
       frequenza,
-      assegnato_a: assegnato_a || null,
+      assegnato_a: assegnato_a ?? null,
       attiva: true,
       completamenti: [],
     })
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
   await logActivityServer(
     user.id, userNome,
     'Azione ricorrente creata',
-    `"${titolo.trim()}" — ${frequenza}`,
+    `"${titolo}" — ${frequenza}`,
     'ricorrenti'
   )
 
