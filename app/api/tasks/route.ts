@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { createNotifica } from '@/lib/notifiche'
+import { createTaskSchema, zodError } from '@/lib/validation'
 
 // POST /api/tasks — crea un nuovo task
 export async function POST(req: NextRequest) {
@@ -12,12 +13,16 @@ export async function POST(req: NextRequest) {
 
   const adminDb = createAdminClient()
 
-  const body = await req.json()
-  const { titolo, descrizione, assegnato_a, priorita, scadenza } = body
-
-  if (!titolo?.trim()) {
-    return NextResponse.json({ error: 'Il titolo è obbligatorio' }, { status: 400 })
+  const rawBody = await req.json().catch(() => null)
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
   }
+
+  const parsed = createTaskSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json(zodError(parsed), { status: 400 })
+  }
+  const { titolo, descrizione, assegnato_a, priorita, scadenza } = parsed.data
 
   // Prendo il nome dell'utente che crea
   const { data: profilo } = await adminDb
@@ -29,13 +34,13 @@ export async function POST(req: NextRequest) {
   const { data, error } = await adminDb
     .from('tasks')
     .insert({
-      titolo: titolo.trim(),
-      descrizione: descrizione?.trim() || null,
+      titolo,
+      descrizione: descrizione ?? null,
       assegnato_a: assegnatoId,
       creato_da: user.id,
       stato: 'da_fare',
-      priorita: priorita || 'media',
-      scadenza: scadenza || null,
+      priorita,
+      scadenza: scadenza ?? null,
     })
     .select()
     .single()
@@ -49,7 +54,7 @@ export async function POST(req: NextRequest) {
   await logActivityServer(
     user.id, userNome,
     'Task creato',
-    `"${titolo.trim()}" — priorità ${priorita || 'media'}${scadenza ? ` — scadenza ${scadenza}` : ''}`,
+    `"${titolo}" — priorità ${priorita}${scadenza ? ` — scadenza ${scadenza}` : ''}`,
     'tasks'
   )
 
@@ -58,7 +63,7 @@ export async function POST(req: NextRequest) {
     await createNotifica({
       user_ids: [assegnatoId],
       tipo: 'task',
-      titolo: `Nuovo task assegnato: ${titolo.trim()}`,
+      titolo: `Nuovo task assegnato: ${titolo}`,
       corpo: `Assegnato da ${userNome}${priorita === 'alta' ? ' — ALTA PRIORITÀ' : ''}${scadenza ? ` — Scadenza: ${new Date(scadenza).toLocaleDateString('it-IT')}` : ''}`,
       url: '/admin/tasks',
       push: true,
