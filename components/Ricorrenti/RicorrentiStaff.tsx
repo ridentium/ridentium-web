@@ -1,17 +1,21 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Ricorrente } from '@/types'
 import { RefreshCw } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-import { logActivity } from '@/lib/registro'
 import { getPeriodoKey } from '@/lib/periodo'
 
 const FREQ_LABEL: Record<string, string> = {
-  giornaliero: 'Oggi',
-  settimanale: 'Questa settimana',
-  mensile: 'Questo mese',
+  giornaliero:  'Oggi',
+  settimanale:  'Questa settimana',
+  mensile:      'Questo mese',
+  trimestrale:  'Questo trimestre',
+  semestrale:   'Questo semestre',
+  annuale:      'Quest\'anno',
+  biennale:     'Questo biennio',
+  triennale:    'Questo triennio',
+  quinquennale: 'Questo quinquennio',
 }
 
 interface Props {
@@ -21,26 +25,26 @@ interface Props {
 }
 
 export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUserNome }: Props) {
-  const supabase = createClient()
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  const [toggling, setToggling] = useState<string | null>(null)
 
   const mie = ricorrenti.filter(az => az.attiva && (!az.assegnato_a || az.assegnato_a === currentUserId))
 
+  // Toggle via API atomica (RPC Postgres FOR UPDATE — nessuna race condition)
   async function toggleCompletamento(az: Ricorrente) {
-    const key = getPeriodoKey(az.frequenza)
-    const completamenti = [...az.completamenti]
-    const idx = completamenti.findIndex(c => c.userId === currentUserId && c.periodoKey === key)
-    if (idx >= 0) {
-      completamenti.splice(idx, 1)
-    } else {
-      completamenti.push({ userId: currentUserId, userName: currentUserNome, periodoKey: key, data: new Date().toISOString() })
+    if (toggling === az.id) return
+    setToggling(az.id)
+    try {
+      const res = await fetch(`/api/ricorrenti/${az.id}/completamento`, { method: 'POST' })
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: 'Errore sconosciuto' }))
+        console.error('[toggleCompletamento]', error)
+      }
+      startTransition(() => router.refresh())
+    } finally {
+      setToggling(null)
     }
-    await supabase.from('ricorrenti').update({ completamenti }).eq('id', az.id)
-    await logActivity(currentUserId, currentUserNome,
-      idx >= 0 ? 'Azione ricorrente rimossa' : 'Azione ricorrente completata',
-      az.titolo, 'ricorrenti')
-    startTransition(() => router.refresh())
   }
 
   const pendenti = mie.filter(az => {
@@ -80,26 +84,27 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
           <div className="px-5 py-3 border-b border-obsidian-light">
             <h3 className="text-xs uppercase tracking-widest text-stone font-medium">Da completare</h3>
           </div>
-          {pendenti.map(az => {
-            const key = getPeriodoKey(az.frequenza)
-            return (
-              <label key={az.id} className="flex items-center gap-4 px-5 py-3.5 border-b border-obsidian-light/40 last:border-0 cursor-pointer hover:bg-obsidian-light/20 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={false}
-                  onChange={() => toggleCompletamento(az)}
-                  className="w-4 h-4 accent-gold cursor-pointer flex-shrink-0"
-                />
-                <div className="flex-1">
-                  <p className="text-sm text-cream">{az.titolo}</p>
-                  {az.descrizione && <p className="text-xs text-stone mt-0.5">{az.descrizione}</p>}
-                </div>
-                <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20 flex-shrink-0">
-                  {FREQ_LABEL[az.frequenza]}
-                </span>
-              </label>
-            )
-          })}
+          {pendenti.map(az => (
+            <label
+              key={az.id}
+              className={`flex items-center gap-4 px-5 py-3.5 border-b border-obsidian-light/40 last:border-0 cursor-pointer hover:bg-obsidian-light/20 transition-colors ${toggling === az.id ? 'opacity-60 pointer-events-none' : ''}`}
+            >
+              <input
+                type="checkbox"
+                checked={false}
+                onChange={() => toggleCompletamento(az)}
+                disabled={toggling === az.id}
+                className="w-4 h-4 accent-gold cursor-pointer flex-shrink-0 disabled:cursor-wait"
+              />
+              <div className="flex-1">
+                <p className="text-sm text-cream">{az.titolo}</p>
+                {az.descrizione && <p className="text-xs text-stone mt-0.5">{az.descrizione}</p>}
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20 flex-shrink-0">
+                {FREQ_LABEL[az.frequenza] ?? az.frequenza}
+              </span>
+            </label>
+          ))}
         </div>
       )}
 
@@ -110,18 +115,22 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
             <h3 className="text-xs uppercase tracking-widest text-stone font-medium">Completate ({completate.length})</h3>
           </div>
           {completate.map(az => (
-            <label key={az.id} className="flex items-center gap-4 px-5 py-3.5 border-b border-obsidian-light/40 last:border-0 cursor-pointer hover:bg-obsidian-light/20 transition-colors">
+            <label
+              key={az.id}
+              className={`flex items-center gap-4 px-5 py-3.5 border-b border-obsidian-light/40 last:border-0 cursor-pointer hover:bg-obsidian-light/20 transition-colors ${toggling === az.id ? 'opacity-60 pointer-events-none' : ''}`}
+            >
               <input
                 type="checkbox"
                 checked={true}
                 onChange={() => toggleCompletamento(az)}
-                className="w-4 h-4 accent-gold cursor-pointer flex-shrink-0"
+                disabled={toggling === az.id}
+                className="w-4 h-4 accent-gold cursor-pointer flex-shrink-0 disabled:cursor-wait"
               />
               <div className="flex-1">
                 <p className="text-sm text-cream line-through">{az.titolo}</p>
               </div>
               <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20 flex-shrink-0">
-                {FREQ_LABEL[az.frequenza]}
+                {FREQ_LABEL[az.frequenza] ?? az.frequenza}
               </span>
             </label>
           ))}
