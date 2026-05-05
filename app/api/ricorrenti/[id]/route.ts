@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
+import { updateRicorrenteSchema, zodError } from '@/lib/validation'
 
 // PATCH /api/ricorrenti/[id] — modifica (solo admin/manager)
 export async function PATCH(
@@ -24,10 +25,16 @@ export async function PATCH(
   const { data: ricorrenteCorrente } = await adminDb
     .from('ricorrenti').select('titolo').eq('id', params.id).single()
 
-  const body = await req.json()
-  const allowed = ['titolo', 'descrizione', 'frequenza', 'assegnato_a', 'attiva']
-  const updates: Record<string, unknown> = {}
-  for (const k of allowed) if (k in body) updates[k] = body[k]
+  const rawBody = await req.json().catch(() => null)
+  if (!rawBody || typeof rawBody !== 'object') {
+    return NextResponse.json({ error: 'Body non valido' }, { status: 400 })
+  }
+
+  const parsed = updateRicorrenteSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    return NextResponse.json(zodError(parsed), { status: 400 })
+  }
+  const updates = parsed.data as Record<string, unknown>
 
   const { data, error } = await adminDb
     .from('ricorrenti').update(updates).eq('id', params.id).select().single()
