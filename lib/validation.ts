@@ -92,3 +92,19 @@ export const createAdempimentoSchema = z.object({
   responsabile:  z.string().trim().max(255).optional().nullable(),
   consulente_id: uuid.optional().nullable(),
 })
+
+export const updateAdempimentoSchema = z.object({
+  titolo:                  z.string().trim().min(1).max(255).optional(),
+  descrizione:             z.string().trim().max(2000).optional().nullable(),
+  categoria:               z.string().trim().min(1).max(50).optional(),
+  frequenza:               z.string().trim().min(1).max(50).optional(),
+  responsabile_profilo_id: uuid.optional().nullable(),
+  consulente_id:           uuid.optional().nullable(),
+  responsabile_etichetta:  z.string().trim().max(255).optional().nullable(),
+  evidenza_richiesta:      z.string().trim().max(500).optional().nullable(),
+  riferimento_normativo:   z.string().trim().max(500).optional().nullable(),
+  preavviso_giorni:        z.number().int().min(1).max(365).optional(),
+  prossima_scadenza:       z.string().optional().nullable(),
+  note:                    z.string().trim().max(1000).optional().nullable(),
+  attivo:                  z.boolean().optional(),
+})

@@ -129,9 +129,13 @@ export const CATEGORIA_COLOR: Record<CategoriaAdempimento, string> = {
 }
 
 /**
- * Dato un adempimento attivo, calcola il suo stato corrente.
+ * Dato un adempimento (o qualsiasi oggetto con prossima_scadenza e preavviso_giorni),
+ * calcola il suo stato corrente. Accetta anche tipi parziali per riuso server-side.
  */
-export function calcolaStato(a: Adempimento, oggi = new Date()): StatoAdempimento {
+export function calcolaStato(
+  a: Pick<Adempimento, 'prossima_scadenza' | 'preavviso_giorni'>,
+  oggi = new Date()
+): StatoAdempimento {
   if (!a.prossima_scadenza) return 'ok'
   const scad = new Date(a.prossima_scadenza)
   const oggiMidnight = new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate())
