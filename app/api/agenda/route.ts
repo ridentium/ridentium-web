@@ -39,94 +39,39 @@ export async function GET(req: NextRequest) {
   const fino = new Date(oggi.getTime() + giorni * 24 * 60 * 60 * 1000)
   const finoStr = fino.toISOString().split('T')[0]
 
-  const events: AgendaEvent[] = []
+  // ── Costruisci query tasks con filtro condizionale ─────────────────────────
+  let tasksQ = adminDb
+    .from('tasks')
+    .select(`
+      id, titolo, descrizione, stato, priorita, scadenza,
+      assegnato_a,
+      assegnato_a_profilo:profili!tasks_assegnato_a_fkey(id, nome, cognome)
+    `)
+    .in('stato', ['da_fare', 'in_corso'])
+    .is('deleted_at', null)
+    .order('scadenza', { ascending: true, nullsFirst: false })
 
-  // ── 1. TASK ────────────────────────────────────────────────────────────────
-  {
-    let q = adminDb
-      .from('tasks')
-      .select(`
-        id, titolo, descrizione, stato, priorita, scadenza,
-        assegnato_a,
-        assegnato_a_profilo:profili!tasks_assegnato_a_fkey(id, nome, cognome)
-      `)
-      .in('stato', ['da_fare', 'in_corso'])
-      .is('deleted_at', null)
-      .order('scadenza', { ascending: true, nullsFirst: false })
-
-    if (!mostraTutti) {
-      q = (q as any).eq('assegnato_a', user.id)
-    }
-
-    const { data: tasks } = await q
-
-    for (const t of tasks ?? []) {
-      const profAssegnato = (t as any).assegnato_a_profilo
-      events.push({
-        id: t.id,
-        tipo: 'task',
-        titolo: t.titolo,
-        descrizione: t.descrizione ?? null,
-        data: t.scadenza ?? null,
-        stato: t.stato,
-        priorita: t.priorita,
-        assegnato_a_id: t.assegnato_a ?? null,
-        assegnato_a_nome: profAssegnato
-          ? `${profAssegnato.nome} ${profAssegnato.cognome}`.trim()
-          : null,
-        href: isAdmin ? '/admin/tasks' : '/staff/tasks',
-      })
-    }
+  if (!mostraTutti) {
+    tasksQ = (tasksQ as any).eq('assegnato_a', user.id)
   }
 
-  // ── 2. RICORRENTI ──────────────────────────────────────────────────────────
-  // Le ricorrenti non hanno una data fissa: le includiamo sempre nell'agenda
-  // con data=null (verranno mostrate come "ricorrente" senza data specifica).
-  // Staff vede le proprie + quelle non assegnate; admin vede tutte.
-  {
-    let q = adminDb
+  // ── Esegui le 4 query in parallelo ────────────────────────────────────────
+  const [
+    { data: tasks },
+    { data: ricorrenti },
+    { data: adempimenti },
+    { data: profiliList },
+  ] = await Promise.all([
+    tasksQ,
+    adminDb
       .from('ricorrenti')
       .select(`
         id, titolo, descrizione, frequenza, assegnato_a, attiva, completamenti,
         assegnato_a_profilo:profili!ricorrenti_assegnato_a_fkey(id, nome, cognome)
       `)
       .eq('attiva', true)
-      .order('frequenza')
-
-    const { data: ricorrenti } = await q
-
-    for (const r of ricorrenti ?? []) {
-      const assegnatoId = (r as any).assegnato_a ?? null
-      // Visibilità: admin vede tutto; staff vede le proprie e non assegnate
-      if (!mostraTutti && assegnatoId !== null && assegnatoId !== user.id) continue
-
-      const profAssegnato = (r as any).assegnato_a_profilo
-      const completamenti: Array<{ periodoKey: string }> = (r as any).completamenti ?? []
-      const periodoKey = getPeriodoKey(r.frequenza)
-      const completata_oggi = completamenti.some(c => c.periodoKey === periodoKey)
-      events.push({
-        id: r.id,
-        tipo: 'ricorrente',
-        titolo: r.titolo,
-        descrizione: (r as any).descrizione ?? null,
-        data: null,
-        frequenza: r.frequenza,
-        attiva: (r as any).attiva ?? true,
-        completata_oggi,
-        assegnato_a_id: assegnatoId,
-        assegnato_a_nome: profAssegnato
-          ? `${profAssegnato.nome} ${profAssegnato.cognome}`.trim()
-          : null,
-        href: isAdmin ? '/admin/ricorrenti' : '/staff/ricorrenti',
-      })
-    }
-  }
-
-  // ── 3. ADEMPIMENTI ─────────────────────────────────────────────────────────
-  // Tutti vedono tutti gli adempimenti; staff li vede ma quelli assegnati a sé
-  // vengono evidenziati lato frontend.
-  {
-    const { data: adempimenti } = await adminDb
+      .order('frequenza'),
+    adminDb
       .from('adempimenti')
       .select(`
         id, titolo, categoria, prossima_scadenza, preavviso_giorni,
@@ -135,28 +80,81 @@ export async function GET(req: NextRequest) {
         responsabile_etichetta
       `)
       .eq('attivo', true)
-      .order('prossima_scadenza', { ascending: true, nullsFirst: false })
+      .order('prossima_scadenza', { ascending: true, nullsFirst: false }),
+    adminDb
+      .from('profili')
+      .select('id, nome, cognome, ruolo')
+      .order('cognome'),
+  ])
 
-    for (const a of adempimenti ?? []) {
-      const profResp = (a as any).responsabile_profilo
-      const responsabileNome = profResp
-        ? `${profResp.nome} ${profResp.cognome}`.trim()
-        : ((a as any).responsabile_etichetta ?? null)
+  const events: AgendaEvent[] = []
 
-      events.push({
-        id: a.id,
-        tipo: 'adempimento',
-        titolo: a.titolo,
-        data: a.prossima_scadenza ?? null,
-        categoria: a.categoria ?? null,
-        frequenza: (a as any).frequenza ?? null,
-        preavviso_giorni: a.preavviso_giorni ?? null,
-        responsabile_etichetta: (a as any).responsabile_etichetta ?? null,
-        assegnato_a_id: a.responsabile_profilo_id ?? null,
-        assegnato_a_nome: responsabileNome,
-        href: isAdmin ? '/admin/adempimenti' : '/staff/adempimenti',
-      })
-    }
+  // ── 1. TASK ────────────────────────────────────────────────────────────────
+  for (const t of tasks ?? []) {
+    const profAssegnato = (t as any).assegnato_a_profilo
+    events.push({
+      id: t.id,
+      tipo: 'task',
+      titolo: t.titolo,
+      descrizione: t.descrizione ?? null,
+      data: t.scadenza ?? null,
+      stato: t.stato,
+      priorita: t.priorita,
+      assegnato_a_id: t.assegnato_a ?? null,
+      assegnato_a_nome: profAssegnato
+        ? `${profAssegnato.nome} ${profAssegnato.cognome}`.trim()
+        : null,
+      href: isAdmin ? '/admin/tasks' : '/staff/tasks',
+    })
+  }
+
+  // ── 2. RICORRENTI ──────────────────────────────────────────────────────────
+  for (const r of ricorrenti ?? []) {
+    const assegnatoId = (r as any).assegnato_a ?? null
+    // Visibilità: admin vede tutto; staff vede le proprie e non assegnate
+    if (!mostraTutti && assegnatoId !== null && assegnatoId !== user.id) continue
+
+    const profAssegnato = (r as any).assegnato_a_profilo
+    const completamenti: Array<{ periodoKey: string }> = (r as any).completamenti ?? []
+    const periodoKey = getPeriodoKey(r.frequenza)
+    const completata_oggi = completamenti.some(c => c.periodoKey === periodoKey)
+    events.push({
+      id: r.id,
+      tipo: 'ricorrente',
+      titolo: r.titolo,
+      descrizione: (r as any).descrizione ?? null,
+      data: null,
+      frequenza: r.frequenza,
+      attiva: (r as any).attiva ?? true,
+      completata_oggi,
+      assegnato_a_id: assegnatoId,
+      assegnato_a_nome: profAssegnato
+        ? `${profAssegnato.nome} ${profAssegnato.cognome}`.trim()
+        : null,
+      href: isAdmin ? '/admin/ricorrenti' : '/staff/ricorrenti',
+    })
+  }
+
+  // ── 3. ADEMPIMENTI ─────────────────────────────────────────────────────────
+  for (const a of adempimenti ?? []) {
+    const profResp = (a as any).responsabile_profilo
+    const responsabileNome = profResp
+      ? `${profResp.nome} ${profResp.cognome}`.trim()
+      : ((a as any).responsabile_etichetta ?? null)
+
+    events.push({
+      id: a.id,
+      tipo: 'adempimento',
+      titolo: a.titolo,
+      data: a.prossima_scadenza ?? null,
+      categoria: a.categoria ?? null,
+      frequenza: (a as any).frequenza ?? null,
+      preavviso_giorni: a.preavviso_giorni ?? null,
+      responsabile_etichetta: (a as any).responsabile_etichetta ?? null,
+      assegnato_a_id: a.responsabile_profilo_id ?? null,
+      assegnato_a_nome: responsabileNome,
+      href: isAdmin ? '/admin/adempimenti' : '/staff/adempimenti',
+    })
   }
 
   // Ordina: prima gli eventi con data (per data asc), poi quelli senza data (ricorrenti)
@@ -166,12 +164,6 @@ export async function GET(req: NextRequest) {
     if (!a.data && b.data) return 1
     return 0
   })
-
-  // Profili per il pannello "Aggiungi"
-  const { data: profiliList } = await adminDb
-    .from('profili')
-    .select('id, nome, cognome, ruolo')
-    .order('cognome')
 
   return NextResponse.json({
     events,
