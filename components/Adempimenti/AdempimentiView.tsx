@@ -883,6 +883,11 @@ function EditAdempimentoModal({
               <select className="input w-full" value={frequenza} onChange={e => setFrequenza(e.target.value as FrequenzaAdempimento)}>
                 {Object.entries(FREQUENZA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
+              {frequenza !== a.frequenza && (
+                <p className="mt-1.5 text-[10px] text-amber-400/80 leading-tight">
+                  ⚠ La frequenza è cambiata. Lo storico esecuzioni rimane invariato — verifica la prossima scadenza.
+                </p>
+              )}
             </div>
           </div>
 
