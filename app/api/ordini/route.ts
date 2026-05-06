@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotifica } from '@/lib/notifiche'
+import { logActivityServer } from '@/lib/registro-server'
 import { createOrdineSchema, zodError } from '@/lib/validation'
 
 export async function POST(req: NextRequest) {
@@ -14,10 +15,11 @@ export async function POST(req: NextRequest) {
   }
 
   const { data: profilo } = await adminDb
-    .from('profili').select('ruolo').eq('id', user.id).single()
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
   if (!profilo || !['admin', 'manager', 'segretaria'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   const rawBody = await req.json().catch(() => null)
   if (!rawBody || typeof rawBody !== 'object') {
@@ -66,6 +68,10 @@ export async function POST(req: NextRequest) {
     if (cleanupErr) console.error('[ordini] Cleanup ordine fallito:', cleanupErr.message)
     return NextResponse.json({ error: 'Errore nel salvataggio delle righe ordine' }, { status: 500 })
   }
+
+  // Log attività
+  const prodottiOrdinati = righe.map(r => `${r.prodotto_nome}: ${r.quantita_ordinata} ${r.unita ?? 'pz'}`).join(', ')
+  await logActivityServer(user.id, userNome, `Nuovo ordine creato: ${fornitore_nome}`, prodottiOrdinati, 'ordini')
 
   // Notifica push: ordine inviato
   const prodottiStr = righe.slice(0, 3).map(r => r.prodotto_nome).join(', ')

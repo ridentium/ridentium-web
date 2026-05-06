@@ -2,7 +2,6 @@
 
 import { useState, useMemo } from 'react'
 import { CRMContatto, CRMStato } from '@/types'
-import { logActivity } from '@/lib/registro'
 import {
   Phone, MessageCircle, Mail, Download, Plus, Search,
   UserCircle, X, ChevronDown, Trash2, AlertCircle, Globe,
@@ -57,14 +56,12 @@ function iniziali(c: CRMContatto) {
 interface Props {
   contatti: CRMContatto[]
   isAdmin: boolean
-  userId: string
-  userNome: string
 }
 
 type FiltroStato    = CRMStato | 'tutti'
 type FiltroMarketing = 'tutti' | 'si' | 'no'
 
-export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, userNome }: Props) {
+export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) {
   const [contatti, setContatti]           = useState(initialContatti)
   const [filtro, setFiltro]               = useState<FiltroStato>('tutti')
   const [filtroMarketing, setFiltroMarketing] = useState<FiltroMarketing>('tutti')
@@ -146,8 +143,6 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     if (res.ok) {
       const { contatto } = await res.json()
       setContatti(prev => prev.map(c => c.id === id ? contatto : c))
-      const nome = [contatto.nome, contatto.cognome].filter(Boolean).join(' ') || contatto.email || contatto.telefono || id
-      await logActivity(userId, userNome, `CRM: stato aggiornato a "${nuovoStato}"`, nome, 'crm')
     }
     setStatoLoading(null)
   }
@@ -165,8 +160,6 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     if (res.ok) {
       const { contatto } = await res.json()
       setContatti(prev => prev.map(c => c.id === editModal.id ? contatto : c))
-      const nome = [editModal.nome, editModal.cognome].filter(Boolean).join(' ') || editModal.email || editModal.telefono || editModal.id
-      await logActivity(userId, userNome, 'CRM: note aggiornate', nome, 'crm')
       setEditModal(null)
     }
     setEditSaving(false)
@@ -206,8 +199,6 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
         updated_at: new Date().toISOString(),
       }
       setContatti(prev => [nuovoContatto, ...prev])
-      const nome = [nuovoForm.nome, nuovoForm.cognome].filter(Boolean).join(' ') || nuovoForm.email || nuovoForm.telefono
-      await logActivity(userId, userNome, 'CRM: contatto aggiunto', nome, 'crm')
       setNuovoModal(false)
       setNuovoForm({ nome: '', cognome: '', email: '', telefono: '', sorgente: '', note: '' })
     } else {
@@ -224,8 +215,6 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
     const res = await fetch(`/api/crm/contatti/${id}`, { method: 'DELETE' })
     if (res.ok) {
       setContatti(prev => prev.filter(c => c.id !== id))
-      const nome = contatto ? ([contatto.nome, contatto.cognome].filter(Boolean).join(' ') || contatto.email || contatto.telefono || id) : id
-      await logActivity(userId, userNome, 'CRM: contatto eliminato', nome, 'crm')
     }
   }
 
@@ -250,8 +239,6 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin, userId, u
 
     if (res.ok) {
       setEmailOk(true)
-      const nome = nomeCompleto(emailModal)
-      await logActivity(userId, userNome, `CRM: email inviata (${emailTemplate})`, nome, 'crm')
       setTimeout(() => setEmailModal(null), 1800)
     } else {
       const data = await res.json().catch(() => ({}))

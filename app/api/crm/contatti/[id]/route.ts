@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivityServer } from '@/lib/registro-server'
 
 // ─── PATCH /api/crm/contatti/[id] ─────────────────────────────────────────────
 // Aggiorna stato, note o dati anagrafici di un contatto.
@@ -19,12 +20,13 @@ export async function PATCH(
 
   const { data: profilo } = await adminDb
     .from('profili')
-    .select('ruolo')
+    .select('ruolo, nome, cognome')
     .eq('id', user.id)
     .single()
   if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   const body = await req.json()
 
@@ -46,6 +48,14 @@ export async function PATCH(
     return NextResponse.json({ error: 'Errore nel salvataggio' }, { status: 500 })
   }
 
+  const nomeContatto = [data.nome, data.cognome].filter(Boolean).join(' ') || data.email || params.id
+  const azione = 'stato' in body
+    ? `CRM: stato aggiornato a "${body.stato}"`
+    : 'note' in body
+      ? 'CRM: note aggiornate'
+      : 'CRM: contatto aggiornato'
+  await logActivityServer(user.id, userNome, azione, nomeContatto, 'crm')
+
   return NextResponse.json({ contatto: data })
 }
 
@@ -64,12 +74,20 @@ export async function DELETE(
 
   const { data: profilo } = await adminDb
     .from('profili')
-    .select('ruolo')
+    .select('ruolo, nome, cognome')
     .eq('id', user.id)
     .single()
   if (!profilo || profilo.ruolo !== 'admin') {
     return NextResponse.json({ error: 'Solo gli admin possono eliminare contatti' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
+
+  // Recupera nome contatto prima dell'eliminazione per il log
+  const { data: contattoInfo } = await adminDb
+    .from('crm_contatti').select('nome, cognome, email').eq('id', params.id).single()
+  const nomeContatto = contattoInfo
+    ? [contattoInfo.nome, contattoInfo.cognome].filter(Boolean).join(' ') || contattoInfo.email || params.id
+    : params.id
 
   const { error } = await adminDb
     .from('crm_contatti')
@@ -79,6 +97,8 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: 'Errore nell\'eliminazione' }, { status: 500 })
   }
+
+  await logActivityServer(user.id, userNome, 'CRM: contatto eliminato', nomeContatto, 'crm')
 
   return NextResponse.json({ success: true })
 }

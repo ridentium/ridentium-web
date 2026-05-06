@@ -14,20 +14,16 @@ export default async function Page() {
 
   const [contattiRes, profiloRes] = await Promise.all([
     adminSupabase.from('crm_contatti').select('*').order('created_at', { ascending: false }),
-    adminSupabase.from('profili').select('ruolo, nome').eq('id', user.id).single(),
+    adminSupabase.from('profili').select('ruolo').eq('id', user.id).single(),
   ])
 
   const profilo = profiloRes.data
   if (!profilo) redirect('/admin')
 
-  const isAdmin = profilo.ruolo === 'admin'
-
   return (
     <CRMAdmin
       contatti={contattiRes.data ?? []}
-      isAdmin={isAdmin}
-      userId={user!.id}
-      userNome={profilo.nome ?? user!.email ?? ''}
+      isAdmin={profilo.ruolo === 'admin'}
     />
   )
 }

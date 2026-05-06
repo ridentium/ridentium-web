@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivityServer } from '@/lib/registro-server'
 
 // PATCH /api/ordini/[id]
 // Gestisce: ricezione (totale/parziale) e annullamento ordine.
@@ -23,10 +24,16 @@ export async function PATCH(
 
   // Role gate: solo admin / manager / segretaria possono ricevere/annullare ordini
   const { data: profilo } = await adminDb
-    .from('profili').select('ruolo').eq('id', user.id).single()
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
   if (!profilo || !['admin', 'manager', 'segretaria'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
+
+  // Recupera fornitore_nome per i log (non fatale se manca)
+  const { data: ordineInfo } = await adminDb
+    .from('ordini').select('fornitore_nome').eq('id', params.id).single()
+  const fornitoreNome = ordineInfo?.fornitore_nome ?? ''
 
   const body = await req.json()
   const { action } = body
@@ -58,6 +65,9 @@ export async function PATCH(
       console.error('[ordini ricevi] RPC error:', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
+
+    const statoLabel = tipo === 'totale' ? 'ricevuto' : 'parz. ricevuto'
+    await logActivityServer(user.id, userNome, `Ordine ${statoLabel}: ${fornitoreNome}`, undefined, 'ordini')
 
     return NextResponse.json({
       ok: true,
@@ -106,6 +116,11 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    const annullaLabel = statoCorrente === 'ricevuto'
+      ? `Ricezione annullata: ${fornitoreNome}`
+      : `Ordine annullato: ${fornitoreNome}`
+    await logActivityServer(user.id, userNome, annullaLabel, undefined, 'ordini')
+
     return NextResponse.json({
       ok: true,
       updates: { stato: 'annullato', note: note || null },
@@ -138,6 +153,8 @@ export async function PATCH(
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    await logActivityServer(user.id, userNome, `Ricezione annullata (ordine ripristinato): ${fornitoreNome}`, undefined, 'ordini')
+
     return NextResponse.json({
       ok: true,
       updates: { stato: 'inviato', data_ricezione: null, note: note || null },
@@ -154,6 +171,14 @@ export async function PATCH(
     const { error } = await adminDb
       .from('ordini').update({ stato }).eq('id', params.id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    const STATO_LABEL_MAP: Record<string, string> = {
+      confermato_fornitore: 'confermato fornitore',
+      in_consegna:          'in consegna',
+      inviato:              'inviato',
+    }
+    await logActivityServer(user.id, userNome, `Ordine ${STATO_LABEL_MAP[stato] ?? stato}: ${fornitoreNome}`, undefined, 'ordini')
+
     return NextResponse.json({ ok: true, updates: { stato } })
   }
 

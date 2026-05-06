@@ -4,6 +4,21 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { createMagazzinoItemSchema, zodError } from '@/lib/validation'
 
+// GET /api/magazzino — lista prodotti per dropdown (utenti autenticati)
+export async function GET() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+
+  const adminDb = createAdminClient()
+  const { data, error } = await adminDb
+    .from('magazzino')
+    .select('id, prodotto, unita, azienda')
+    .order('prodotto', { ascending: true })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  return NextResponse.json({ items: data ?? [] })
+}
+
 // POST /api/magazzino — aggiunge un prodotto al magazzino (admin/manager)
 export async function POST(req: NextRequest) {
   const supabase = createClient()
