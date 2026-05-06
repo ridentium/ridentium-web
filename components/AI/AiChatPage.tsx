@@ -82,7 +82,7 @@ export default function AiChatPage({ userName, userRole, userId, storico, bachec
 
   async function deleteSession(sid: string, e: React.MouseEvent) {
     e.stopPropagation()
-    await supabase.from('ai_sessioni').delete().eq('id', sid)
+    await fetch(`/api/ai/sessioni/${sid}`, { method: 'DELETE' })
     setSessioni(prev => prev.filter(s => s.id !== sid))
     if (sessionId === sid) newChat()
   }

@@ -73,19 +73,17 @@ export default function ProfiloPagina({ profilo }: Props) {
   useEffect(() => {
     async function loadPrefs() {
       setPrefsLoading(true)
-      const { data } = await supabase
-        .from('user_notification_prefs')
-        .select('tipo, abilitata')
-        .eq('user_id', profilo.id)
-      if (data) {
+      const res = await fetch('/api/profilo/preferenze')
+      if (res.ok) {
+        const json = await res.json()
         const map: Record<string, boolean> = {}
-        for (const row of data) map[row.tipo] = row.abilitata
+        for (const row of (json.prefs ?? [])) map[row.tipo] = row.abilitata
         setPrefs(map)
       }
       setPrefsLoading(false)
     }
     loadPrefs()
-  }, [profilo.id])
+  }, [])
 
   async function handleSave() {
     if (!nome.trim() || !cognome.trim()) {
@@ -96,31 +94,21 @@ export default function ProfiloPagina({ profilo }: Props) {
     setError(null)
     setSuccess(false)
 
-    const updates: Record<string, string | null> = {
-      nome: nome.trim(),
-      cognome: cognome.trim(),
-    }
-    if (telefono !== undefined) {
-      updates.telefono = telefono.trim() || null
-    }
-
-    const { error: dbError } = await supabase
-      .from('profili')
-      .update(updates)
-      .eq('id', profilo.id)
+    const res = await fetch('/api/profilo', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome: nome.trim(),
+        cognome: cognome.trim(),
+        telefono: telefono.trim() || null,
+      }),
+    })
 
     setSaving(false)
-    if (dbError) {
-      if (dbError.message.includes('telefono')) {
-        const { error: retryError } = await supabase
-          .from('profili')
-          .update({ nome: nome.trim(), cognome: cognome.trim() })
-          .eq('id', profilo.id)
-        if (retryError) { setError(`Errore: ${retryError.message}`); return }
-      } else {
-        setError(`Errore nel salvataggio: ${dbError.message}`)
-        return
-      }
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setError(json.error ?? 'Errore nel salvataggio')
+      return
     }
     setSuccess(true)
     setTimeout(() => setSuccess(false), 3000)
@@ -153,16 +141,16 @@ export default function ProfiloPagina({ profilo }: Props) {
 
   async function handleTogglePref(tipo: string, current: boolean) {
     const next = !current
-    // Optimistic update
+    // Aggiornamento ottimistico
     setPrefs(p => ({ ...p, [tipo]: next }))
-    const { error } = await supabase
-      .from('user_notification_prefs')
-      .upsert({ user_id: profilo.id, tipo, abilitata: next, updated_at: new Date().toISOString() },
-               { onConflict: 'user_id,tipo' })
-    if (error) {
-      // revert
+    const res = await fetch('/api/profilo/preferenze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tipo, abilitata: next }),
+    })
+    if (!res.ok) {
+      // Revert
       setPrefs(p => ({ ...p, [tipo]: current }))
-      console.error('Pref save error:', error)
     }
   }
 

@@ -1,12 +1,10 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Fornitore, FornitoreContatto, MagazzinoItem, CanaleOrdine } from '@/types'
 import { Plus, Trash2, MessageCircle, Mail, Globe, Phone, Edit2, Check, X, Star, ChevronDown, ChevronUp, UserPlus, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { logActivity } from '@/lib/registro'
 
 interface Props {
   fornitori: (Fornitore & { fornitore_contatti?: FornitoreContatto[] })[]
@@ -42,7 +40,6 @@ function emptyContactForm(): Partial<FornitoreContatto> {
 }
 
 export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, currentUserNome, userRole = 'admin' }: Props) {
-  const supabase = createClient()
   const router = useRouter()
   const [, startTransition] = useTransition()
   const canEdit = userRole === 'admin' || userRole === 'manager'
@@ -75,10 +72,14 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
     if (!nome.trim()) return
     setSavingFornitore(true)
     try {
-      const { data } = await supabase.from('fornitori').insert({ nome: nome.trim(), note: note.trim() || null }).select().single()
-      await logActivity(currentUserId, currentUserNome, 'Fornitore aggiunto', nome.trim(), 'fornitori')
+      const res = await fetch('/api/fornitori', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nome: nome.trim(), note: note.trim() || null }),
+      })
+      const json = await res.json()
       resetForm()
-      if (data) setExpandedId(data.id)
+      if (json.fornitore) setExpandedId(json.fornitore.id)
       startTransition(() => router.refresh())
     } finally {
       setSavingFornitore(false)
@@ -91,19 +92,18 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
   }
 
   async function saveEdit(f: Fornitore) {
-    await supabase.from('fornitori').update({
-      nome: editFields.nome,
-      note: editFields.note || null,
-    }).eq('id', f.id)
-    await logActivity(currentUserId, currentUserNome, 'Fornitore modificato', editFields.nome ?? f.nome, 'fornitori')
+    await fetch(`/api/fornitori/${f.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: editFields.nome, note: editFields.note || null }),
+    })
     setEditingId(null)
     startTransition(() => router.refresh())
   }
 
   async function deleteFornitore(f: Fornitore) {
     if (!confirm(`Eliminare il fornitore "${f.nome}"?`)) return
-    await supabase.from('fornitori').delete().eq('id', f.id)
-    await logActivity(currentUserId, currentUserNome, 'Fornitore eliminato', f.nome, 'fornitori')
+    await fetch(`/api/fornitori/${f.id}`, { method: 'DELETE' })
     startTransition(() => router.refresh())
   }
 
@@ -132,7 +132,6 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
   async function saveContact(fornitoreId: string) {
     setSavingContact(true)
     const payload = {
-      fornitore_id: fornitoreId,
       nome: contactForm.nome?.trim() || '',
       ruolo: contactForm.ruolo?.trim() || null,
       telefono: contactForm.telefono?.trim() || null,
@@ -145,24 +144,18 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
     if (!payload.nome) { setSavingContact(false); return }
 
     if (editContact) {
-      await supabase.from('fornitore_contatti').update(payload).eq('id', editContact.id)
+      await fetch(`/api/fornitori/${fornitoreId}/contatti/${editContact.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
     } else {
-      await supabase.from('fornitore_contatti').insert(payload)
+      await fetch(`/api/fornitori/${fornitoreId}/contatti`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
     }
-
-    // Se marcato come predefinito, de-seleziona gli altri
-    if (payload.is_predefinito) {
-      const otherId = editContact?.id ?? null
-      await supabase
-        .from('fornitore_contatti')
-        .update({ is_predefinito: false })
-        .eq('fornitore_id', fornitoreId)
-        .neq('id', otherId ?? '00000000-0000-0000-0000-000000000000')
-    }
-
-    await logActivity(currentUserId, currentUserNome,
-      editContact ? 'Contatto fornitore modificato' : 'Contatto fornitore aggiunto',
-      payload.nome, 'fornitori')
 
     setSavingContact(false)
     closeContactForm()
@@ -171,14 +164,12 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
 
   async function deleteContact(c: FornitoreContatto) {
     if (!confirm(`Eliminare il contatto "${c.nome}"?`)) return
-    await supabase.from('fornitore_contatti').delete().eq('id', c.id)
-    await logActivity(currentUserId, currentUserNome, 'Contatto fornitore eliminato', c.nome, 'fornitori')
+    await fetch(`/api/fornitori/${c.fornitore_id}/contatti/${c.id}`, { method: 'DELETE' })
     startTransition(() => router.refresh())
   }
 
   async function setDefaultContact(fornitoreId: string, contattoId: string) {
-    await supabase.from('fornitore_contatti').update({ is_predefinito: false }).eq('fornitore_id', fornitoreId)
-    await supabase.from('fornitore_contatti').update({ is_predefinito: true }).eq('id', contattoId)
+    await fetch(`/api/fornitori/${fornitoreId}/contatti/${contattoId}/predefinito`, { method: 'PATCH' })
     startTransition(() => router.refresh())
   }
 

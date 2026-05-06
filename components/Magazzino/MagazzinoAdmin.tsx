@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useTransition, useCallback } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
 import {
@@ -11,7 +10,6 @@ import {
 import { useRouter } from 'next/navigation'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
 import Toast, { type ToastState } from '@/components/ui/Toast'
-import { logActivity } from '@/lib/registro'
 
 function scadenzaColor(scadenza: string | null | undefined): string {
   if (!scadenza) return ''
@@ -94,7 +92,6 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     id: string; azione: string; dettaglio: string; user_nome: string; created_at: string
   }> | null>(null)
   const router = useRouter()
-  const supabase = createClient()
   const [, startTransition] = useTransition()
 
   function toggleSort(field: SortField) {
@@ -157,13 +154,9 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   async function caricaStoricoDb() {
     setLoadingStorico(true)
     try {
-      const { data } = await supabase
-        .from('registro')
-        .select('id, azione, dettaglio, user_nome, created_at')
-        .eq('categoria', 'magazzino')
-        .order('created_at', { ascending: false })
-        .limit(60)
-      setStoricoDb(data ?? [])
+      const res = await fetch('/api/magazzino/storico')
+      const json = await res.json()
+      setStoricoDb(json.storico ?? [])
       setShowStorico(true)
     } finally {
       setLoadingStorico(false)
@@ -184,16 +177,21 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     const eraOk = item ? item.quantita >= item.soglia_minima : true
     const saraAlert = item ? nuovaQuantita < item.soglia_minima : false
 
+    // Aggiornamento ottimistico
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantita: nuovaQuantita } : i))
-    const { error } = await supabase.from('magazzino').update({ quantita: nuovaQuantita }).eq('id', id)
-    if (error) {
+
+    const res = await fetch(`/api/magazzino/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ quantita: nuovaQuantita }),
+    })
+    if (!res.ok) {
       showToast('Errore aggiornamento quantità', 'error')
     } else {
       showToast(saraAlert ? `Sotto soglia — verifica il riordino` : `Quantità aggiornata: ${nuovaQuantita}`)
       if (item) {
         const azione = `${item.quantita} → ${nuovaQuantita} ${item.unita ?? 'pz'}`
         addStorico(item.prodotto, azione)
-        logActivity(userId, userNome, `Quantità aggiornata: ${item.prodotto}`, azione, 'magazzino').catch(() => {})
       }
     }
 
@@ -221,11 +219,17 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   async function confermaEvadisci(qtyRicevuta: number) {
     if (!evadisciModal) return
     const nuovaQty = evadisciModal.quantitaAttuale + qtyRicevuta
-    const [{ error }] = await Promise.all([
-      supabase.from('riordini').update({ stato: 'evasa' }).eq('id', evadisciModal.riordineId),
-      supabase.from('magazzino').update({ quantita: nuovaQty, updated_at: new Date().toISOString() }).eq('id', evadisciModal.magazzinoId),
-    ])
-    if (error) {
+
+    const res = await fetch('/api/magazzino/evadisci', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        riordine_id: evadisciModal.riordineId,
+        magazzino_id: evadisciModal.magazzinoId,
+        qty_ricevuta: qtyRicevuta,
+      }),
+    })
+    if (!res.ok) {
       showToast('Errore durante la ricezione merce', 'error')
     } else {
       setItems(prev => prev.map(i =>
@@ -234,7 +238,6 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       showToast(`Merce ricevuta — giacenza aggiornata a ${nuovaQty}`)
       const azione = `Ricevute ${qtyRicevuta} pz → giacenza ${nuovaQty}`
       addStorico(evadisciModal.prodotto, azione)
-      logActivity(userId, userNome, `Merce ricevuta: ${evadisciModal.prodotto}`, azione, 'magazzino').catch(() => {})
     }
     setEvadisciModal(null)
     startTransition(() => router.refresh())
@@ -726,7 +729,6 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
 }
 
 function ItemModal({ item, fornitori, onClose, onSave }: ItemModalProps) {
-  const supabase = createClient()
   const [form, setForm] = useState<Partial<MagazzinoItem>>(item ?? {
     prodotto: '', categoria: 'Impianti', azienda: 'Neodent',
     quantita: 0, soglia_minima: 2, unita: 'pz'
@@ -739,13 +741,25 @@ function ItemModal({ item, fornitori, onClose, onSave }: ItemModalProps) {
     if (saving) return // guard doppio-click
     setSaving(true)
     try {
+      let data: MagazzinoItem | undefined
       if (item) {
-        const { data } = await supabase.from('magazzino').update(form).eq('id', item.id).select().single()
-        onSave(data ?? undefined)
+        const res = await fetch(`/api/magazzino/${item.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        const json = await res.json()
+        data = json.item
       } else {
-        const { data } = await supabase.from('magazzino').insert(form).select().single()
-        onSave(data ?? undefined)
+        const res = await fetch('/api/magazzino', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
+        const json = await res.json()
+        data = json.item
       }
+      onSave(data)
     } finally {
       setSaving(false)
     }

@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 type Ruolo = 'aso' | 'segretaria' | 'manager' | 'clinico'
 type Sezione = 'magazzino' | 'tasks' | 'ricorrenti' | 'sop'
@@ -31,7 +30,6 @@ interface Props {
 }
 
 export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
-  const supabase = createClient()
   const [permessi, setPermessi] = useState<PermessoRow[]>(initialPermessi)
   const [saving, setSaving] = useState<string | null>(null)
 
@@ -52,13 +50,15 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
     )
     setSaving(key)
 
-    const { error } = await supabase
-      .from('sezione_permessi')
-      .upsert({ sezione, ruolo, visibile: newVal }, { onConflict: 'sezione,ruolo' })
+    const res = await fetch('/api/impostazioni/permessi', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sezione, ruolo, visibile: newVal }),
+    })
 
     setSaving(null)
 
-    if (error) {
+    if (!res.ok) {
       setPermessi(prev =>
         prev.map(p =>
           p.sezione === sezione && p.ruolo === ruolo ? { ...p, visibile: current } : p
