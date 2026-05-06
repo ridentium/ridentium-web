@@ -1,9 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
-import { logActivity } from '@/lib/registro'
 import { CheckSquare, RefreshCw } from 'lucide-react'
 import { getPeriodoKey } from '@/lib/periodo'
 
@@ -64,7 +62,6 @@ function NotePopup({ onSave, onSkip }: { onSave: (nota: string) => void; onSkip:
 }
 
 export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId, currentUserNome }: Props) {
-  const supabase = createClient()
   const router = useRouter()
   const [, startTransition] = useTransition()
 
@@ -90,12 +87,12 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
     setNoteFor({ type: 'task', id: task.id })
   }
 
-  async function saveTask(task: CompletableTask, nota: string) {
-    await supabase.from('tasks').update({ stato: 'completato' }).eq('id', task.id)
-    await logActivity(
-      currentUserId, currentUserNome, 'Task completato',
-      nota ? `${task.titolo} — ${nota}` : task.titolo, 'ricorrenti'
-    ).catch(() => {})
+  async function saveTask(task: CompletableTask, _nota: string) {
+    await fetch(`/api/tasks/${task.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ stato: 'completato' }),
+    })
     setNoteFor(null)
     startTransition(() => router.refresh())
   }
@@ -106,21 +103,8 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
     setNoteFor({ type: 'ricorrente', id: r.id })
   }
 
-  async function saveRicorrente(r: CompletableRicorrente, nota: string) {
-    const key = getPeriodoKey(r.frequenza)
-    const newComp: Completamento = {
-      userId: currentUserId,
-      userName: currentUserNome,
-      periodoKey: key,
-      data: new Date().toISOString(),
-      ...(nota ? { nota } : {}),
-    }
-    const completamenti = [...(r.completamenti ?? []), newComp]
-    await supabase.from('ricorrenti').update({ completamenti }).eq('id', r.id)
-    await logActivity(
-      currentUserId, currentUserNome, 'Azione ricorrente completata',
-      nota ? `${r.titolo} — ${nota}` : r.titolo, 'ricorrenti'
-    ).catch(() => {})
+  async function saveRicorrente(r: CompletableRicorrente, _nota: string) {
+    await fetch(`/api/ricorrenti/${r.id}/completamento`, { method: 'POST' })
     setNoteFor(null)
     startTransition(() => router.refresh())
   }

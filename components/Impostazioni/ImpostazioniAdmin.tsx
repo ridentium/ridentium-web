@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { KPI } from '@/types'
 import { Save } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -11,8 +10,7 @@ interface Props {
   currentUserId: string
 }
 
-export default function ImpostazioniAdmin({ kpi, currentUserId }: Props) {
-  const supabase = createClient()
+export default function ImpostazioniAdmin({ kpi }: Props) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [saved, setSaved] = useState(false)
@@ -27,11 +25,11 @@ export default function ImpostazioniAdmin({ kpi, currentUserId }: Props) {
   })
 
   async function saveKpi() {
-    if (kpi) {
-      await supabase.from('kpi').update({ ...form, updated_at: new Date().toISOString() }).eq('id', 1)
-    } else {
-      await supabase.from('kpi').insert({ id: 1, ...form })
-    }
+    await fetch('/api/kpi', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(form),
+    })
     setSaved(true)
     setTimeout(() => setSaved(false), 3000)
     startTransition(() => router.refresh())
