@@ -224,7 +224,21 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   // Creazione rapida inline
   const [quickAdd, setQuickAdd] = useState<{ date: string } | null>(null)
   const [quickTitle, setQuickTitle] = useState('')
+  const [quickPriorita, setQuickPriorita] = useState<'alta' | 'media' | 'bassa'>('media')
+  const [quickAssegnato, setQuickAssegnato] = useState<string>(userId)
   const [quickSaving, setQuickSaving] = useState(false)
+
+  function openQuickAdd(date: string) {
+    setQuickAdd({ date })
+    setQuickTitle('')
+    setQuickPriorita('media')
+    setQuickAssegnato(userId)
+  }
+
+  function closeQuickAdd() {
+    setQuickAdd(null)
+    setQuickTitle('')
+  }
 
   async function handleQuickAdd() {
     if (!quickTitle.trim() || !quickAdd || quickSaving) return
@@ -235,9 +249,9 @@ export default function AgendaView({ isAdmin, userId }: Props) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           titolo: quickTitle.trim(),
-          priorita: 'media',
+          priorita: quickPriorita,
           scadenza: quickAdd.date,
-          assegnato_a: userId,
+          assegnato_a: quickAssegnato,
         }),
       })
       if (r.ok) {
@@ -249,7 +263,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             titolo: newTask.titolo,
             data: newTask.scadenza,
             stato: 'da_fare',
-            priorita: 'media',
+            priorita: quickPriorita,
           } as AgendaEvent])
           showToast(`Task "${newTask.titolo}" aggiunto`)
         }
@@ -259,8 +273,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
     } catch {
       showToast('Errore di rete', 'error')
     }
-    setQuickTitle('')
-    setQuickAdd(null)
+    closeQuickAdd()
     setQuickSaving(false)
   }
 
@@ -659,7 +672,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
 
                 {/* Creazione rapida */}
                 {quickAdd?.date === viewDay ? (
-                  <div className="card border-gold/20 bg-gold/5">
+                  <div className="card border-gold/20 bg-gold/5 space-y-2">
                     <div className="flex items-center gap-2">
                       <input
                         autoFocus
@@ -669,7 +682,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                         onChange={e => setQuickTitle(e.target.value)}
                         onKeyDown={e => {
                           if (e.key === 'Enter') handleQuickAdd()
-                          if (e.key === 'Escape') { setQuickAdd(null); setQuickTitle('') }
+                          if (e.key === 'Escape') closeQuickAdd()
                         }}
                         className="input flex-1 text-sm py-1.5"
                       />
@@ -681,17 +694,41 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                         {quickSaving ? '…' : 'Aggiungi'}
                       </button>
                       <button
-                        onClick={() => { setQuickAdd(null); setQuickTitle('') }}
+                        onClick={closeQuickAdd}
                         className="p-1.5 text-stone hover:text-cream transition-colors"
                       >
                         <X size={14} />
                       </button>
                     </div>
-                    <p className="text-[10px] text-stone/40 mt-2">Premi Invio per salvare · Esc per annullare</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <select
+                        value={quickPriorita}
+                        onChange={e => setQuickPriorita(e.target.value as 'alta' | 'media' | 'bassa')}
+                        className="input text-xs py-1 pr-6"
+                      >
+                        <option value="bassa">🟢 Bassa</option>
+                        <option value="media">🟡 Media</option>
+                        <option value="alta">🔴 Alta</option>
+                      </select>
+                      {isAdmin && profili.length > 0 && (
+                        <select
+                          value={quickAssegnato}
+                          onChange={e => setQuickAssegnato(e.target.value)}
+                          className="input text-xs py-1 pr-6"
+                        >
+                          {profili.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.nome} {p.cognome}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
+                    <p className="text-[10px] text-stone/40">Invio per salvare · Esc per annullare</p>
                   </div>
                 ) : (
                   <button
-                    onClick={() => setQuickAdd({ date: viewDay })}
+                    onClick={() => openQuickAdd(viewDay)}
                     className="flex items-center gap-1.5 text-xs text-stone/40 hover:text-stone transition-colors py-1"
                   >
                     <Plus size={12} /> Aggiungi task rapido
