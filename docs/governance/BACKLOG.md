@@ -66,17 +66,17 @@ Soluzione: `lib/rate-limit.ts` in-memory sliding window (documentato: per-instan
 ---
 
 ### Fase 2E — UX operativa
-**Status: 🔄 IN CORSO**
+**Status: ✅ COMPLETATA**
 **Priorità: P2**
 
 | Item | Descrizione | Status |
 |------|-------------|--------|
 | CRM badge "da X giorni in questo stato" | Mostrare da quanto il contatto è nello stato corrente | ✅ PR #46 |
 | Adempimenti: chi ha completato e quando | Nome + data ultima esecuzione nel pannello dettaglio | ✅ PR #47 |
-| Refresh manuale widget dashboard | Bottone per aggiornare ogni widget senza ricaricare | 🔜 |
-| Feedback creazione staff | Migliorare feedback dopo invito nuovo membro | 🔜 |
-| Pagina offline PWA | HTML statico mostrato dal SW quando offline | 🔜 |
-| Breadcrumb/back link su schermate profonde | Navigazione mobile | 🔜 |
+| Feedback creazione staff | InviteModal con pannello successo + auto-close 1.8s | ✅ PR #49 |
+| Pagina offline PWA | HTML statico brandizzato + SW v7 network-first fallback | ✅ PR #49 |
+| Refresh manuale widget dashboard | DashboardRefreshButton con spinner e router.refresh() | ✅ PR #53 |
+| Breadcrumb/back link su schermate profonde | PageHeader prop breadcrumb, mobile-only sm:hidden | ✅ PR #53 |
 
 ---
 
@@ -94,14 +94,14 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 ## BACKLOG APERTO (priorità P1-P2)
 
 ### Bug
-- [ ] **Magazzino: soglia minima non editabile inline** — Per cambiare la soglia bisogna aprire il modal completo. Aggiungere double-click-to-edit. (P2)
-- [ ] **Adempimenti: warning quando si cambia frequenza** — Se si passa da "mensile" ad "annuale", nessun avviso che la cronologia rimane quella vecchia. (P2)
+- [x] **Magazzino: soglia minima non editabile inline** — SogliaMinimaEditor click-to-edit + PATCH API. (P2) — PR #51
+- [x] **Adempimenti: warning quando si cambia frequenza** — Warning ambra inline sotto select. (P2) — PR #55
 
 ### UX — funzionalità presenti ma migliorabili
-- [ ] **Ordini: traccia chi ha ricevuto** — Manca `received_by` e `received_at`. Richiede colonna DB + API. (P1)
-- [ ] **Staff non può vedere contatti fornitori** — Read-only sui contatti fornitore per il ruolo staff. (P1)
-- [x] **Registro attività: filtri avanzati** — Già implementati: data range, utente, categoria, ricerca testo, export CSV, paginazione. Backlog era sfasato rispetto al codice.
-- [ ] **Form task: più campi nel quick-add** — Aggiungere priorità e assegnato_a nel quick-add agenda. (P2)
+- [x] **Ordini: traccia chi ha ricevuto** — Migration + RPC p_received_by + API + UI. (P1) — PR #54
+- [x] **Staff non può vedere contatti fornitori** — Staff magazzino mostra colonna fornitore read-only. (P1) — PR #50
+- [x] **Registro attività: filtri avanzati** — Già implementati. Backlog era sfasato rispetto al codice.
+- [x] **Form task: più campi nel quick-add** — Quick-add agenda con priorità + assegnato (admin). (P2) — PR #52
 - [ ] **Preferenze notifiche per staff** — Staff non può disattivare notifiche non rilevanti. (P2)
 - [ ] **Preferenze utente persistenti in DB** — Filtri e view mode attualmente in localStorage. (P3)
 
@@ -152,3 +152,10 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #46 | Fase 2E: CRM badge "aggiornato X gg fa" nel kanban |
 | #47 | Fase 2E: Adempimenti pannello dettaglio mostra chi ha completato l'ultima esecuzione |
 | #48 | Fase 2D: nota facoltativa al completamento ricorrente (migration + API + widget) |
+| #49 | Fase 2E: feedback creazione staff (pannello successo) + pagina offline PWA + SW v7 |
+| #50 | Staff: visibilità contatti fornitori in magazzino (colonna read-only con tel/email) |
+| #51 | Magazzino: soglia minima editabile inline (SogliaMinimaEditor) |
+| #52 | Agenda quick-add task: campi priorità e assegnato_a |
+| #53 | Dashboard: bottone refresh manuale + breadcrumb mobile su pagine secondarie |
+| #54 | Ordini: traccia chi ha ricevuto (migration received_by + RPC + API + UI) |
+| #55 | Adempimenti: warning inline quando si modifica la frequenza |
