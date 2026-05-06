@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Bell, BellOff, BellRing, Check, Smartphone, Trash2, AlertTriangle, RefreshCw, CheckSquare, Zap } from 'lucide-react'
 import NotificationBell from '@/components/Layout/NotificationBell'
 import { useRouter } from 'next/navigation'
@@ -51,8 +50,7 @@ interface Props {
 
 export default function NotificheAdmin({ settings, subscriptions }: Props) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
-  const supabase = createClient()
+  const [, startTransition] = useTransition()
   const [saving, setSaving] = useState<string | null>(null)
   const [testResult, setTestResult] = useState<string | null>(null)
 
@@ -65,11 +63,12 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
     setLocalSettings(prev =>
       prev.map(s => s.tipo === setting.tipo ? { ...s, abilitata: newVal } : s)
     )
-    const { error } = await supabase
-      .from('notification_settings')
-      .update({ abilitata: newVal, updated_at: new Date().toISOString() })
-      .eq('tipo', setting.tipo)
-    if (error) {
+    const res = await fetch(`/api/notifiche/impostazioni/${setting.tipo}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ abilitata: newVal }),
+    })
+    if (!res.ok) {
       // Revert
       setLocalSettings(prev =>
         prev.map(s => s.tipo === setting.tipo ? { ...s, abilitata: !newVal } : s)
@@ -88,10 +87,11 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
     setLocalSettings(prev =>
       prev.map(s => s.tipo === setting.tipo ? { ...s, ruoli_destinatari: newRuoli } : s)
     )
-    await supabase
-      .from('notification_settings')
-      .update({ ruoli_destinatari: newRuoli, updated_at: new Date().toISOString() })
-      .eq('tipo', setting.tipo)
+    await fetch(`/api/notifiche/impostazioni/${setting.tipo}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ruoli_destinatari: newRuoli }),
+    })
     setSaving(null)
   }
 
@@ -109,7 +109,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
   }
 
   async function removeSubscription(id: string) {
-    await supabase.from('push_subscriptions').delete().eq('id', id)
+    await fetch(`/api/notifiche/subscriptions/${id}`, { method: 'DELETE' })
     startTransition(() => router.refresh())
   }
 

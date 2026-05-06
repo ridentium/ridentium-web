@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { MagazzinoItem } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { AlertTriangle, CheckCircle, ShoppingCart, Check, Clock, AlertCircle } from 'lucide-react'
@@ -31,9 +30,8 @@ const CATEGORIE = [
 ]
 
 export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props) {
-  const supabase = createClient()
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [categoria, setCategoria] = useState('Tutte')
   const [soloAlert, setSoloAlert] = useState(false)
   const [soloScadenza, setSoloScadenza] = useState(false)
@@ -57,10 +55,10 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props)
   }).length
 
   async function richiediRiordine(itemId: string) {
-    await supabase.from('riordini').insert({
-      magazzino_id: itemId,
-      richiesto_da: userId,
-      note: riordineNote[itemId] || null,
+    await fetch('/api/magazzino/riordini', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ magazzino_id: itemId, note: riordineNote[itemId] || null }),
     })
     setLocalRiordini(prev => [...prev, itemId])
     startTransition(() => router.refresh())
