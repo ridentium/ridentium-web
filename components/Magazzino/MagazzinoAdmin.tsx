@@ -170,6 +170,18 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     }, ...prev].slice(0, 20))
   }
 
+  async function saveSoglia(id: string, nuovaSoglia: number) {
+    if (nuovaSoglia < 0 || !Number.isFinite(nuovaSoglia)) return
+    setItems(prev => prev.map(i => i.id === id ? { ...i, soglia_minima: nuovaSoglia } : i))
+    const res = await fetch(`/api/magazzino/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ soglia_minima: nuovaSoglia }),
+    })
+    if (!res.ok) showToast('Errore aggiornamento soglia', 'error')
+    else showToast(`Soglia minima aggiornata: ${nuovaSoglia}`)
+  }
+
   async function saveQuantita(id: string, nuovaQuantita: number) {
     const item = items.find(i => i.id === id)
     const eraOk = item ? item.quantita >= item.soglia_minima : true
@@ -410,7 +422,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                   </div>
                   <div>
                     <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Min.</p>
-                    <p className="text-xs text-stone">{item.soglia_minima}</p>
+                    <SogliaMinimaEditor value={item.soglia_minima} onChange={val => saveSoglia(item.id, val)} />
                   </div>
                   {item.scadenza && (
                     <div>
@@ -501,7 +513,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                         onChange={val => saveQuantita(item.id, val)}
                       />
                     </td>
-                    <td className="text-stone">{item.soglia_minima}</td>
+                    <td><SogliaMinimaEditor value={item.soglia_minima} onChange={val => saveSoglia(item.id, val)} /></td>
                     <td>
                       {isAlert
                         ? <span className="badge-alert"><AlertTriangle size={10} /> Sotto soglia</span>
@@ -726,6 +738,38 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
       onChange={e => setVal(e.target.value)}
       onBlur={() => { onChange(Number(val)); setEditing(false) }}
       onKeyDown={e => { if (e.key === 'Enter') { onChange(Number(val)); setEditing(false) } }}
+      className="input w-16 py-1 text-center text-sm"
+      autoFocus
+    />
+  )
+}
+
+function SogliaMinimaEditor({ value, onChange }: { value: number; onChange: (v: number) => void }) {
+  const [editing, setEditing] = useState(false)
+  const [val, setVal] = useState(String(value))
+
+  if (!editing) {
+    return (
+      <button
+        onClick={() => { setVal(String(value)); setEditing(true) }}
+        className="text-stone hover:text-gold transition-colors"
+        title="Clicca per modificare la soglia minima"
+      >
+        {value}
+      </button>
+    )
+  }
+  return (
+    <input
+      type="number"
+      min={0}
+      value={val}
+      onChange={e => setVal(e.target.value)}
+      onBlur={() => { const n = Number(val); if (n >= 0 && n !== value) onChange(n); setEditing(false) }}
+      onKeyDown={e => {
+        if (e.key === 'Enter') { const n = Number(val); if (n >= 0 && n !== value) onChange(n); setEditing(false) }
+        if (e.key === 'Escape') setEditing(false)
+      }}
       className="input w-16 py-1 text-center text-sm"
       autoFocus
     />

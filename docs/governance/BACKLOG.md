@@ -100,7 +100,7 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 ### UX — funzionalità presenti ma migliorabili
 - [ ] **Ordini: traccia chi ha ricevuto** — Manca `received_by` e `received_at`. Richiede colonna DB + API. (P1)
 - [ ] **Staff non può vedere contatti fornitori** — Read-only sui contatti fornitore per il ruolo staff. (P1)
-- [ ] **Registro attività: filtri avanzati** — Mancano filtri per data range, utente specifico, export CSV completo. (P2)
+- [x] **Registro attività: filtri avanzati** — Già implementati: data range, utente, categoria, ricerca testo, export CSV, paginazione. Backlog era sfasato rispetto al codice.
 - [ ] **Form task: più campi nel quick-add** — Aggiungere priorità e assegnato_a nel quick-add agenda. (P2)
 - [ ] **Preferenze notifiche per staff** — Staff non può disattivare notifiche non rilevanti. (P2)
 - [ ] **Preferenze utente persistenti in DB** — Filtri e view mode attualmente in localStorage. (P3)
