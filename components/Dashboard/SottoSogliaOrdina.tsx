@@ -18,6 +18,8 @@ export default function SottoSogliaOrdina({
 }: Props) {
   // Traccia localmente gli item appena ordinati (oltre a quelli già da server)
   const [localOrdinati, setLocalOrdinati] = useState<string[]>([])
+  // ID fornitore con contatto malformato (es. telefono con soli caratteri speciali)
+  const [erroreFornitore, setErroreFornitore] = useState<string | null>(null)
 
   const tuttiOrdinati = new Set([...orderedItemIds, ...localOrdinati])
 
@@ -95,8 +97,14 @@ export default function SottoSogliaOrdina({
 
   function handleWhatsApp(fornitore: Fornitore & { fornitore_contatti?: FornitoreContatto[] }, prodotti: MagazzinoItem[]) {
     const { telefono } = resolveContact(fornitore)
-    const msg = buildMessage(fornitore, prodotti)
     const phone = (telefono ?? '').replace(/\D/g, '')
+    // Minimo 6 cifre: protegge da numeri malformati (es. "+", "039") salvati nel DB
+    if (!phone || phone.length < 6) {
+      setErroreFornitore(fornitore.id)
+      setTimeout(() => setErroreFornitore(null), 4000)
+      return
+    }
+    const msg = buildMessage(fornitore, prodotti)
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
     salvaCreaOrdine(fornitore, prodotti, 'whatsapp').catch(() => {})
     markOrdinati(prodotti)
@@ -174,6 +182,11 @@ export default function SottoSogliaOrdina({
               {((canale === 'whatsapp' && !telefono) || (canale === 'email' && !email) ||
                 (canale === 'eshop' && !sitoEshop) || (canale === 'telefono' && !telefono)) && (
                 <span className="text-xs text-stone italic">Contatto mancante</span>
+              )}
+              {erroreFornitore === fornitore.id && (
+                <span className="w-full text-[11px] text-amber-400/90 italic mt-0.5">
+                  Numero non valido — aggiorna il contatto del fornitore
+                </span>
               )}
             </div>
             <div className="space-y-1">

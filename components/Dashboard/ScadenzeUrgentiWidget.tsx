@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import Link from 'next/link'
 import { AlertCircle, Clock, CheckCircle2, Loader2, FileText, ChevronDown, ChevronUp } from 'lucide-react'
 import { CATEGORIA_LABEL, CATEGORIA_COLOR } from '@/types/adempimenti'
@@ -25,12 +25,19 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
   const [completando, setCompletando] = useState<string | null>(null)
   const [completati, setCompletati] = useState<Set<string>>(new Set())
   const [espanso, setEspanso] = useState(true)
+  // Guard sincrono: useRef aggiorna immediatamente, senza aspettare il re-render.
+  // Previene la race condition pre-render in cui il doppio-click lancia due fetch
+  // prima che il disabled={completando === a.id} abbia effetto.
+  const inFlight = useRef(new Set<string>())
 
   const visibili = adempimenti.filter(a => !completati.has(a.id))
 
   async function segnaDiretto(a: AdempimentoUrgente) {
     // Se richiede evidenza → vai alla sezione adempimenti
     if (a.evidenza_richiesta) return
+    // Guard doppio-click sincrono
+    if (inFlight.current.has(a.id)) return
+    inFlight.current.add(a.id)
 
     setCompletando(a.id)
     try {
@@ -43,6 +50,7 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
         setCompletati(prev => new Set([...Array.from(prev), a.id]))
       }
     } finally {
+      inFlight.current.delete(a.id)
       setCompletando(null)
     }
   }

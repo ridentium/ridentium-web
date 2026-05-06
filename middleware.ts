@@ -28,7 +28,12 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   const { pathname } = request.nextUrl
 
-  // API pubbliche (form landing, webhook) — nessuna auth richiesta
+  // Queste route gestiscono la propria autenticazione internamente e non usano
+  // i cookie Supabase — escluderle qui evita overhead inutile e loop di redirect.
+  //
+  // /api/crm/contatti — endpoint pubblico per form landing (verifica x-api-key header)
+  // /api/notify       — endpoint interni per push notification (verificano x-notify-secret
+  //                     header oppure sessione admin; vedi ogni route.ts per dettagli)
   if (pathname.startsWith('/api/crm/contatti') || pathname.startsWith('/api/notify')) {
     return supabaseResponse
   }
