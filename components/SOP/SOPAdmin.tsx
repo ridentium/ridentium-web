@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { formatDate } from '@/lib/utils'
 import { Plus, X, ChevronDown, ChevronRight, BookOpen, Pencil, Square, CheckSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -98,7 +97,6 @@ function SOPContenuto({ contenuto }: { contenuto: string }) {
 }
 
 export default function SOPAdmin({ sops }: { sops: any[] }) {
-  const supabase = createClient()
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
@@ -114,7 +112,7 @@ export default function SOPAdmin({ sops }: { sops: any[] }) {
 
   async function deleteSop(id: string) {
     if (!confirm('Eliminare questa SOP?')) return
-    await supabase.from('sop').delete().eq('id', id)
+    await fetch(`/api/sop/${id}`, { method: 'DELETE' })
     startTransition(() => router.refresh())
   }
 
@@ -197,7 +195,6 @@ export default function SOPAdmin({ sops }: { sops: any[] }) {
 }
 
 function SOPModal({ sop, onClose, onSave }: { sop: any | null; onClose: () => void; onSave: () => void }) {
-  const supabase = createClient()
   const [form, setForm] = useState({
     titolo: sop?.titolo ?? '',
     categoria: sop?.categoria ?? 'Clinico',
@@ -219,11 +216,18 @@ function SOPModal({ sop, onClose, onSave }: { sop: any | null; onClose: () => vo
     if (saving) return
     setSaving(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
       if (sop) {
-        await supabase.from('sop').update({ ...form, updated_at: new Date().toISOString() }).eq('id', sop.id)
+        await fetch(`/api/sop/${sop.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
       } else {
-        await supabase.from('sop').insert({ ...form, autore: user?.id })
+        await fetch('/api/sop', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form),
+        })
       }
       onSave()
     } finally {
