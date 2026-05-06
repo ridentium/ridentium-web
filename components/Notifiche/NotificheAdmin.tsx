@@ -96,6 +96,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
   }
 
   async function sendTestNotification() {
+    if (saving === 'test') return
     setSaving('test')
     setTestResult(null)
     try {

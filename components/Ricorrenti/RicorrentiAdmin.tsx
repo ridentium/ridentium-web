@@ -27,7 +27,7 @@ interface Props {
 
 export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, currentUserNome }: Props) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
   const [newTitolo, setNewTitolo] = useState('')
   const [newDesc, setNewDesc] = useState('')
