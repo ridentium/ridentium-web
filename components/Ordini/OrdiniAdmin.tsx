@@ -81,6 +81,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
   const [magazzinoLoaded, setMagazzinoLoaded] = useState(false)
   const [csvError, setCsvError] = useState<string | null>(null)
   const csvInputRef = useRef<HTMLInputElement>(null)
+  const [hasMore, setHasMore] = useState(initialOrdini.length >= 100)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const aperti    = ordini.filter(o => ['inviato', 'confermato_fornitore', 'in_consegna', 'parziale'].includes(o.stato))
   const ricevuti  = ordini.filter(o => o.stato === 'ricevuto')
@@ -306,6 +308,20 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
       setNuovoRighe(parsed)
     }
     reader.readAsText(file, 'utf-8')
+  }
+
+  async function caricaAltri() {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    const oldest = ordini.at(-1)?.created_at
+    const url = `/api/ordini?limit=50${oldest ? `&before=${encodeURIComponent(oldest)}` : ''}`
+    const res = await fetch(url)
+    if (res.ok) {
+      const json = await res.json()
+      setOrdini(prev => [...prev, ...json.ordini])
+      setHasMore(json.hasMore)
+    }
+    setLoadingMore(false)
   }
 
   function scaricaTemplate() {
@@ -602,6 +618,19 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Carica ordini precedenti */}
+      {hasMore && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={caricaAltri}
+            disabled={loadingMore}
+            className="text-xs px-5 py-2 rounded border border-obsidian-light/40 text-stone hover:text-cream hover:border-stone/40 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? 'Caricamento…' : 'Carica ordini precedenti'}
+          </button>
         </div>
       )}
 
