@@ -386,6 +386,12 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                   <p className="text-xs text-stone mt-0.5">
                     {item.azienda ?? ''}{item.azienda && item.categoria ? ' · ' : ''}{item.categoria}
                   </p>
+                  {item.fornitore_id && (() => {
+                    const f = fornitori.find(f => f.id === item.fornitore_id)
+                    return f ? (
+                      <p className="text-xs text-stone/50 mt-0.5">Fornitore: {f.nome}</p>
+                    ) : null
+                  })()}
                   {(item.diametro || item.lunghezza) && (
                     <p className="text-xs text-stone/60 mt-0.5">
                       {item.diametro ? `ø${item.diametro}` : ''}{item.diametro && item.lunghezza ? ' ' : ''}{item.lunghezza ? `${item.lunghezza}mm` : ''}
@@ -428,7 +434,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       {/* ── Tabella su desktop ── */}
       <div className="hidden md:block card p-0 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="table-ridentium" style={{ minWidth: '860px' }}>
+          <table className="table-ridentium" style={{ minWidth: '960px' }}>
             <thead>
               <tr>
                 <th>
@@ -446,6 +452,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                     Azienda <SortIcon field="azienda" />
                   </button>
                 </th>
+                <th>Fornitore</th>
                 <th>
                   <button onClick={() => toggleSort('diametro')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
                     Ø <SortIcon field="diametro" />
@@ -474,7 +481,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="text-center text-stone py-8">
+                  <td colSpan={11} className="text-center text-stone py-8">
                     {cerca ? `Nessun prodotto trovato per "${cerca}"` : 'Nessun prodotto trovato'}
                   </td>
                 </tr>
@@ -485,6 +492,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                     <td className="font-medium text-cream">{item.prodotto}</td>
                     <td>{item.categoria}</td>
                     <td>{item.azienda ?? '—'}</td>
+                    <td>{fornitori.find(f => f.id === item.fornitore_id)?.nome ?? '—'}</td>
                     <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
                     <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
                     <td>
