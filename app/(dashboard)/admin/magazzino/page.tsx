@@ -16,7 +16,8 @@ export default async function MagazzinoPage() {
       .order('categoria')
       .order('diametro', { ascending: true, nullsFirst: false })
       .order('lunghezza', { ascending: true, nullsFirst: false })
-      .order('prodotto'),
+      .order('prodotto')
+      .limit(500),
     supabase
       .from('riordini')
       .select('*, profili(nome, cognome)')
