@@ -6,6 +6,17 @@
 
 ---
 
+## ⚠️ MIGRATION DA APPLICARE IN SUPABASE (prima del prossimo deploy)
+
+| File | Contenuto | Urgenza |
+|------|-----------|---------|
+| `20260506_nota_ricorrenti.sql` | Aggiunge p_nota alla RPC toggle_completamento | Alta |
+| `20260506_ordine_received_by.sql` | Aggiunge colonna received_by su ordini | Alta |
+| `20260507_attrezzature.sql` | Tabelle attrezzature + manutenzioni | Media |
+| `20260507_user_prefs.sql` | Tabella user_prefs JSONB | Media |
+
+---
+
 ## FASI DI SVILUPPO CORRENTI
 
 ### Fase 2A — Governance e documentazione
@@ -109,7 +120,7 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 - [x] **Pagination / infinite scroll** — Limit server-side su tasks/magazzino + cursor load-more su ordini. (P3) — PR #60
 - [x] **Gestione attrezzature** — Tabelle DB + API + UI completa con storico manutenzioni. (P2) — PR #57
 - [x] **Import CSV ordini** — Parse CSV client-side nel modal nuovo ordine + template scaricabile. (P2) — PR #58
-- [ ] **Lina AI con contesto reale** — Chat AI non conosce i dati dello studio. (P3)
+- [x] **Lina AI con contesto reale** — Snapshot bacheca nel system prompt + tool get_adempimenti/get_attrezzature. (P3) — PR #61
 
 ### Evoluzioni future (P4)
 - [ ] **Calendario clinico / appuntamenti** — Agenda pazienti, timeslot, dentista, reminder
@@ -164,3 +175,4 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #58 | Import CSV prodotti nel modal nuovo ordine (client-side, template scaricabile) |
 | #59 | Preferenze utente in DB: hook useUserPref, migration user_prefs, 3 chiavi migrate |
 | #60 | Pagination: limit server-side tasks/magazzino, cursor load-more ordini, GET /api/ordini |
+| #61 | Lina AI: snapshot bacheca nel system prompt + tool get_adempimenti + get_attrezzature |
