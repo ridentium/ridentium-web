@@ -26,7 +26,7 @@ interface Props {
 
 export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUserNome }: Props) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [toggling, setToggling] = useState<string | null>(null)
 
   const mie = ricorrenti.filter(az => az.attiva && (!az.assegnato_a || az.assegnato_a === currentUserId))

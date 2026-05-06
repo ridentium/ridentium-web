@@ -35,7 +35,7 @@ function getLS<T>(key: string, fallback: T): T {
 
 export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks: any[]; staff: UserProfile[]; currentUserId?: string }) {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const [, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
 
   // Filtri — legge ?filter=aperti dall'URL al primo render
