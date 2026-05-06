@@ -8,6 +8,7 @@ import {
   LayoutList, Columns3, Download, Trash2, CheckCheck, Search,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
+import { useUserPref } from '@/lib/useUserPref'
 
 const STATI = ['da_fare', 'in_corso', 'completato'] as const
 const PRIORITA = ['bassa', 'media', 'alta'] as const
@@ -28,34 +29,30 @@ const prioritaColor: Record<string, string> = {
   bassa: 'text-stone', media: 'text-gold/70', alta: 'text-red-400',
 }
 
-function getLS<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback
-  try { const v = localStorage.getItem(key); return v !== null ? (JSON.parse(v) as T) : fallback } catch { return fallback }
-}
-
 export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks: Task[]; staff: UserProfile[]; currentUserId?: string }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
 
-  // Filtri — legge ?filter=aperti dall'URL al primo render
-  // 'aperti' è un valore speciale: mostra da_fare + in_corso (non completati)
+  // Filtri — legge ?filter=aperti dall'URL al primo render (override rispetto a DB)
+  const [filterStatoDb, setFilterStatoDb] = useUserPref<string>('tasks_filter', 'tutti')
   const [filterStato, setFilterStato] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const f = new URL(window.location.href).searchParams.get('filter')
       if (f === 'aperti') return 'aperti'
     }
-    return getLS('tasks_filter', 'tutti')
+    return filterStatoDb
   })
-  useEffect(() => { localStorage.setItem('tasks_filter', filterStato) }, [filterStato])
+  // Sincronizza il cambio filtro verso DB
+  function handleFilterStato(v: string) { setFilterStato(v); setFilterStatoDb(v) }
+
   const [filterPriorita, setFilterPriorita] = useState<string>('tutte')
   const [filterScadenza, setFilterScadenza] = useState<string>('tutte')
   const [filterAssegnato, setFilterAssegnato] = useState<string>('')
   const [cerca, setCerca] = useState('')
 
-  // Vista persistente
-  const [viewMode, setViewMode] = useState<'lista' | 'kanban'>(() => getLS('tasks_view', 'lista'))
-  useEffect(() => { localStorage.setItem('tasks_view', viewMode) }, [viewMode])
+  // Vista persistente (cross-device via DB)
+  const [viewMode, setViewMode] = useUserPref<'lista' | 'kanban'>('tasks_view', 'lista')
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set())
@@ -126,7 +123,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
 
   const hasFilters = filterStato !== 'tutti' || filterPriorita !== 'tutte' || filterScadenza !== 'tutte' || filterAssegnato || cerca.trim()
   function resetFilters() {
-    setFilterStato('tutti'); setFilterPriorita('tutte'); setFilterScadenza('tutte'); setFilterAssegnato(''); setCerca('')
+    handleFilterStato('tutti'); setFilterPriorita('tutte'); setFilterScadenza('tutte'); setFilterAssegnato(''); setCerca('')
   }
 
   async function updateStato(id: string, stato: string) {
@@ -171,7 +168,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
         {/* Filtri stato */}
         {['tutti', ...STATI].map(s => (
           <button key={s}
-            onClick={() => setFilterStato(s)}
+            onClick={() => handleFilterStato(s)}
             className={`text-xs px-3 py-1.5 rounded border transition-colors ${
               filterStato === s
                 ? 'bg-gold text-obsidian border-gold'
@@ -182,7 +179,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
         ))}
         {currentUserId && (
           <button
-            onClick={() => setFilterStato('miei')}
+            onClick={() => handleFilterStato('miei')}
             className={`text-xs px-3 py-1.5 rounded border transition-colors ${
               filterStato === 'miei'
                 ? 'bg-gold text-obsidian border-gold'
@@ -336,7 +333,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
                                 : `Nessun task con stato "${statoLabel[filterStato]}"`}
                         </p>
                         {filterStato !== 'tutti' ? (
-                          <button onClick={() => setFilterStato('tutti')} className="mt-2 text-xs text-gold/60 hover:text-gold transition-colors">
+                          <button onClick={() => handleFilterStato('tutti')} className="mt-2 text-xs text-gold/60 hover:text-gold transition-colors">
                             Mostra tutti →
                           </button>
                         ) : (
