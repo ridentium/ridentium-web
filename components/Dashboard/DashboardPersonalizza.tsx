@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Settings2, X, Eye, EyeOff } from 'lucide-react'
+import { useUserPref } from '@/lib/useUserPref'
 
 const WIDGETS = [
   { id: 'lina',       label: 'Briefing Lina AI' },
@@ -31,6 +32,9 @@ export default function DashboardPersonalizza() {
   const [open, setOpen] = useState(false)
   const [hidden, setHidden] = useState<Set<WidgetId>>(new Set())
 
+  // DB sync: carica preferenze da DB (sovrascrive localStorage se diverso)
+  const [, setHiddenDb] = useUserPref<WidgetId[]>('dashboard_hidden_widgets', [])
+
   useEffect(() => {
     const h = getHidden()
     setHidden(h)
@@ -50,6 +54,7 @@ export default function DashboardPersonalizza() {
       if (next.has(id)) { next.delete(id) } else { next.add(id) }
       saveHidden(next)
       applyHidden(next)
+      setHiddenDb(Array.from(next) as WidgetId[]) // persiste in DB
       return next
     })
   }
@@ -59,6 +64,7 @@ export default function DashboardPersonalizza() {
     setHidden(empty)
     saveHidden(empty)
     applyHidden(empty)
+    setHiddenDb([]) // persiste in DB
   }
 
   return (
