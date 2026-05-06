@@ -24,6 +24,7 @@ export default async function StaffProfiloPage() {
       <PageHeader
         title="Il mio Profilo"
         subtitle="Gestisci i tuoi dati personali e le impostazioni account"
+        breadcrumb={{ label: 'Dashboard', href: '/staff' }}
       />
       <ProfiloPagina profilo={profilo as UserProfile} />
     </div>
