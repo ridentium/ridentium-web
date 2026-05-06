@@ -87,12 +87,23 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
     setNoteFor({ type: 'task', id: task.id })
   }
 
-  async function saveTask(task: CompletableTask, _nota: string) {
+  async function saveTask(task: CompletableTask, nota: string) {
     await fetch(`/api/tasks/${task.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stato: 'completato' }),
     })
+    // Salva la nota come commento al task se presente.
+    // Il task è già completato: se il commento fallisce non si blocca nulla.
+    if (nota.trim()) {
+      try {
+        await fetch(`/api/tasks/${task.id}/commenti`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ testo: nota.trim() }),
+        })
+      } catch { /* commento opzionale */ }
+    }
     setNoteFor(null)
     startTransition(() => router.refresh())
   }
@@ -100,10 +111,12 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
   async function onCheckRicorrente(r: CompletableRicorrente) {
     if (completedRicorrentiIds.has(r.id)) return
     setCompletedRicorrentiIds(prev => new Set([...Array.from(prev), r.id]))
-    setNoteFor({ type: 'ricorrente', id: r.id })
+    // La RPC toggle_completamento_ricorrente non accetta p_nota (richiederebbe
+    // migrazione DB — rimandato a Fase 2). Il ricorrente si completa direttamente.
+    await saveRicorrente(r)
   }
 
-  async function saveRicorrente(r: CompletableRicorrente, _nota: string) {
+  async function saveRicorrente(r: CompletableRicorrente) {
     await fetch(`/api/ricorrenti/${r.id}/completamento`, { method: 'POST' })
     setNoteFor(null)
     startTransition(() => router.refresh())
@@ -168,12 +181,6 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
               </p>
             </div>
           </div>
-          {noteFor?.type === 'ricorrente' && noteFor.id === r.id && (
-            <NotePopup
-              onSave={nota => saveRicorrente(r, nota)}
-              onSkip={() => saveRicorrente(r, '')}
-            />
-          )}
         </div>
       ))}
     </div>
