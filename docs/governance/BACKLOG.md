@@ -107,8 +107,8 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 
 ### Funzionalità mancanti (da costruire)
 - [ ] **Pagination / infinite scroll** — Task, magazzino, ordini, ricorrenti caricano tutto. (P3)
-- [ ] **Gestione attrezzature** — Nessuna traccia di strumenti e manutenzioni. (P2)
-- [ ] **Import CSV ordini** — Inserimento multiplo prodotti. (P2)
+- [x] **Gestione attrezzature** — Tabelle DB + API + UI completa con storico manutenzioni. (P2) — PR #57
+- [x] **Import CSV ordini** — Parse CSV client-side nel modal nuovo ordine + template scaricabile. (P2) — PR #58
 - [ ] **Lina AI con contesto reale** — Chat AI non conosce i dati dello studio. (P3)
 
 ### Evoluzioni future (P4)
@@ -160,3 +160,5 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #54 | Ordini: traccia chi ha ricevuto (migration received_by + RPC + API + UI) |
 | #55 | Adempimenti: warning inline quando si modifica la frequenza |
 | #56 | Preferenze notifiche staff: fix NOTIF_TYPES ruoli + filtro per-utente su /api/notify broadcast |
+| #57 | Gestione attrezzature: migration + API + AttrezzatureAdmin con storico manutenzioni |
+| #58 | Import CSV prodotti nel modal nuovo ordine (client-side, template scaricabile) |
