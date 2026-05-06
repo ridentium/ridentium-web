@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import {
   Sparkles, Users, Package, CheckSquare, RefreshCw,
   Bell, Rocket, BookOpen, ChevronRight, ChevronLeft, X
@@ -105,7 +104,6 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
   const [step, setStep] = useState(0)
   const [completing, setCompleting] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   const current = steps[step]
   const Icon = current.icon
@@ -115,7 +113,7 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
   async function complete() {
     if (completing) return
     setCompleting(true)
-    await supabase.from('profili').update({ onboarding_completato: true }).eq('id', userId)
+    await fetch('/api/profilo/onboarding', { method: 'POST' })
     router.refresh()
   }
 
