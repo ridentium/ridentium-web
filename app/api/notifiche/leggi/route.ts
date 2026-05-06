@@ -11,11 +11,13 @@ export async function POST(req: NextRequest) {
   const adminDb = createAdminClient()
 
   if (all) {
-    await adminDb.from('notifiche').update({ letta: true })
+    const { error } = await adminDb.from('notifiche').update({ letta: true })
       .eq('user_id', user.id).eq('letta', false)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   } else if (id) {
-    await adminDb.from('notifiche').update({ letta: true })
+    const { error } = await adminDb.from('notifiche').update({ letta: true })
       .eq('id', id).eq('user_id', user.id)
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
   return NextResponse.json({ ok: true })
 }

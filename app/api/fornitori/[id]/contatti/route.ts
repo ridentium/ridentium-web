@@ -39,11 +39,12 @@ export async function POST(
 
   // Se marcato come predefinito, de-seleziona gli altri dello stesso fornitore
   if (payload.is_predefinito) {
-    await adminDb
+    const { error: deselErr } = await adminDb
       .from('fornitore_contatti')
       .update({ is_predefinito: false })
       .eq('fornitore_id', params.id)
       .neq('id', data.id)
+    if (deselErr) console.error('[fornitori/contatti POST] de-select error:', deselErr.message)
   }
 
   await logActivityServer(user.id, userNome, 'Contatto fornitore aggiunto', data.nome, 'fornitori')
