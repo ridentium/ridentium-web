@@ -1,8 +1,8 @@
 // RIDENTIUM Service Worker — PWA + Push Notifications + Offline
-// v6: robust pushsubscriptionchange auto-resubscribe, saves to DB
+// v7: offline.html fallback su navigazione senza rete
 
-const CACHE_STATIC = 'ridentium-static-v6'
-const CACHE_IMAGES = 'ridentium-images-v6'
+const CACHE_STATIC = 'ridentium-static-v7'
+const CACHE_IMAGES = 'ridentium-images-v7'
 const ALL_CACHES   = [CACHE_STATIC, CACHE_IMAGES]
 
 // ── Install ─ pre-cache key assets ────────────────────────────────────────────
@@ -13,6 +13,7 @@ self.addEventListener('install', (event) => {
         '/manifest.json',
         '/icons/icon-192.png',
         '/icons/icon-512.png',
+        '/offline.html',
       ])
     )
   )
@@ -58,8 +59,17 @@ function isApiOrAuth(url) {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url)
 
-  // v4 fix: bypass navigation — prevents iOS Safari SSL/privacy warning
-  if (isNavigation(event.request)) return
+  // Navigazione: network-first con fallback offline.html se la rete manca.
+  // Non si mette in cache la risposta (evita iOS Safari SSL/privacy warning
+  // che era il motivo del bypass originale in v4).
+  if (isNavigation(event.request)) {
+    event.respondWith(
+      fetch(event.request).catch(() =>
+        caches.match('/offline.html').then(r => r || new Response('Offline', { status: 503 }))
+      )
+    )
+    return
+  }
 
   // Never cache API / auth / supabase
   if (isApiOrAuth(url)) return
