@@ -12,7 +12,7 @@ export default async function SOPPage() {
 
   return (
     <div>
-      <PageHeader title="SOP & Protocolli" subtitle="Standard Operating Procedures" />
+      <PageHeader title="SOP & Protocolli" subtitle="Standard Operating Procedures" breadcrumb={{ label: 'Dashboard', href: '/admin' }} />
       <SOPAdmin sops={sops ?? []} />
     </div>
   )
