@@ -26,19 +26,33 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { data: consulenti } = await adminDb
-    .from('consulenti')
-    .select('id, ruolo, nome, email, telefono, attivo')
-    .eq('attivo', true)
-    .order('ruolo')
+  // Fetch parallelo: consulenti, profili, ultima esecuzione per adempimento
+  const [
+    { data: consulenti },
+    { data: profili },
+    { data: esecuzioni },
+  ] = await Promise.all([
+    adminDb.from('consulenti').select('id, ruolo, nome, email, telefono, attivo').eq('attivo', true).order('ruolo'),
+    adminDb.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true).order('nome'),
+    adminDb.from('adempimenti_esecuzioni')
+      .select('adempimento_id, eseguito_da_nome, data_esecuzione')
+      .order('data_esecuzione', { ascending: false }),
+  ])
 
-  const { data: profili } = await adminDb
-    .from('profili')
-    .select('id, nome, cognome, ruolo')
-    .eq('attivo', true)
-    .order('nome')
+  // Per ogni adempimento: prendi solo la prima riga (più recente) dell'esecuzione
+  const ultimaEsecuzioneMap: Record<string, string | null> = {}
+  for (const e of esecuzioni ?? []) {
+    if (e.adempimento_id && !(e.adempimento_id in ultimaEsecuzioneMap)) {
+      ultimaEsecuzioneMap[e.adempimento_id] = e.eseguito_da_nome ?? null
+    }
+  }
 
-  return NextResponse.json({ adempimenti: adempimenti ?? [], consulenti: consulenti ?? [], profili: profili ?? [] })
+  const adempimentiArricchiti = (adempimenti ?? []).map(a => ({
+    ...a,
+    ultima_esecuzione_da: ultimaEsecuzioneMap[a.id] ?? null,
+  }))
+
+  return NextResponse.json({ adempimenti: adempimentiArricchiti, consulenti: consulenti ?? [], profili: profili ?? [] })
 }
 
 // POST /api/adempimenti — crea nuovo adempimento (solo admin/manager)
