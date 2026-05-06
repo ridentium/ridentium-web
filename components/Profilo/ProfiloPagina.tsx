@@ -14,25 +14,25 @@ interface Props {
   profilo: UserProfile
 }
 
-// Notification types per role
+// Notification types per role — uses actual UserRole values from types/index.ts
 const NOTIF_TYPES = [
   {
     tipo: 'task_assegnata',
     label: 'Task assegnata',
     desc: 'Quando ti viene assegnato un nuovo task',
-    roles: ['admin', 'staff', 'medico', 'assistente', 'receptionist'],
+    roles: ['admin', 'aso', 'segretaria', 'manager', 'clinico'],
   },
   {
     tipo: 'stock_minimo',
     label: 'Scorte sotto soglia',
     desc: 'Quando un prodotto scende sotto la soglia minima',
-    roles: ['admin'],
+    roles: ['admin', 'manager'],
   },
   {
     tipo: 'ricorrente_scaduta',
     label: 'Azione ricorrente',
     desc: 'Quando una ricorrenza è in scadenza o in ritardo',
-    roles: ['admin', 'staff', 'medico', 'assistente', 'receptionist'],
+    roles: ['admin', 'aso', 'segretaria', 'manager'],
   },
 ]
 

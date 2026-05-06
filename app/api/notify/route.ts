@@ -72,6 +72,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, sent: 0 })
     }
 
+    // Filter out users who have explicitly disabled this notification type.
+    // Default (no row) = enabled. Only rows with abilitata=false are excluded.
+    const { data: disabledRows } = await adminDb
+      .from('user_notification_prefs')
+      .select('user_id')
+      .eq('tipo', payload.tipo)
+      .eq('abilitata', false)
+
+    const disabledSet = new Set<string>((disabledRows ?? []).map((r: any) => r.user_id as string))
+    const filteredSubs = subscriptions.filter((sub: any) => !disabledSet.has(sub.user_id))
+
+    if (filteredSubs.length === 0) {
+      return NextResponse.json({ ok: true, sent: 0, reason: 'all_user_disabled' })
+    }
+
     const notifPayload = JSON.stringify({
       title: payload.title,
       body: payload.body,
@@ -84,7 +99,7 @@ export async function POST(req: NextRequest) {
     let failed = 0
     const toDelete: string[] = []
 
-    for (const sub of subscriptions) {
+    for (const sub of filteredSubs) {
       try {
         await webpush.sendNotification(
           {

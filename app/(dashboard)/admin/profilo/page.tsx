@@ -24,6 +24,7 @@ export default async function AdminProfiloPage() {
       <PageHeader
         title="Il mio Profilo"
         subtitle="Gestisci i tuoi dati personali e le impostazioni account"
+        breadcrumb={{ label: 'Dashboard', href: '/admin' }}
       />
       <ProfiloPagina profilo={profilo as UserProfile} />
     </div>
