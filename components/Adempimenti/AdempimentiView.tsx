@@ -553,6 +553,9 @@ export default function AdempimentiView({ canEdit }: Props) {
                             <div className="text-[11px] text-stone/50 italic">
                               Ultima esecuzione:{' '}
                               {new Date(a.ultima_esecuzione).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' })}
+                              {a.ultima_esecuzione_da && (
+                                <span className="ml-1 text-stone/40">— da {a.ultima_esecuzione_da}</span>
+                              )}
                             </div>
                           )}
                           {(a.evidenza_descrizione || a.evidenza_url) && (
