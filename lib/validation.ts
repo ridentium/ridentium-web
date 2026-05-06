@@ -122,6 +122,113 @@ export const updateSopSchema = z.object({
   ruoli_visibili:  z.array(z.string()).optional(),
 })
 
+// ── Fornitori ────────────────────────────────────────────────────────────────
+
+export const createFornitoreSchema = z.object({
+  nome: nonEmptyString(255),
+  note: z.string().trim().max(500).optional().nullable(),
+})
+
+export const updateFornitoreSchema = z.object({
+  nome: z.string().trim().min(1).max(255).optional(),
+  note: z.string().trim().max(500).optional().nullable(),
+})
+
+const CANALI_ORDINE = ['whatsapp', 'email', 'eshop', 'telefono'] as const
+
+export const createContattoSchema = z.object({
+  nome:                nonEmptyString(255),
+  ruolo:               z.string().trim().max(100).optional().nullable(),
+  telefono:            z.string().trim().max(50).optional().nullable(),
+  whatsapp:            z.string().trim().max(50).optional().nullable(),
+  email:               z.string().trim().max(255).optional().nullable(),
+  metodo_predefinito:  z.enum(CANALI_ORDINE).default('whatsapp'),
+  is_predefinito:      z.boolean().default(false),
+})
+
+export const updateContattoSchema = z.object({
+  nome:                z.string().trim().min(1).max(255).optional(),
+  ruolo:               z.string().trim().max(100).optional().nullable(),
+  telefono:            z.string().trim().max(50).optional().nullable(),
+  whatsapp:            z.string().trim().max(50).optional().nullable(),
+  email:               z.string().trim().max(255).optional().nullable(),
+  metodo_predefinito:  z.enum(CANALI_ORDINE).optional(),
+  is_predefinito:      z.boolean().optional(),
+})
+
+// ── Magazzino ────────────────────────────────────────────────────────────────
+
+export const createMagazzinoItemSchema = z.object({
+  prodotto:        nonEmptyString(255),
+  categoria:       z.string().trim().min(1).max(100),
+  azienda:         z.string().trim().max(100).optional().nullable(),
+  codice_articolo: z.string().trim().max(100).optional().nullable(),
+  quantita:        z.number().int().min(0).default(0),
+  soglia_minima:   z.number().int().min(0).default(0),
+  unita:           z.string().trim().max(20).default('pz'),
+  diametro:        z.number().optional().nullable(),
+  lunghezza:       z.number().optional().nullable(),
+  prezzo_unitario: z.number().optional().nullable(),
+  scadenza:        z.string().optional().nullable(),
+  note:            z.string().trim().max(500).optional().nullable(),
+  fornitore_id:    uuid.optional().nullable(),
+})
+
+export const updateMagazzinoItemSchema = z.object({
+  prodotto:        z.string().trim().min(1).max(255).optional(),
+  categoria:       z.string().trim().min(1).max(100).optional(),
+  azienda:         z.string().trim().max(100).optional().nullable(),
+  codice_articolo: z.string().trim().max(100).optional().nullable(),
+  quantita:        z.number().int().min(0).optional(),
+  soglia_minima:   z.number().int().min(0).optional(),
+  unita:           z.string().trim().max(20).optional(),
+  diametro:        z.number().optional().nullable(),
+  lunghezza:       z.number().optional().nullable(),
+  prezzo_unitario: z.number().optional().nullable(),
+  scadenza:        z.string().optional().nullable(),
+  note:            z.string().trim().max(500).optional().nullable(),
+  fornitore_id:    uuid.optional().nullable(),
+})
+
+export const createRiordineSchema = z.object({
+  magazzino_id: uuid,
+  note:         z.string().trim().max(500).optional().nullable(),
+})
+
+export const evadisciRiordineSchema = z.object({
+  riordine_id:  uuid,
+  magazzino_id: uuid,
+  qty_ricevuta: z.number().int().positive(),
+})
+
+// ── Profilo ──────────────────────────────────────────────────────────────────
+
+export const updateProfiloSchema = z.object({
+  nome:     nonEmptyString(100),
+  cognome:  nonEmptyString(100),
+  telefono: z.string().trim().max(50).optional().nullable(),
+})
+
+export const upsertNotifPrefSchema = z.object({
+  tipo:      nonEmptyString(100),
+  abilitata: z.boolean(),
+})
+
+// ── Impostazioni notifiche (admin) ────────────────────────────────────────────
+
+export const updateNotifSettingSchema = z.object({
+  abilitata:          z.boolean().optional(),
+  ruoli_destinatari:  z.array(z.string()).optional(),
+})
+
+// ── Permessi sezioni ──────────────────────────────────────────────────────────
+
+export const upsertPermessoSchema = z.object({
+  sezione:  z.enum(['magazzino', 'tasks', 'ricorrenti', 'sop']),
+  ruolo:    z.enum(['aso', 'segretaria', 'manager', 'clinico']),
+  visibile: z.boolean(),
+})
+
 // ── Adempimenti update ────────────────────────────────────────────────────────
 
 export const updateAdempimentoSchema = z.object({
