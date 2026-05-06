@@ -16,6 +16,7 @@ export default async function RegistroAdminPage() {
       <PageHeader
         title="Registro Attività"
         subtitle="Log completo di tutte le operazioni del team"
+        breadcrumb={{ label: 'Dashboard', href: '/admin' }}
       />
       <RegistroAdmin entries={entries ?? []} />
     </div>
