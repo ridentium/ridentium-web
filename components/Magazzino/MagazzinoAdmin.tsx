@@ -41,8 +41,6 @@ interface Props {
   items: MagazzinoItem[]
   riordini: any[]
   fornitori?: Fornitore[]
-  userId?: string
-  userNome?: string
   /** IDs magazzino già presenti in ordini aperti (server-side) */
   orderedItemIds?: string[]
 }
@@ -62,7 +60,7 @@ interface EvadisciModalState {
   quantitaAttuale: number
 }
 
-export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], userId = '', userNome = '', orderedItemIds = [] }: Props) {
+export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori = [], orderedItemIds = [] }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
   const [evadisciModal, setEvadisciModal] = useState<EvadisciModalState | null>(null)
@@ -300,8 +298,6 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
               <SottoSogliaOrdina
                 alertItems={alertItems}
                 fornitori={fornitori}
-                userId={userId}
-                userNome={userNome}
                 orderedItemIds={orderedItemIds}
               />
             </div>

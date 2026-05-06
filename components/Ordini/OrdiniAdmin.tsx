@@ -2,9 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Ordine, MagazzinoItem, Fornitore } from '@/types'
-import { logActivity } from '@/lib/registro'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
   Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone,
@@ -13,8 +11,6 @@ import {
 
 interface Props {
   ordini: Ordine[]
-  userId: string
-  userNome: string
   fornitori?: Fornitore[]
 }
 
@@ -50,8 +46,7 @@ interface NuovaRiga {
   unita: string
 }
 
-export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, fornitori = [] }: Props) {
-  const supabase = createClient()
+export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: Props) {
   const router = useRouter()
   const [ordini, setOrdini] = useState(initialOrdini)
   const [filtro, setFiltro] = useState<Filtro>('tutti')
@@ -158,16 +153,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
         : o
     ))
 
-    const prodottiRicevuti = righe
-      .filter(r => (quantitaRicevute[r.id] ?? 0) > 0)
-      .map(r => `${r.prodotto_nome}: +${quantitaRicevute[r.id]} ${r.unita ?? 'pz'}`)
-      .join(', ')
-    await logActivity(
-      userId, userNome,
-      `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}: ${ricezioneModal.ordine.fornitore_nome}`,
-      prodottiRicevuti || undefined,
-      'magazzino'
-    )
     setLoading(null)
     setRicezioneModal(null)
     router.refresh()
@@ -207,13 +192,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     const { updates } = await res.json()
     setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, ...updates } as Ordine : o))
 
-    const azioneLabel = isRipristino
-      ? `Ricezione annullata (ordine ripristinato): ${ordine?.fornitore_nome ?? ''}`
-      : ordine?.stato === 'ricevuto'
-        ? `Ricezione annullata: ${ordine.fornitore_nome}`
-        : `Ordine annullato: ${ordine?.fornitore_nome ?? ''}`
-    await logActivity(userId, userNome, azioneLabel, undefined, 'magazzino')
-
     setLoading(null)
     setAnnullaModal(null)
     setAnnullaNote('')
@@ -230,8 +208,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     })
     if (res.ok) {
       setOrdini(prev => prev.map(o => o.id === ordineId ? { ...o, stato: nuovoStato as Ordine['stato'] } : o))
-      const ordine = ordini.find(o => o.id === ordineId)
-      await logActivity(userId, userNome, `Ordine ${STATO_LABEL[nuovoStato].toLowerCase()}: ${ordine?.fornitore_nome ?? ''}`, undefined, 'ordini')
     }
     setLoading(null)
   }
@@ -252,12 +228,10 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
         : [{ magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }]
     )
     if (!magazzinoLoaded) {
-      const { data } = await supabase
-        .from('magazzino')
-        .select('id, prodotto, unita, azienda')
-        .order('prodotto', { ascending: true })
-      if (data) {
-        setMagazzino(data as MagazzinoItem[])
+      const res = await fetch('/api/magazzino')
+      if (res.ok) {
+        const { items } = await res.json()
+        setMagazzino(items as MagazzinoItem[])
         setMagazzinoLoaded(true)
       }
     }
@@ -270,12 +244,10 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     setNuovoRighe([{ magazzino_id: '', prodotto_nome: '', quantita: 1, unita: 'pz' }])
     setNuovoNote('')
     if (!magazzinoLoaded) {
-      const { data } = await supabase
-        .from('magazzino')
-        .select('id, prodotto, unita, azienda')
-        .order('prodotto', { ascending: true })
-      if (data) {
-        setMagazzino(data as MagazzinoItem[])
+      const res = await fetch('/api/magazzino')
+      if (res.ok) {
+        const { items } = await res.json()
+        setMagazzino(items as MagazzinoItem[])
         setMagazzinoLoaded(true)
       }
     }
@@ -338,14 +310,6 @@ export default function OrdiniAdmin({ ordini: initialOrdini, userId, userNome, f
     const { ordine: nuovoOrdine } = await res.json()
 
     setOrdini(prev => [nuovoOrdine, ...prev])
-
-    const prodottiOrdinati = righeValide.map(r => `${r.prodotto_nome}: ${r.quantita} ${r.unita}`).join(', ')
-    await logActivity(
-      userId, userNome,
-      `Nuovo ordine creato: ${nuovoFornitore.trim()}`,
-      prodottiOrdinati,
-      'magazzino'
-    )
 
     setNuovoSaving(false)
     setNuovoModal(false)

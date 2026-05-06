@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, EmailTemplate } from '@/lib/mailer'
+import { logActivityServer } from '@/lib/registro-server'
 
 export async function POST(req: NextRequest) {
   const supabase = createClient()
@@ -15,10 +16,11 @@ export async function POST(req: NextRequest) {
 
   // Role gate: solo admin/manager possono inviare email dal CRM
   const { data: profilo } = await adminDb
-    .from('profili').select('ruolo').eq('id', user.id).single()
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
   if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   let body: {
     contattoId: string
@@ -65,6 +67,8 @@ export async function POST(req: NextRequest) {
   if (!result.success) {
     return NextResponse.json({ error: result.error ?? 'Invio fallito' }, { status: 500 })
   }
+
+  await logActivityServer(user.id, userNome, `CRM: email inviata (${template})`, contatto.nome ?? contatto.email ?? contattoId, 'crm')
 
   return NextResponse.json({ ok: true })
 }

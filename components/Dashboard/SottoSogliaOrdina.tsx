@@ -3,20 +3,17 @@
 import { useState } from 'react'
 import { MagazzinoItem, Fornitore, FornitoreContatto, CanaleOrdine } from '@/types'
 import { MessageCircle, Mail, AlertTriangle, Globe, Phone, ExternalLink, Clock } from 'lucide-react'
-import { logActivity } from '@/lib/registro'
 
 interface Props {
   alertItems: MagazzinoItem[]
   fornitori: (Fornitore & { fornitore_contatti?: FornitoreContatto[] })[]
-  userId: string
-  userNome: string
   /** IDs magazzino già presenti in ordini aperti (da server) */
   orderedItemIds?: string[]
   onOrdineInviato?: (ids: string[]) => void
 }
 
 export default function SottoSogliaOrdina({
-  alertItems, fornitori, userId, userNome,
+  alertItems, fornitori,
   orderedItemIds = [], onOrdineInviato,
 }: Props) {
   // Traccia localmente gli item appena ordinati (oltre a quelli già da server)
@@ -102,8 +99,6 @@ export default function SottoSogliaOrdina({
     const phone = (telefono ?? '').replace(/\D/g, '')
     window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
     salvaCreaOrdine(fornitore, prodotti, 'whatsapp').catch(() => {})
-    logActivity(userId, userNome, 'Ordine inviato via WhatsApp',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
     markOrdinati(prodotti)
   }
 
@@ -114,8 +109,6 @@ export default function SottoSogliaOrdina({
     const body = encodeURIComponent(msg)
     window.open(`mailto:${email}?subject=${subject}&body=${body}`)
     salvaCreaOrdine(fornitore, prodotti, 'email').catch(() => {})
-    logActivity(userId, userNome, 'Ordine inviato via email',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
     markOrdinati(prodotti)
   }
 
@@ -123,8 +116,6 @@ export default function SottoSogliaOrdina({
     const { sitoEshop } = resolveContact(fornitore)
     window.open(sitoEshop ?? '#', '_blank')
     salvaCreaOrdine(fornitore, prodotti, 'eshop').catch(() => {})
-    logActivity(userId, userNome, 'Ordine avviato via eshop',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
     markOrdinati(prodotti)
   }
 
@@ -132,8 +123,6 @@ export default function SottoSogliaOrdina({
     const { telefono } = resolveContact(fornitore)
     window.open(`tel:${(telefono ?? '').replace(/\s/g, '')}`)
     salvaCreaOrdine(fornitore, prodotti, 'telefono').catch(() => {})
-    logActivity(userId, userNome, 'Ordine avviato via telefono',
-      `${fornitore.nome}: ${prodotti.map(p => p.prodotto).join(', ')}`, 'magazzino').catch(() => {})
     markOrdinati(prodotti)
   }
 

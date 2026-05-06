@@ -8,10 +8,8 @@ export default async function MagazzinoPage() {
   const supabase = createClient()
   const adminDb = createAdminClient()
 
-  const { data: { user } } = await supabase.auth.getUser()
-
   // Tutti i dati in parallelo
-  const [{ data: items }, { data: riordini }, { data: fornitori }, { data: profilo }, { data: ordiniRighe }] = await Promise.all([
+  const [{ data: items }, { data: riordini }, { data: fornitori }, { data: ordiniRighe }] = await Promise.all([
     supabase
       .from('magazzino')
       .select('*')
@@ -25,7 +23,6 @@ export default async function MagazzinoPage() {
       .eq('stato', 'aperta')
       .order('created_at', { ascending: false }),
     supabase.from('fornitori').select('*, fornitore_contatti(*)').order('nome'),
-    adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
     // Item magazzino già presenti in ordini aperti (inviato o parziale)
     adminDb
       .from('ordini_righe')
@@ -39,8 +36,6 @@ export default async function MagazzinoPage() {
     .map((r: any) => r.magazzino_id as string)
     .filter(Boolean)
 
-  const userNome = `${profilo?.nome ?? ''} ${profilo?.cognome ?? ''}`.trim()
-
   return (
     <div>
       <PageHeader
@@ -52,8 +47,6 @@ export default async function MagazzinoPage() {
           items={items ?? []}
           riordini={riordini ?? []}
           fornitori={fornitori ?? []}
-          userId={user!.id}
-          userNome={userNome}
           orderedItemIds={orderedItemIds}
         />
       </ErrorBoundary>
