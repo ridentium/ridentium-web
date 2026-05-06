@@ -97,12 +97,19 @@ export default function AiChatPage({ userName, userRole, userId, storico, bachec
     setLoading(true)
 
     try {
+      // Genera snapshot bacheca per il primo messaggio della sessione (context injection)
+      const isFirst = messages.length === 0
+      const snapshot = isFirst && bacheca.length > 0
+        ? bacheca.slice(0, 8).map(b => `• [${b.tipo}] ${b.titolo}: ${b.dettaglio}`).join('\n')
+        : null
+
       const resp = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: newMessages.map(m => ({ role: m.role, content: m.content })),
           sessionId,
+          snapshot,
         }),
       })
       const data = await resp.json()
