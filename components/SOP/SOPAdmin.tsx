@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
+import { SOP } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { Plus, X, ChevronDown, ChevronRight, BookOpen, Pencil, Square, CheckSquare } from 'lucide-react'
 import { useRouter } from 'next/navigation'
@@ -96,14 +97,14 @@ function SOPContenuto({ contenuto }: { contenuto: string }) {
   )
 }
 
-export default function SOPAdmin({ sops }: { sops: any[] }) {
+export default function SOPAdmin({ sops }: { sops: SOP[] }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
   const [editSop, setEditSop] = useState<any | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const grouped = sops.reduce((acc: Record<string, any[]>, sop) => {
+  const grouped = sops.reduce((acc: Record<string, SOP[]>, sop) => {
     const cat = sop.categoria ?? 'Altro'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(sop)
@@ -136,7 +137,7 @@ export default function SOPAdmin({ sops }: { sops: any[] }) {
         <div key={cat} className="card">
           <h3 className="text-xs uppercase tracking-widest text-stone mb-4">{cat}</h3>
           <div className="space-y-2">
-            {items.map((sop: any) => {
+            {items.map((sop: SOP) => {
               const hasChecklist = /^- \[[ x]\] /m.test(sop.contenuto ?? '')
               return (
                 <div key={sop.id} className="border border-obsidian-light rounded overflow-hidden">

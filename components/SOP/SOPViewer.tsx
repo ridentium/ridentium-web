@@ -1,13 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import { SOP } from '@/types'
 import { formatDate } from '@/lib/utils'
 import { ChevronDown, ChevronRight, BookOpen } from 'lucide-react'
 
-export default function SOPViewer({ sops }: { sops: any[] }) {
+export default function SOPViewer({ sops }: { sops: SOP[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const grouped = sops.reduce((acc: Record<string, any[]>, sop) => {
+  const grouped = sops.reduce((acc: Record<string, SOP[]>, sop) => {
     const cat = sop.categoria ?? 'Generale'
     if (!acc[cat]) acc[cat] = []
     acc[cat].push(sop)
@@ -29,7 +30,7 @@ export default function SOPViewer({ sops }: { sops: any[] }) {
         <div key={cat} className="card">
           <h3 className="text-xs uppercase tracking-widest text-stone mb-4">{cat}</h3>
           <div className="space-y-2">
-            {items.map((sop: any) => (
+            {items.map((sop: SOP) => (
               <div key={sop.id} className="border border-obsidian-light rounded overflow-hidden">
                 <div
                   className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-obsidian-light/30 transition-colors"

@@ -54,10 +54,11 @@ export interface SOP {
   categoria: string
   contenuto: string
   versione: string
-  autore: string
-  ruoli_visibili: UserRole[]
-  created_at: string
+  autore?: string
+  ruoli_visibili?: UserRole[]
+  created_at?: string
   updated_at?: string
+  autore_profilo?: { nome: string | null; cognome: string | null }
 }
 
 export interface RiordineRequest {

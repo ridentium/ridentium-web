@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useTransition } from 'react'
-import { UserProfile } from '@/types'
+import { Task, UserProfile } from '@/types'
 import { formatDate, roleLabel } from '@/lib/utils'
 import {
   Plus, X, CheckCircle2, Circle, Clock, ChevronUp, AlertCircle,
@@ -33,7 +33,7 @@ function getLS<T>(key: string, fallback: T): T {
   try { const v = localStorage.getItem(key); return v !== null ? (JSON.parse(v) as T) : fallback } catch { return fallback }
 }
 
-export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks: any[]; staff: UserProfile[]; currentUserId?: string }) {
+export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks: Task[]; staff: UserProfile[]; currentUserId?: string }) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [showForm, setShowForm] = useState(false)
@@ -67,7 +67,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
     })
   }
   function selectAll() {
-    setSelected(new Set(filtered.filter(t => t.stato !== 'completato').map((t: any) => t.id)))
+    setSelected(new Set(filtered.filter(t => t.stato !== 'completato').map((t: Task) => t.id)))
   }
   function clearSelection() { setSelected(new Set()) }
 
@@ -347,7 +347,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
                       </div>
                     </td>
                   </tr>
-                ) : filtered.map((task: any) => {
+                ) : filtered.map((task: Task) => {
                   const Icon = statoIcon[task.stato as keyof typeof statoIcon] ?? Circle
                   return (
                     <tr key={task.id} className={task.stato === 'completato' ? 'opacity-50' : ''}>
@@ -430,7 +430,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
                         </button>
                       )}
                     </div>
-                  ) : colTasks.map((task: any) => (
+                  ) : colTasks.map((task: Task) => (
                     <KanbanCard
                       key={task.id}
                       task={task}
@@ -459,7 +459,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
 // ── KanbanCard ─────────────────────────────────────────────────────────────────
 
 function KanbanCard({ task, onStatusChange, onDelete }: {
-  task: any
+  task: Task
   onStatusChange: (id: string, stato: string) => void
   onDelete: () => void
 }) {
