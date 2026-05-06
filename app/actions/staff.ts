@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { UserRole } from '@/types'
+import { logActivityServer } from '@/lib/registro-server'
 
 // Verifica che il chiamante sia un admin autenticato
 async function requireAdmin(): Promise<boolean> {
@@ -19,6 +20,21 @@ async function requireAdmin(): Promise<boolean> {
   return profilo?.ruolo === 'admin'
 }
 
+// Restituisce l'utente admin corrente con nome (o null se non autorizzato)
+async function getAdminUser() {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+  const adminDb = createAdminClient()
+  const { data: profilo } = await adminDb
+    .from('profili')
+    .select('ruolo, nome, cognome')
+    .eq('id', user.id)
+    .single()
+  if (!profilo || profilo.ruolo !== 'admin') return null
+  return { id: user.id, nome: `${profilo.nome} ${profilo.cognome}`.trim() }
+}
+
 export async function createStaffAccount(data: {
   email: string
   password: string
@@ -27,7 +43,8 @@ export async function createStaffAccount(data: {
   ruolo: UserRole
   telefono?: string
 }) {
-  if (!await requireAdmin()) return { error: 'Accesso non autorizzato' }
+  const adminUser = await getAdminUser()
+  if (!adminUser) return { error: 'Accesso non autorizzato' }
 
   const admin = createAdminClient()
 
@@ -55,6 +72,14 @@ export async function createStaffAccount(data: {
     await admin.auth.admin.deleteUser(authData.user.id)
     return { error: profileError.message }
   }
+
+  await logActivityServer(
+    adminUser.id,
+    adminUser.nome,
+    'Nuovo staff creato',
+    `"${data.nome} ${data.cognome}" — ruolo: ${data.ruolo}`,
+    'sistema'
+  )
 
   revalidatePath('/admin/staff')
   return { success: true }

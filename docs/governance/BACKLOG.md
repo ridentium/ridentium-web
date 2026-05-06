@@ -41,51 +41,42 @@ Coverage finale verificata su tutte le route che scrivono dati critici.
 ---
 
 ### Fase 2C — Rate limiting
-**Status: 🔜 DA PIANIFICARE**
+**Status: ✅ COMPLETATA — PR #45 (2026-05-06)**
 **Priorità: P0**
 
-Valutare e implementare rate limiting su endpoint pubblici o costosi.
+| Endpoint | Limite | Finestra |
+|----------|--------|----------|
+| `/api/crm/contatti` | 5 req/IP | 1 ora |
+| `/api/ai/chat` | 30 req/user | 1 ora |
 
-| Endpoint | Tipo | Rischio | Priorità |
-|----------|------|---------|----------|
-| `/api/crm/contatti` | Pubblico (form landing) | Spam, abuso | Alta |
-| `/api/ai/chat` | Costoso (Groq API) | Costi incontrollati | Alta |
-
-**Note:** Valutare se usare middleware Next.js con in-memory store oppure soluzione Vercel Edge (KV/Edge Config). Presentare opzioni al Founder prima di procedere se l'implementazione richiede servizi a pagamento.
+Soluzione: `lib/rate-limit.ts` in-memory sliding window (documentato: per-instance Vercel, sufficiente per studio single-tenant). CORS headers 429 per CRM (cross-origin). Upgrade path Upstash/KV documentato.
 
 ---
 
 ### Fase 2D — Note sui ricorrenti
-**Status: 🔜 DA PIANIFICARE**
+**Status: ✅ COMPLETATA — PR #48 (2026-05-06)**
 **Priorità: P2**
 
-La RPC `toggle_completamento_ricorrente` non accetta parametro `p_nota`.
-Attualmente i ricorrenti si completano senza possibilità di aggiungere note.
+- Migration `20260506_nota_ricorrenti.sql`: `CREATE OR REPLACE FUNCTION` con `p_nota TEXT DEFAULT NULL` (non distruttiva)
+- API route `/api/ricorrenti/[id]/completamento`: accetta `nota` dal body JSON
+- `TasksRicorrentiWidget`: NotePopup ora attivo anche per ricorrenti
 
-**Cosa serve:**
-1. Migrazione DB: aggiungere colonna `nota` alla struttura `completamenti` JSONB nella tabella `ricorrenti`
-2. Aggiornare la RPC Postgres con parametro `p_nota`
-3. Aggiornare route `/api/ricorrenti/[id]/completamento`
-4. Ripristinare il NotePopup nel widget `TasksRicorrentiWidget`
-
-**⚠️ Richiede approvazione Founder** — modificazione RPC e struttura dati esistente.
+⚠️ **Richiede applicazione migration in Supabase prima del deploy.**
 
 ---
 
 ### Fase 2E — UX operativa
-**Status: 🔜 DA PIANIFICARE**
+**Status: 🔄 IN CORSO**
 **Priorità: P2**
 
-Miglioramenti UX che non richiedono modifiche DB strutturali.
-
-| Item | Descrizione | Complessità |
-|------|-------------|-------------|
-| Refresh manuale widget dashboard | Bottone per aggiornare ogni widget senza ricaricare la pagina | Bassa |
-| CRM badge "da X giorni in questo stato" | Mostrare da quanto tempo un contatto è nello stato corrente | Bassa |
-| Adempimenti: chi ha completato e quando | Visualizzare nome e data dell'ultima esecuzione | Media |
-| Feedback creazione staff | Migliorare il feedback dopo invito nuovo membro staff | Bassa |
-| Pagina offline PWA | Pagina HTML statica mostrata dal SW quando offline | Bassa |
-| Breadcrumb/back link su schermate profonde | Facilitare navigazione su mobile | Media |
+| Item | Descrizione | Status |
+|------|-------------|--------|
+| CRM badge "da X giorni in questo stato" | Mostrare da quanto il contatto è nello stato corrente | ✅ PR #46 |
+| Adempimenti: chi ha completato e quando | Nome + data ultima esecuzione nel pannello dettaglio | ✅ PR #47 |
+| Refresh manuale widget dashboard | Bottone per aggiornare ogni widget senza ricaricare | 🔜 |
+| Feedback creazione staff | Migliorare feedback dopo invito nuovo membro | 🔜 |
+| Pagina offline PWA | HTML statico mostrato dal SW quando offline | 🔜 |
+| Breadcrumb/back link su schermate profonde | Navigazione mobile | 🔜 |
 
 ---
 
@@ -157,3 +148,7 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #42 | Magazzino: colonna e card mobile fornitore assegnato |
 | #43 | Fase 1 bug fix: nota task come commento, useRef guard adempimenti, validazione WhatsApp, commento middleware |
 | #44 | Fase 2B: audit log su 4 route scoperte (adempimenti POST, magazzino/riordini POST, impostazioni/permessi PATCH, kpi PATCH) |
+| #45 | Fase 2C: rate limiting in-memory (lib/rate-limit.ts, CRM 5/h per IP, AI 30/h per user) |
+| #46 | Fase 2E: CRM badge "aggiornato X gg fa" nel kanban |
+| #47 | Fase 2E: Adempimenti pannello dettaglio mostra chi ha completato l'ultima esecuzione |
+| #48 | Fase 2D: nota facoltativa al completamento ricorrente (migration + API + widget) |

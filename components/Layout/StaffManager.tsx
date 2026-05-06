@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useEffect } from 'react'
 import { UserProfile, UserRole } from '@/types'
 import { roleLabel, roleColor, cn } from '@/lib/utils'
-import { UserPlus, X, Trash2, AlertTriangle } from 'lucide-react'
+import { UserPlus, X, Trash2, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   createStaffAccount,
@@ -201,6 +201,14 @@ function InviteModal({ onClose, onSave }: { onClose: () => void; onSave: () => v
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [created, setCreated] = useState<{ nome: string; cognome: string } | null>(null)
+
+  // Auto-chiudi e aggiorna lista 1.8 secondi dopo il successo
+  useEffect(() => {
+    if (!created) return
+    const t = setTimeout(() => onSave(), 1800)
+    return () => clearTimeout(t)
+  }, [created, onSave])
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }))
 
@@ -230,8 +238,26 @@ function InviteModal({ onClose, onSave }: { onClose: () => void; onSave: () => v
     if (res.error) {
       setError(res.error)
     } else {
-      onSave()
+      setCreated({ nome: form.nome, cognome: form.cognome })
     }
+  }
+
+  // Pannello di successo — visibile per 1.8s poi si chiude automaticamente
+  if (created) {
+    return (
+      <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="card w-full max-w-md text-center py-8 px-6">
+          <div className="flex justify-center mb-4">
+            <CheckCircle2 size={40} className="text-green-400" />
+          </div>
+          <p className="text-cream font-medium text-lg mb-1">Account creato</p>
+          <p className="text-stone text-sm">
+            <span className="text-cream font-medium">{created.nome} {created.cognome}</span>{' '}
+            è ora nel team. La pagina si aggiornerà automaticamente.
+          </p>
+        </div>
+      </div>
+    )
   }
 
   return (
