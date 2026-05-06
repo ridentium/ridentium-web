@@ -45,6 +45,14 @@ function formatData(iso: string) {
   return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+/** Quanti giorni fa è avvenuta l'ultima modifica al contatto. */
+function formatGiorniAggiornato(iso: string): string {
+  const giorni = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000)
+  if (giorni === 0) return 'aggiornato oggi'
+  if (giorni === 1) return 'aggiornato ieri'
+  return `aggiornato ${giorni} gg fa`
+}
+
 function iniziali(c: CRMContatto) {
   const n = c.nome?.[0] ?? ''
   const cg = c.cognome?.[0] ?? ''
@@ -371,6 +379,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${si.bg} ${si.color}`}>
                         <StatoIcon size={9} />
                         {si.label}
+                      </span>
+                      <span className="text-[10px] text-stone/45 flex items-center gap-0.5">
+                        <Clock size={8} />
+                        {formatGiorniAggiornato(c.updated_at)}
                       </span>
                       {c.sorgente && (
                         <span className="text-[10px] px-2 py-0.5 rounded border border-obsidian-light/30 text-stone flex items-center gap-1">
