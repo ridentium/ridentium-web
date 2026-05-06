@@ -22,11 +22,9 @@ export async function POST(req: NextRequest) {
   const adminDb = createAdminClient()
 
   const envKey = process.env.CRM_API_KEY
-  if (envKey) {
-    const sentKey = req.headers.get('x-api-key')
-    if (sentKey !== envKey) {
-      return NextResponse.json({ error: 'API key non valida' }, { status: 401, headers: corsHeaders() })
-    }
+  const sentKey = req.headers.get('x-api-key')
+  if (!envKey || sentKey !== envKey) {
+    return NextResponse.json({ error: 'API key non valida' }, { status: 401, headers: corsHeaders() })
   }
 
   let body: Record<string, unknown>

@@ -1,8 +1,23 @@
 'use server'
 
+import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { UserRole } from '@/types'
+
+// Verifica che il chiamante sia un admin autenticato
+async function requireAdmin(): Promise<boolean> {
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+  const adminDb = createAdminClient()
+  const { data: profilo } = await adminDb
+    .from('profili')
+    .select('ruolo')
+    .eq('id', user.id)
+    .single()
+  return profilo?.ruolo === 'admin'
+}
 
 export async function createStaffAccount(data: {
   email: string
@@ -12,6 +27,8 @@ export async function createStaffAccount(data: {
   ruolo: UserRole
   telefono?: string
 }) {
+  if (!await requireAdmin()) return { error: 'Accesso non autorizzato' }
+
   const admin = createAdminClient()
 
   const { data: authData, error: authError } = await admin.auth.admin.createUser({
@@ -44,6 +61,8 @@ export async function createStaffAccount(data: {
 }
 
 export async function updateStaffRole(id: string, ruolo: UserRole) {
+  if (!await requireAdmin()) return { error: 'Accesso non autorizzato' }
+
   const admin = createAdminClient()
   const { error } = await admin.from('profili').update({ ruolo }).eq('id', id)
   if (error) return { error: error.message }
@@ -52,6 +71,8 @@ export async function updateStaffRole(id: string, ruolo: UserRole) {
 }
 
 export async function toggleStaffAttivo(id: string, attivo: boolean) {
+  if (!await requireAdmin()) return { error: 'Accesso non autorizzato' }
+
   const admin = createAdminClient()
   const { error } = await admin.from('profili').update({ attivo: !attivo }).eq('id', id)
   if (error) return { error: error.message }
@@ -60,6 +81,8 @@ export async function toggleStaffAttivo(id: string, attivo: boolean) {
 }
 
 export async function deleteStaffAccount(userId: string) {
+  if (!await requireAdmin()) return { error: 'Accesso non autorizzato' }
+
   const admin = createAdminClient()
   const { error } = await admin.auth.admin.deleteUser(userId)
   if (error) return { error: error.message }
