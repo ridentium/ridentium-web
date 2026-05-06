@@ -1,9 +1,9 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { MagazzinoItem } from '@/types'
+import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, ShoppingCart, Check, Clock, AlertCircle } from 'lucide-react'
+import { AlertTriangle, CheckCircle, ShoppingCart, Check, Clock, AlertCircle, Phone, Mail } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
@@ -22,6 +22,7 @@ interface Props {
   items: MagazzinoItem[]
   riordiniAperti: string[]
   userId: string
+  fornitori: Fornitore[]
 }
 
 const CATEGORIE = [
@@ -29,7 +30,7 @@ const CATEGORIE = [
   'Consumabili', 'DPI & Sterilizzazione'
 ]
 
-export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props) {
+export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitori }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [categoria, setCategoria] = useState('Tutte')
@@ -115,12 +116,13 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props)
               <th>Qtà</th>
               <th>Scadenza</th>
               <th>Stato</th>
+              <th>Fornitore</th>
               <th>Riordina</th>
             </tr>
           </thead>
           <tbody>
             {filtered.length === 0 ? (
-              <tr><td colSpan={8} className="text-center text-stone py-8">Nessun prodotto</td></tr>
+              <tr><td colSpan={9} className="text-center text-stone py-8">Nessun prodotto</td></tr>
             ) : filtered.map(item => {
               const isAlert = item.quantita < item.soglia_minima
               const expiryStatus = getExpiryStatus(item.scadenza)
@@ -161,6 +163,36 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId }: Props)
                         <span className="badge-ok flex items-center gap-1"><CheckCircle size={10} /> OK</span>
                       )}
                     </div>
+                  </td>
+                  {/* Fornitore — read-only per staff */}
+                  <td>
+                    {(() => {
+                      const f = fornitori.find(f => f.id === item.fornitore_id)
+                      if (!f) return <span className="text-stone/40">—</span>
+                      const contatto = f.fornitore_contatti?.find(c => c.is_predefinito)
+                        ?? f.fornitore_contatti?.[0]
+                      return (
+                        <div className="space-y-0.5">
+                          <p className="text-xs text-cream/80 font-medium">{f.nome}</p>
+                          {contatto?.telefono && (
+                            <a
+                              href={`tel:${contatto.telefono}`}
+                              className="flex items-center gap-1 text-[10px] text-stone/60 hover:text-gold transition-colors"
+                            >
+                              <Phone size={9} /> {contatto.telefono}
+                            </a>
+                          )}
+                          {contatto?.email && (
+                            <a
+                              href={`mailto:${contatto.email}`}
+                              className="flex items-center gap-1 text-[10px] text-stone/60 hover:text-gold transition-colors"
+                            >
+                              <Mail size={9} /> {contatto.email}
+                            </a>
+                          )}
+                        </div>
+                      )
+                    })()}
                   </td>
                   <td>
                     {riordinato ? (

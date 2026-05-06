@@ -6,19 +6,25 @@ export default async function MagazzinoStaffPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  const { data: items } = await supabase
-    .from('magazzino')
-    .select('*')
-    .order('categoria')
-    .order('diametro', { ascending: true, nullsFirst: false })
-    .order('lunghezza', { ascending: true, nullsFirst: false })
-    .order('prodotto')
-
-  const { data: myRiordini } = await supabase
-    .from('riordini')
-    .select('magazzino_id, stato')
-    .eq('richiesto_da', user!.id)
-    .eq('stato', 'aperta')
+  const [
+    { data: items },
+    { data: myRiordini },
+    { data: fornitori },
+  ] = await Promise.all([
+    supabase
+      .from('magazzino')
+      .select('*')
+      .order('categoria')
+      .order('diametro', { ascending: true, nullsFirst: false })
+      .order('lunghezza', { ascending: true, nullsFirst: false })
+      .order('prodotto'),
+    supabase
+      .from('riordini')
+      .select('magazzino_id, stato')
+      .eq('richiesto_da', user!.id)
+      .eq('stato', 'aperta'),
+    supabase.from('fornitori').select('*, fornitore_contatti(*)').order('nome'),
+  ])
 
   const riordiniIds = (myRiordini ?? []).map((r: any) => r.magazzino_id)
 
@@ -28,7 +34,12 @@ export default async function MagazzinoStaffPage() {
         title="Magazzino"
         subtitle="Consulta lo stock e segnala prodotti da riordinare"
       />
-      <MagazzinoStaff items={items ?? []} riordiniAperti={riordiniIds} userId={user!.id} />
+      <MagazzinoStaff
+        items={items ?? []}
+        riordiniAperti={riordiniIds}
+        userId={user!.id}
+        fornitori={fornitori ?? []}
+      />
     </div>
   )
 }
