@@ -106,7 +106,7 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 - [x] **Preferenze utente persistenti in DB** — useUserPref hook + DB sync; tasks_filter, tasks_view, dashboard_hidden. (P3) — PR #59
 
 ### Funzionalità mancanti (da costruire)
-- [ ] **Pagination / infinite scroll** — Task, magazzino, ordini, ricorrenti caricano tutto. (P3)
+- [x] **Pagination / infinite scroll** — Limit server-side su tasks/magazzino + cursor load-more su ordini. (P3) — PR #60
 - [x] **Gestione attrezzature** — Tabelle DB + API + UI completa con storico manutenzioni. (P2) — PR #57
 - [x] **Import CSV ordini** — Parse CSV client-side nel modal nuovo ordine + template scaricabile. (P2) — PR #58
 - [ ] **Lina AI con contesto reale** — Chat AI non conosce i dati dello studio. (P3)
@@ -163,3 +163,4 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #57 | Gestione attrezzature: migration + API + AttrezzatureAdmin con storico manutenzioni |
 | #58 | Import CSV prodotti nel modal nuovo ordine (client-side, template scaricabile) |
 | #59 | Preferenze utente in DB: hook useUserPref, migration user_prefs, 3 chiavi migrate |
+| #60 | Pagination: limit server-side tasks/magazzino, cursor load-more ordini, GET /api/ordini |
