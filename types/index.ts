@@ -192,6 +192,7 @@ export interface Ordine {
   note?: string | null
   data_invio: string
   data_ricezione?: string | null
+  received_by?: string | null
   created_by?: string
   created_at: string
   righe?: OrdineRiga[]

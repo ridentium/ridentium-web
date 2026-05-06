@@ -413,6 +413,9 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     {ordine.data_ricezione && (
                       <p className="text-xs text-stone/60 mt-0.5">
                         Ricevuto: {formatData(ordine.data_ricezione)}
+                        {ordine.received_by && (
+                          <span className="ml-1 text-stone/40">da {ordine.received_by}</span>
+                        )}
                       </p>
                     )}
                     {ordine.note && (
