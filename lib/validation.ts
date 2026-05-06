@@ -93,6 +93,37 @@ export const createAdempimentoSchema = z.object({
   consulente_id: uuid.optional().nullable(),
 })
 
+// ── KPI ──────────────────────────────────────────────────────────────────────
+
+export const upsertKpiSchema = z.object({
+  pazienti_oggi:       z.number().int().min(0),
+  pazienti_settimana:  z.number().int().min(0),
+  pazienti_mese:       z.number().int().min(0),
+  appuntamenti_oggi:   z.number().int().min(0),
+  fatturato_mese:      z.number().min(0),
+  tasso_presenze:      z.number().min(0).max(100),
+})
+
+// ── SOP ──────────────────────────────────────────────────────────────────────
+
+export const createSopSchema = z.object({
+  titolo:          nonEmptyString(255),
+  categoria:       nonEmptyString(100),
+  contenuto:       z.string().trim().max(20000).optional().nullable(),
+  versione:        z.string().trim().max(20).optional(),
+  ruoli_visibili:  z.array(z.string()).optional(),
+})
+
+export const updateSopSchema = z.object({
+  titolo:          z.string().trim().min(1).max(255).optional(),
+  categoria:       z.string().trim().min(1).max(100).optional(),
+  contenuto:       z.string().trim().max(20000).optional().nullable(),
+  versione:        z.string().trim().max(20).optional(),
+  ruoli_visibili:  z.array(z.string()).optional(),
+})
+
+// ── Adempimenti update ────────────────────────────────────────────────────────
+
 export const updateAdempimentoSchema = z.object({
   titolo:                  z.string().trim().min(1).max(255).optional(),
   descrizione:             z.string().trim().max(2000).optional().nullable(),
