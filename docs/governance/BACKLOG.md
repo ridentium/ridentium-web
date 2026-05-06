@@ -103,7 +103,7 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 - [x] **Registro attività: filtri avanzati** — Già implementati. Backlog era sfasato rispetto al codice.
 - [x] **Form task: più campi nel quick-add** — Quick-add agenda con priorità + assegnato (admin). (P2) — PR #52
 - [x] **Preferenze notifiche per staff** — Fix ruoli NOTIF_TYPES + filtro per-utente su /api/notify broadcast. (P2) — PR #56
-- [ ] **Preferenze utente persistenti in DB** — Filtri e view mode attualmente in localStorage. (P3)
+- [x] **Preferenze utente persistenti in DB** — useUserPref hook + DB sync; tasks_filter, tasks_view, dashboard_hidden. (P3) — PR #59
 
 ### Funzionalità mancanti (da costruire)
 - [ ] **Pagination / infinite scroll** — Task, magazzino, ordini, ricorrenti caricano tutto. (P3)
@@ -162,3 +162,4 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #56 | Preferenze notifiche staff: fix NOTIF_TYPES ruoli + filtro per-utente su /api/notify broadcast |
 | #57 | Gestione attrezzature: migration + API + AttrezzatureAdmin con storico manutenzioni |
 | #58 | Import CSV prodotti nel modal nuovo ordine (client-side, template scaricabile) |
+| #59 | Preferenze utente in DB: hook useUserPref, migration user_prefs, 3 chiavi migrate |
