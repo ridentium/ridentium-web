@@ -2,7 +2,7 @@
 
 > Documento di lavoro del Project Director.
 > Aggiornato dopo ogni PR o sessione di lavoro significativa.
-> Ultima revisione: 2026-05-06
+> Ultima revisione: 2026-05-07
 
 ---
 
@@ -102,7 +102,7 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 - [x] **Staff non può vedere contatti fornitori** — Staff magazzino mostra colonna fornitore read-only. (P1) — PR #50
 - [x] **Registro attività: filtri avanzati** — Già implementati. Backlog era sfasato rispetto al codice.
 - [x] **Form task: più campi nel quick-add** — Quick-add agenda con priorità + assegnato (admin). (P2) — PR #52
-- [ ] **Preferenze notifiche per staff** — Staff non può disattivare notifiche non rilevanti. (P2)
+- [x] **Preferenze notifiche per staff** — Fix ruoli NOTIF_TYPES + filtro per-utente su /api/notify broadcast. (P2) — PR #56
 - [ ] **Preferenze utente persistenti in DB** — Filtri e view mode attualmente in localStorage. (P3)
 
 ### Funzionalità mancanti (da costruire)
@@ -159,3 +159,4 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #53 | Dashboard: bottone refresh manuale + breadcrumb mobile su pagine secondarie |
 | #54 | Ordini: traccia chi ha ricevuto (migration received_by + RPC + API + UI) |
 | #55 | Adempimenti: warning inline quando si modifica la frequenza |
+| #56 | Preferenze notifiche staff: fix NOTIF_TYPES ruoli + filtro per-utente su /api/notify broadcast |
