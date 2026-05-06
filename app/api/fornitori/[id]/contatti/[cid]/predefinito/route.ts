@@ -20,10 +20,11 @@ export async function PATCH(
   }
 
   // Reset tutti i contatti del fornitore
-  await adminDb
+  const { error: resetErr } = await adminDb
     .from('fornitore_contatti')
     .update({ is_predefinito: false })
     .eq('fornitore_id', params.id)
+  if (resetErr) return NextResponse.json({ error: resetErr.message }, { status: 500 })
 
   // Imposta il contatto selezionato come predefinito
   const { error } = await adminDb
