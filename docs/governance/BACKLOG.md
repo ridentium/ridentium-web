@@ -20,22 +20,23 @@
 ---
 
 ### Fase 2B — Audit log su route critiche
-**Status: 🔜 PROSSIMA**
+**Status: ✅ COMPLETATA — PR #44 (2026-05-06)**
 **Priorità: P0**
 
-Verificare e aggiungere `logActivityServer` sulle route che mancano di coverage.
-Queste route modificano dati rilevanti senza lasciare traccia nel registro attività.
+Coverage finale verificata su tutte le route che scrivono dati critici.
 
 | Route | Metodo | Status | Note |
 |-------|--------|--------|------|
-| `/api/ricorrenti/[id]/completamento` | POST | ⚠️ da verificare | Completamento ricorrente |
-| `/api/adempimenti` | POST | ⚠️ da verificare | Creazione adempimento |
-| `/api/adempimenti/[id]` | PATCH | ⚠️ da verificare | Modifica adempimento |
-| `/api/adempimenti/[id]/completa` | POST | ⚠️ da verificare | Completamento adempimento |
-| `/api/magazzino/riordini` | POST | ⚠️ da verificare | Ordine di riassortimento |
-| `/api/magazzino/evadisci` | POST | ⚠️ da verificare | Evasione ordine magazzino |
-| `/api/tasks` | POST | ⚠️ da verificare | Creazione task |
-| `/api/tasks/[id]` | PATCH | ⚠️ da verificare | Modifica/completamento task |
+| `/api/ricorrenti/[id]/completamento` | POST | ✅ coperta | Già presente (PR #31) |
+| `/api/adempimenti` | POST | ✅ coperta | Aggiunta in PR #44 |
+| `/api/adempimenti/[id]` | PATCH | ✅ coperta | Già presente |
+| `/api/adempimenti/[id]/completa` | POST | ✅ coperta | Già presente |
+| `/api/magazzino/riordini` | POST | ✅ coperta | Aggiunta in PR #44 |
+| `/api/magazzino/evadisci` | POST | ✅ coperta | Già presente |
+| `/api/tasks` | POST | ✅ coperta | Già presente |
+| `/api/tasks/[id]` | PATCH | ✅ coperta | Già presente |
+| `/api/impostazioni/permessi` | PATCH | ✅ coperta | Aggiunta in PR #44 — era il gap più critico |
+| `/api/kpi` | PATCH | ✅ coperta | Aggiunta in PR #44 |
 
 ---
 
@@ -155,3 +156,4 @@ Separare in sotto-componenti senza cambiare comportamento utente.
 | #41 | Security: CRM API key fail-safe, staff server action auth guards, Promise.all agenda, delete lib/registro.ts |
 | #42 | Magazzino: colonna e card mobile fornitore assegnato |
 | #43 | Fase 1 bug fix: nota task come commento, useRef guard adempimenti, validazione WhatsApp, commento middleware |
+| #44 | Fase 2B: audit log su 4 route scoperte (adempimenti POST, magazzino/riordini POST, impostazioni/permessi PATCH, kpi PATCH) |
