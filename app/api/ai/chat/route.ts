@@ -1,6 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit } from '@/lib/rate-limit'
+
+// Rate limit: 30 messaggi per ora per utente autenticato.
+// Evita consumo eccessivo delle API Groq da parte di un singolo utente.
+const AI_RATE_LIMIT = 30
+const AI_WINDOW_MS  = 60 * 60 * 1000  // 1 ora
 
 // Usa Groq llama-3.3-70b-versatile — completamente gratuito
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions'
@@ -328,6 +334,15 @@ export async function POST(req: NextRequest) {
   const adminDb = createAdminClient()
   const { data: profilo } = await adminDb.from('profili').select('nome, cognome, ruolo').eq('id', user.id).single()
   if (!profilo) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 403 })
+
+  // ── Rate limiting per utente ─────────────────────────────────────────────────
+  const rl = checkRateLimit(`ai:${user.id}`, AI_RATE_LIMIT, AI_WINDOW_MS)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Hai raggiunto il limite di messaggi per questa ora. Riprova tra ${rl.retryAfterSeconds < 120 ? `${rl.retryAfterSeconds} secondi` : `${Math.ceil(rl.retryAfterSeconds / 60)} minuti`}.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
 
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {

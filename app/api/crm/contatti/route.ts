@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/mailer'
 import { createNotifica } from '@/lib/notifiche'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+
+// Rate limit: 5 richieste per ora per IP.
+// Protegge da spam sul form landing anche in presenza di API key valida.
+const CRM_RATE_LIMIT = 5
+const CRM_WINDOW_MS  = 60 * 60 * 1000  // 1 ora
 
 // ─── CORS helper ──────────────────────────────────────────────────────────────
 function corsHeaders() {
@@ -19,6 +25,16 @@ export async function OPTIONS() {
 
 // ─── POST /api/crm/contatti ──────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  // ── Rate limiting (prima dell'auth) ──────────────────────────────────────────
+  const ip = getClientIp(req.headers)
+  const rl = checkRateLimit(`crm:${ip}`, CRM_RATE_LIMIT, CRM_WINDOW_MS)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Troppe richieste. Riprova tra qualche minuto.' },
+      { status: 429, headers: { ...corsHeaders(), 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
   const adminDb = createAdminClient()
 
   const envKey = process.env.CRM_API_KEY
