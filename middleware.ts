@@ -51,8 +51,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
-  // Protezione rotte admin
-  if (pathname.startsWith('/admin')) {
+  // Protezione rotte admin e staff: entrambe richiedono un profilo valido nel DB.
+  // /admin → solo ruolo 'admin'; /staff → qualsiasi ruolo di studio registrato.
+  if (pathname.startsWith('/admin') || pathname.startsWith('/staff')) {
     const adminDb = createAdminSupabase(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -63,7 +64,13 @@ export async function middleware(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
-    if (profile?.ruolo !== 'admin') {
+    // Nessun profilo → utente autenticato ma non registrato come membro dello studio
+    if (!profile) {
+      return NextResponse.redirect(new URL('/login', request.url))
+    }
+
+    // /admin richiede ruolo admin esplicito
+    if (pathname.startsWith('/admin') && profile.ruolo !== 'admin') {
       return NextResponse.redirect(new URL('/dashboard', request.url))
     }
   }
