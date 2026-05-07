@@ -192,9 +192,45 @@ export interface Ordine {
   note?: string | null
   data_invio: string
   data_ricezione?: string | null
+  received_by?: string | null
   created_by?: string
   created_at: string
   righe?: OrdineRiga[]
+}
+
+// ── Attrezzature ─────────────────────────────────────────────────────────────
+
+export type StatoAttrezzatura = 'operativo' | 'in_manutenzione' | 'fuori_servizio'
+export type FrequenzaManutenzione = 'mensile' | 'trimestrale' | 'semestrale' | 'annuale'
+export type TipoManutenzione = 'ordinaria' | 'straordinaria' | 'revisione'
+
+export interface Manutenzione {
+  id: string
+  attrezzatura_id: string
+  data: string
+  tipo: TipoManutenzione
+  eseguito_da?: string | null
+  note?: string | null
+  prossima_data?: string | null
+  creato_da_nome: string
+  created_at: string
+}
+
+export interface Attrezzatura {
+  id: string
+  nome: string
+  categoria: string
+  numero_seriale?: string | null
+  fornitore_nome?: string | null
+  data_acquisto?: string | null
+  frequenza_manutenzione: FrequenzaManutenzione
+  data_ultima_manutenzione?: string | null
+  data_prossima_manutenzione?: string | null
+  stato: StatoAttrezzatura
+  note?: string | null
+  created_at: string
+  updated_at?: string
+  manutenzioni?: Manutenzione[]
 }
 
 // ── CRM ───────────────────────────────────────────────────────────────────────

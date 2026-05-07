@@ -27,6 +27,7 @@ export default async function FornitoriAdminPage() {
       <PageHeader
         title="Fornitori"
         subtitle="Rubrica fornitori, contatti e canali di ordine"
+        breadcrumb={{ label: 'Dashboard', href: '/admin' }}
       />
       <FornitoriAdmin
         fornitori={fornitori ?? []}

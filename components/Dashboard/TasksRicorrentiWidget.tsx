@@ -111,13 +111,15 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
   async function onCheckRicorrente(r: CompletableRicorrente) {
     if (completedRicorrentiIds.has(r.id)) return
     setCompletedRicorrentiIds(prev => new Set([...Array.from(prev), r.id]))
-    // La RPC toggle_completamento_ricorrente non accetta p_nota (richiederebbe
-    // migrazione DB — rimandato a Fase 2). Il ricorrente si completa direttamente.
-    await saveRicorrente(r)
+    setNoteFor({ type: 'ricorrente', id: r.id })
   }
 
-  async function saveRicorrente(r: CompletableRicorrente) {
-    await fetch(`/api/ricorrenti/${r.id}/completamento`, { method: 'POST' })
+  async function saveRicorrente(r: CompletableRicorrente, nota: string) {
+    await fetch(`/api/ricorrenti/${r.id}/completamento`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nota: nota.trim() || null }),
+    })
     setNoteFor(null)
     startTransition(() => router.refresh())
   }
@@ -181,6 +183,12 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
               </p>
             </div>
           </div>
+          {noteFor?.type === 'ricorrente' && noteFor.id === r.id && (
+            <NotePopup
+              onSave={nota => saveRicorrente(r, nota)}
+              onSkip={() => saveRicorrente(r, '')}
+            />
+          )}
         </div>
       ))}
     </div>

@@ -63,6 +63,8 @@ export interface Adempimento {
   // Join opzionali
   responsabile_profilo?: { id: string; nome: string; cognome: string } | null
   consulente?: Consulente | null
+  // Arricchimento API: nome di chi ha completato l'ultima volta
+  ultima_esecuzione_da?: string | null
 }
 
 export interface AdempimentoEsecuzione {

@@ -1,6 +1,12 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
+import { checkRateLimit } from '@/lib/rate-limit'
+
+// Rate limit: 30 messaggi per ora per utente autenticato.
+// Evita consumo eccessivo delle API Groq da parte di un singolo utente.
+const AI_RATE_LIMIT = 30
+const AI_WINDOW_MS  = 60 * 60 * 1000  // 1 ora
 
 // Usa Groq llama-3.3-70b-versatile — completamente gratuito
 const GROQ_API = 'https://api.groq.com/openai/v1/chat/completions'
@@ -129,6 +135,32 @@ const ALL_TOOLS = [
               },
             },
           },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_adempimenti',
+      description: 'Legge gli adempimenti normativi e scadenze di compliance dello studio (HACCP, privacy, manutenzioni obbligatorie, ecc.).',
+      parameters: {
+        type: 'object',
+        properties: {
+          solo_urgenti: { type: 'boolean', description: 'Se true, restituisce solo adempimenti in scadenza entro 30 giorni.' },
+        },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'get_attrezzature',
+      description: 'Legge le attrezzature cliniche con stato operativo e prossima manutenzione.',
+      parameters: {
+        type: 'object',
+        properties: {
+          solo_alert: { type: 'boolean', description: 'Se true, restituisce solo attrezzature con manutenzione scaduta o in scadenza entro 30 giorni.' },
         },
       },
     },
@@ -273,6 +305,56 @@ async function executeTool(
         }
       }
 
+      case 'get_adempimenti': {
+        const oggi = new Date().toISOString().split('T')[0]
+        let q = db.from('adempimenti')
+          .select('id, titolo, categoria, frequenza, prossima_scadenza, preavviso_giorni, responsabile_profilo:profili!adempimenti_responsabile_profilo_id_fkey(nome, cognome)')
+          .eq('attivo', true)
+          .order('prossima_scadenza', { ascending: true })
+        if (input.solo_urgenti) {
+          const tra30 = new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]
+          q = (q as any).lte('prossima_scadenza', tra30)
+        }
+        const { data } = await q.limit(30)
+        const oggi_d = new Date(oggi)
+        return {
+          adempimenti: (data ?? []).map((a: any) => ({
+            ...a,
+            stato: a.prossima_scadenza < oggi ? 'SCADUTO' : (() => {
+              const diff = Math.floor((new Date(a.prossima_scadenza).getTime() - oggi_d.getTime()) / 86400000)
+              return diff <= (a.preavviso_giorni ?? 30) ? `scade_tra_${diff}_giorni` : 'ok'
+            })(),
+          })),
+        }
+      }
+
+      case 'get_attrezzature': {
+        const { data } = await db.from('attrezzature')
+          .select('id, nome, categoria, stato, data_ultima_manutenzione, data_prossima_manutenzione, frequenza_manutenzione, fornitore_nome')
+          .order('nome')
+        const oggi = Date.now()
+        let items = data ?? []
+        if (input.solo_alert) {
+          items = items.filter((a: any) => {
+            if (!a.data_prossima_manutenzione) return false
+            const diff = Math.floor((new Date(a.data_prossima_manutenzione).getTime() - oggi) / 86400000)
+            return diff <= 30
+          })
+        }
+        return {
+          attrezzature: items.map((a: any) => ({
+            ...a,
+            stato_manutenzione: (() => {
+              if (!a.data_prossima_manutenzione) return 'non_programmata'
+              const diff = Math.floor((new Date(a.data_prossima_manutenzione).getTime() - oggi) / 86400000)
+              if (diff < 0) return 'SCADUTA'
+              if (diff <= 30) return `scade_tra_${diff}_giorni`
+              return 'ok'
+            })(),
+          })),
+        }
+      }
+
       case 'get_agenda': {
         const giorni = input.giorni ?? 30
         const oggi = new Date()
@@ -329,6 +411,15 @@ export async function POST(req: NextRequest) {
   const { data: profilo } = await adminDb.from('profili').select('nome, cognome, ruolo').eq('id', user.id).single()
   if (!profilo) return NextResponse.json({ error: 'Profilo non trovato' }, { status: 403 })
 
+  // ── Rate limiting per utente ─────────────────────────────────────────────────
+  const rl = checkRateLimit(`ai:${user.id}`, AI_RATE_LIMIT, AI_WINDOW_MS)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Hai raggiunto il limite di messaggi per questa ora. Riprova tra ${rl.retryAfterSeconds < 120 ? `${rl.retryAfterSeconds} secondi` : `${Math.ceil(rl.retryAfterSeconds / 60)} minuti`}.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
   const apiKey = process.env.GROQ_API_KEY
   if (!apiKey) {
     return NextResponse.json({
@@ -336,7 +427,7 @@ export async function POST(req: NextRequest) {
     }, { status: 500 })
   }
 
-  const { messages, sessionId } = await req.json()
+  const { messages, sessionId, snapshot } = await req.json()
   if (!messages?.length) return NextResponse.json({ error: 'Nessun messaggio' }, { status: 400 })
 
   const userRole: string = profilo.ruolo
@@ -360,9 +451,13 @@ PERMESSI (ruolo: ${userRole}):
 ${['admin', 'manager'].includes(userRole)
   ? '- Accesso completo a tutte le funzioni del gestionale'
   : '- Puoi creare task solo per te stesso\n- Per operazioni avanzate, contatta un admin o manager'}
+${snapshot ? `
+PRIORITÀ ATTUALI DELLO STUDIO (pre-caricato al momento dell'apertura chat):
+${snapshot}
 
+Usa questo snapshot per rispondere a domande generali sullo stato dello studio. Per dati più dettagliati o aggiornati usa sempre gli strumenti.` : ''}
 REGOLE:
-1. Usa SEMPRE gli strumenti per ottenere dati reali — non inventare informazioni
+1. Usa gli strumenti per ottenere dati reali — non inventare informazioni
 2. Prima di creare qualcosa, conferma i dettagli con l'utente se non sono chiari
 3. Rispondi sempre in italiano
 4. Sii conciso ma completo

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logActivityServer } from '@/lib/registro-server'
 
 // GET /api/adempimenti — lista adempimenti attivi con responsabile e consulente
 export async function GET(_req: NextRequest) {
@@ -25,19 +26,33 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const { data: consulenti } = await adminDb
-    .from('consulenti')
-    .select('id, ruolo, nome, email, telefono, attivo')
-    .eq('attivo', true)
-    .order('ruolo')
+  // Fetch parallelo: consulenti, profili, ultima esecuzione per adempimento
+  const [
+    { data: consulenti },
+    { data: profili },
+    { data: esecuzioni },
+  ] = await Promise.all([
+    adminDb.from('consulenti').select('id, ruolo, nome, email, telefono, attivo').eq('attivo', true).order('ruolo'),
+    adminDb.from('profili').select('id, nome, cognome, ruolo').eq('attivo', true).order('nome'),
+    adminDb.from('adempimenti_esecuzioni')
+      .select('adempimento_id, eseguito_da_nome, data_esecuzione')
+      .order('data_esecuzione', { ascending: false }),
+  ])
 
-  const { data: profili } = await adminDb
-    .from('profili')
-    .select('id, nome, cognome, ruolo')
-    .eq('attivo', true)
-    .order('nome')
+  // Per ogni adempimento: prendi solo la prima riga (più recente) dell'esecuzione
+  const ultimaEsecuzioneMap: Record<string, string | null> = {}
+  for (const e of esecuzioni ?? []) {
+    if (e.adempimento_id && !(e.adempimento_id in ultimaEsecuzioneMap)) {
+      ultimaEsecuzioneMap[e.adempimento_id] = e.eseguito_da_nome ?? null
+    }
+  }
 
-  return NextResponse.json({ adempimenti: adempimenti ?? [], consulenti: consulenti ?? [], profili: profili ?? [] })
+  const adempimentiArricchiti = (adempimenti ?? []).map(a => ({
+    ...a,
+    ultima_esecuzione_da: ultimaEsecuzioneMap[a.id] ?? null,
+  }))
+
+  return NextResponse.json({ adempimenti: adempimentiArricchiti, consulenti: consulenti ?? [], profili: profili ?? [] })
 }
 
 // POST /api/adempimenti — crea nuovo adempimento (solo admin/manager)
@@ -48,10 +63,11 @@ export async function POST(req: NextRequest) {
 
   const adminDb = createAdminClient()
   const { data: profilo } = await adminDb
-    .from('profili').select('ruolo').eq('id', user.id).single()
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
   if (!profilo || !['admin', 'manager'].includes(profilo.ruolo)) {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
+  const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   const body = await req.json()
   const allowed = [
@@ -69,6 +85,13 @@ export async function POST(req: NextRequest) {
   const { data, error } = await adminDb
     .from('adempimenti').insert(insert).select().single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await logActivityServer(
+    user.id, userNome,
+    'Adempimento creato',
+    `"${insert.titolo}" — categoria ${insert.categoria} — frequenza ${insert.frequenza}`,
+    'adempimenti'
+  )
 
   return NextResponse.json({ adempimento: data })
 }

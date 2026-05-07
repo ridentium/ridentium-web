@@ -55,10 +55,11 @@ export async function PATCH(
     }))
 
     const { data, error } = await adminDb.rpc('ricevi_ordine_tx', {
-      p_ordine_id: params.id,
-      p_righe: righeTx,
-      p_note: note || null,
-      p_tipo: tipo,
+      p_ordine_id:   params.id,
+      p_righe:       righeTx,
+      p_note:        note || null,
+      p_tipo:        tipo,
+      p_received_by: userNome,
     })
 
     if (error) {
@@ -75,6 +76,7 @@ export async function PATCH(
         stato: tipo === 'totale' ? 'ricevuto' : 'parziale',
         note: note || null,
         data_ricezione: (data as any)?.data_ricezione ?? new Date().toISOString(),
+        received_by: userNome,
       },
     })
   }

@@ -1,12 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Ordine, MagazzinoItem, Fornitore } from '@/types'
 import {
   MessageCircle, Mail, Check, X, AlertCircle,
   Package, ChevronDown, ChevronUp, ShoppingCart, Globe, Phone,
-  Plus, Trash2, Copy,
+  Plus, Trash2, Copy, FileUp,
 } from 'lucide-react'
 
 interface Props {
@@ -79,6 +79,10 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
   const [nuovoSaving, setNuovoSaving] = useState(false)
   const [magazzino, setMagazzino] = useState<MagazzinoItem[]>([])
   const [magazzinoLoaded, setMagazzinoLoaded] = useState(false)
+  const [csvError, setCsvError] = useState<string | null>(null)
+  const csvInputRef = useRef<HTMLInputElement>(null)
+  const [hasMore, setHasMore] = useState(initialOrdini.length >= 100)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const aperti    = ordini.filter(o => ['inviato', 'confermato_fornitore', 'in_consegna', 'parziale'].includes(o.stato))
   const ricevuti  = ordini.filter(o => o.stato === 'ricevuto')
@@ -277,6 +281,58 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
     }))
   }
 
+  function importaCSV(file: File) {
+    setCsvError(null)
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      const text = e.target?.result as string
+      if (!text) return
+      const lines = text.split(/\r?\n/).filter(l => l.trim())
+      if (lines.length === 0) { setCsvError('File vuoto'); return }
+      // Autorileva separatore (virgola o punto e virgola)
+      const sep = lines[0].includes(';') ? ';' : ','
+      // Salta riga header se prima cella non è un numero (es. "prodotto_nome")
+      const firstCols = lines[0].split(sep)
+      const hasHeader = isNaN(Number(firstCols[1]?.trim().replace(/"/g, '')))
+      const dataLines = hasHeader ? lines.slice(1) : lines
+      const parsed: NuovaRiga[] = []
+      for (const line of dataLines) {
+        const cols = line.split(sep).map(c => c.trim().replace(/^"|"$/g, ''))
+        const nome = cols[0]
+        const qty  = Number(cols[1])
+        const unita = cols[2] || 'pz'
+        if (!nome || isNaN(qty) || qty <= 0) continue
+        parsed.push({ magazzino_id: '', prodotto_nome: nome, quantita: qty, unita })
+      }
+      if (parsed.length === 0) { setCsvError('Nessun prodotto valido nel CSV (atteso: nome,quantità,unità)'); return }
+      setNuovoRighe(parsed)
+    }
+    reader.readAsText(file, 'utf-8')
+  }
+
+  async function caricaAltri() {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    const oldest = ordini.at(-1)?.created_at
+    const url = `/api/ordini?limit=50${oldest ? `&before=${encodeURIComponent(oldest)}` : ''}`
+    const res = await fetch(url)
+    if (res.ok) {
+      const json = await res.json()
+      setOrdini(prev => [...prev, ...json.ordini])
+      setHasMore(json.hasMore)
+    }
+    setLoadingMore(false)
+  }
+
+  function scaricaTemplate() {
+    const content = 'prodotto_nome,quantita,unita\nGuanti nitrile M,100,pz\nMascherine FFP2,50,pz\nAgo 27G,200,pz\n'
+    const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = 'template_ordine.csv'; a.click()
+    URL.revokeObjectURL(url)
+  }
+
   async function creaNuovoOrdine() {
     if (nuovoSaving) return // guard doppio-click: era la fonte principale dei duplicati
     if (!nuovoFornitore.trim()) return
@@ -413,6 +469,9 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     {ordine.data_ricezione && (
                       <p className="text-xs text-stone/60 mt-0.5">
                         Ricevuto: {formatData(ordine.data_ricezione)}
+                        {ordine.received_by && (
+                          <span className="ml-1 text-stone/40">da {ordine.received_by}</span>
+                        )}
                       </p>
                     )}
                     {ordine.note && (
@@ -559,6 +618,19 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Carica ordini precedenti */}
+      {hasMore && (
+        <div className="mt-4 text-center">
+          <button
+            onClick={caricaAltri}
+            disabled={loadingMore}
+            className="text-xs px-5 py-2 rounded border border-obsidian-light/40 text-stone hover:text-cream hover:border-stone/40 transition-colors disabled:opacity-50"
+          >
+            {loadingMore ? 'Caricamento…' : 'Carica ordini precedenti'}
+          </button>
         </div>
       )}
 
@@ -832,12 +904,41 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                   </div>
                 ))}
               </div>
-              <button
-                onClick={aggiungiRiga}
-                className="mt-2 flex items-center gap-1 text-xs text-stone hover:text-gold transition-colors"
-              >
-                <Plus size={12} /> Aggiungi prodotto
-              </button>
+              <div className="mt-2 flex items-center gap-3 flex-wrap">
+                <button
+                  onClick={aggiungiRiga}
+                  className="flex items-center gap-1 text-xs text-stone hover:text-gold transition-colors"
+                >
+                  <Plus size={12} /> Aggiungi prodotto
+                </button>
+                <span className="text-obsidian-light/40 text-xs">|</span>
+                <button
+                  type="button"
+                  onClick={() => { setCsvError(null); csvInputRef.current?.click() }}
+                  className="flex items-center gap-1 text-xs text-stone hover:text-gold transition-colors"
+                >
+                  <FileUp size={12} /> Importa CSV
+                </button>
+                <button
+                  type="button"
+                  onClick={scaricaTemplate}
+                  className="text-[10px] text-stone/40 hover:text-stone transition-colors underline underline-offset-2"
+                >
+                  Scarica template
+                </button>
+                <input
+                  ref={csvInputRef}
+                  type="file"
+                  accept=".csv,text/csv"
+                  className="hidden"
+                  onChange={e => { const f = e.target.files?.[0]; if (f) importaCSV(f); e.target.value = '' }}
+                />
+              </div>
+              {csvError && (
+                <p className="mt-1.5 text-[11px] text-red-400 flex items-center gap-1">
+                  <AlertCircle size={11} /> {csvError}
+                </p>
+              )}
             </div>
 
             {/* Note */}

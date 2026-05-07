@@ -14,7 +14,8 @@ export default async function OrdiniPage() {
     adminDb
       .from('ordini')
       .select('*, righe:ordini_righe(*)')
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .limit(100),
     adminDb
       .from('fornitori')
       .select('*'),

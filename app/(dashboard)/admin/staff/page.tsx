@@ -17,6 +17,7 @@ export default async function StaffPage() {
       <PageHeader
         title="Staff"
         subtitle="Gestione membri del team"
+        breadcrumb={{ label: 'Dashboard', href: '/admin' }}
       />
       <StaffManager staff={staff ?? []} />
     </div>

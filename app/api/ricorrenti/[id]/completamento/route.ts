@@ -41,6 +41,15 @@ export async function POST(
 
   const periodoKey = getPeriodoKey(ricorrente.frequenza)
 
+  // Nota facoltativa dal body (inviata dal widget NotePopup)
+  let nota: string | null = null
+  try {
+    const body = await req.json()
+    if (typeof body?.nota === 'string' && body.nota.trim()) {
+      nota = body.nota.trim()
+    }
+  } catch { /* body assente o non-JSON — nessuna nota */ }
+
   // Chiama la RPC atomica (usa SELECT FOR UPDATE internamente)
   const { data: nuoviCompletamenti, error } = await adminDb.rpc(
     'toggle_completamento_ricorrente',
@@ -49,6 +58,7 @@ export async function POST(
       p_user_id:       user.id,
       p_user_name:     userNome,
       p_periodo_key:   periodoKey,
+      p_nota:          nota,
     }
   )
 

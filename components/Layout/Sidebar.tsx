@@ -9,7 +9,7 @@ import { cn, roleLabel } from '@/lib/utils'
 import {
   LayoutDashboard, Package, CheckSquare, BookOpen, Users, LogOut, ChevronRight,
   AlertTriangle, ShoppingCart, UserCircle2, RefreshCw, Activity, Sparkles,
-  Building2, X, Bell, ShieldCheck, Settings2, CalendarDays, Search,
+  Building2, X, Bell, ShieldCheck, Settings2, CalendarDays, Search, Wrench,
 } from 'lucide-react'
 import NotificheBell from '@/components/Notifiche/NotificheBell'
 
@@ -17,9 +17,10 @@ interface NavItem { href:string; label:string; icon:React.ElementType; highlight
 
 const adminHome: NavItem[]       = [{ href:'/admin', label:'Panoramica', icon:LayoutDashboard }]
 const adminOperazioni: NavItem[] = [
-  { href:'/admin/magazzino', label:'Magazzino', icon:Package },
-  { href:'/admin/ordini',    label:'Ordini',    icon:ShoppingCart },
-  { href:'/admin/fornitori', label:'Fornitori', icon:Building2 },
+  { href:'/admin/magazzino',    label:'Magazzino',    icon:Package },
+  { href:'/admin/ordini',       label:'Ordini',       icon:ShoppingCart },
+  { href:'/admin/fornitori',    label:'Fornitori',    icon:Building2 },
+  { href:'/admin/attrezzature', label:'Attrezzature', icon:Wrench },
 ]
 const adminTeam: NavItem[] = [
   { href:'/admin/agenda',     label:'Agenda',    icon:CalendarDays },

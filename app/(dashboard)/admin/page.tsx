@@ -7,6 +7,7 @@ import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
 import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
+import DashboardRefreshButton from '@/components/Dashboard/DashboardRefreshButton'
 import OggiWidget, { type OggiItem } from '@/components/Dashboard/OggiWidget'
 import { calcolaStato } from '@/types/adempimenti'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
@@ -196,7 +197,10 @@ export default async function AdminHome() {
         <p className="text-xs text-stone uppercase tracking-widest">
           {oggi.charAt(0).toUpperCase() + oggi.slice(1)}
         </p>
-        <DashboardPersonalizza />
+        <div className="flex items-center gap-4">
+          <DashboardRefreshButton />
+          <DashboardPersonalizza />
+        </div>
       </div>
 
       <QuickActionsBar />

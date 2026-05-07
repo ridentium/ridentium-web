@@ -5,6 +5,35 @@ import { createNotifica } from '@/lib/notifiche'
 import { logActivityServer } from '@/lib/registro-server'
 import { createOrdineSchema, zodError } from '@/lib/validation'
 
+// GET /api/ordini?before=<ISO date>&limit=<n>
+// Cursor-based pagination: restituisce ordini creati prima di `before`
+export async function GET(req: NextRequest) {
+  const supabase = createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError || !user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+
+  const url = new URL(req.url)
+  const before = url.searchParams.get('before')
+  const limit  = Math.min(100, parseInt(url.searchParams.get('limit') ?? '50', 10))
+
+  const adminDb = createAdminClient()
+  let query = adminDb
+    .from('ordini')
+    .select('*, righe:ordini_righe(*)')
+    .order('created_at', { ascending: false })
+    .limit(limit + 1) // fetch one extra to detect hasMore
+
+  if (before) query = query.lt('created_at', before)
+
+  const { data, error } = await query
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const hasMore = (data?.length ?? 0) > limit
+  const ordini = hasMore ? data!.slice(0, limit) : (data ?? [])
+
+  return NextResponse.json({ ordini, hasMore })
+}
+
 export async function POST(req: NextRequest) {
   const supabase = createClient()
   const adminDb  = createAdminClient()
