@@ -4,19 +4,20 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotifica } from '@/lib/notifiche'
 import { logActivityServer } from '@/lib/registro-server'
 import { createOrdineSchema, zodError } from '@/lib/validation'
+import { requireAuth } from '@/lib/auth-helpers'
 
 // GET /api/ordini?before=<ISO date>&limit=<n>
 // Cursor-based pagination: restituisce ordini creati prima di `before`
+// Staff e superiori possono leggere gli ordini (operativita magazzino)
 export async function GET(req: NextRequest) {
-  const supabase = createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  const auth = await requireAuth('any')
+  if (auth instanceof NextResponse) return auth
+  const { adminDb } = auth
 
   const url = new URL(req.url)
   const before = url.searchParams.get('before')
   const limit  = Math.min(100, parseInt(url.searchParams.get('limit') ?? '50', 10))
 
-  const adminDb = createAdminClient()
   let query = adminDb
     .from('ordini')
     .select('*, righe:ordini_righe(*)')

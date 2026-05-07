@@ -3,14 +3,15 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { createMagazzinoItemSchema, zodError } from '@/lib/validation'
+import { requireAuth } from '@/lib/auth-helpers'
 
-// GET /api/magazzino — lista prodotti per dropdown (utenti autenticati)
+// GET /api/magazzino — lista prodotti (staff e superiori)
+// Qualsiasi ruolo dello studio registrato nel DB puo leggere il magazzino.
 export async function GET() {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
+  const auth = await requireAuth('any')
+  if (auth instanceof NextResponse) return auth
+  const { adminDb } = auth
 
-  const adminDb = createAdminClient()
   const { data, error } = await adminDb
     .from('magazzino')
     .select('id, prodotto, unita, azienda')
