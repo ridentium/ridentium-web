@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/mailer'
 import { createNotifica } from '@/lib/notifiche'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
+import { logActivityServer } from '@/lib/registro-server'
 
 // Rate limit: 5 richieste per ora per IP.
 // Protegge da spam sul form landing anche in presenza di API key valida.
@@ -149,6 +150,16 @@ export async function GET(req: NextRequest) {
       new Date(r.created_at).toLocaleDateString('it-IT'),
     ].map(v => `"${v}"`).join(','))
     const csv = [headers.join(','), ...rows].join('\n')
+
+    // Audit GDPR: ogni export di dati personali deve essere tracciato
+    const nomeUtente = `${(profilo as { nome?: string }).nome ?? ''} (${profilo.ruolo})`.trim()
+    logActivityServer(
+      user.id, nomeUtente,
+      `Export CSV contatti CRM — ${(data ?? []).length} record${stato ? ` (filtro stato: ${stato})` : ''}`,
+      `export_${new Date().toISOString().slice(0,10)}`,
+      'crm',
+    ).catch(() => {}) // non blocca la risposta
+
     return new NextResponse(csv, {
       status: 200,
       headers: {
