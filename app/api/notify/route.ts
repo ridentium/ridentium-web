@@ -32,8 +32,13 @@ interface NotifyPayload {
 export async function POST(req: NextRequest) {
   try {
     // Verify this is an internal call with a secret header
+    const notifySecret = process.env.NOTIFY_SECRET
+    if (!notifySecret) {
+      console.error('[notify] NOTIFY_SECRET non configurata — tutte le notifiche push interne sono bloccate')
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     const secret = req.headers.get('x-notify-secret')
-    if (secret !== process.env.NOTIFY_SECRET) {
+    if (secret !== notifySecret) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

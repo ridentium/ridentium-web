@@ -67,12 +67,18 @@ export async function GET(req: NextRequest) {
     }
 
     // Call the notify endpoint server-to-server
+    // Guard: se NOTIFY_SECRET non e configurata, la chiamata fallirebbe con 403 silenzioso
+    const notifySecret = process.env.NOTIFY_SECRET
+    if (!notifySecret) {
+      console.error('[notify/stock] NOTIFY_SECRET non configurata — notifiche push scorte non inviate')
+      return NextResponse.json({ ok: true, alerts: below.length, reason: 'notify_secret_missing' })
+    }
     const baseUrl = req.nextUrl.origin
     const res = await fetch(`${baseUrl}/api/notify`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-notify-secret': process.env.NOTIFY_SECRET || '',
+        'x-notify-secret': notifySecret,
       },
       body: JSON.stringify(notifyPayload),
     })
