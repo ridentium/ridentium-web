@@ -21,3 +21,7 @@
 *.tsbuildinfo
 next-env.d.ts
 package-lock.json
+
+# supabase CLI — file locali generati dal link al progetto remoto
+# contengono URL di connessione e metadati di sessione, non vanno in git
+supabase/.temp/
