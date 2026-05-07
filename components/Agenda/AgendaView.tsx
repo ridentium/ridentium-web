@@ -639,7 +639,12 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                             )
                           })}
                           {dayEvs.length > 4 && (
-                            <p className="text-[9px] text-stone/50 text-center">+{dayEvs.length - 4} altri</p>
+                            <button
+                              onClick={() => goToDay(iso)}
+                              className="w-full text-[9px] text-stone/50 hover:text-gold/70 text-center transition-colors py-0.5 rounded hover:bg-gold/5"
+                            >
+                              +{dayEvs.length - 4} altri
+                            </button>
                           )}
                           <button onClick={() => { goToDay(iso); setQuickAdd({ date: iso }) }}
                             className="w-full flex items-center justify-center py-0.5 text-stone/20 hover:text-stone/60 transition-colors rounded"

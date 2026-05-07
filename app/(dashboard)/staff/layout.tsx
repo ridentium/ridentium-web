@@ -1,9 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import Sidebar from '@/components/Layout/Sidebar'
+import AdminShell from '@/components/Layout/AdminShell'
 import { UserProfile } from '@/types'
-import { getPeriodoKey } from '@/lib/periodo'
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -20,32 +19,30 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   if (!profilo) redirect('/login')
   if (profilo.ruolo === 'admin') redirect('/admin')
 
-  const [{ data: alertData }, { data: ricorrenti }] = await Promise.all([
-    supabase.from('magazzino').select('id, quantita, soglia_minima, scadenza'),
-    supabase.from('ricorrenti').select('frequenza, completamenti').eq('attiva', true),
+  const [{ data: alertData }, { data: tasksData }] = await Promise.all([
+    supabase.from('magazzino').select('id, quantita, soglia_minima'),
+    supabase.from('tasks').select('id')
+      .eq('assegnato_a', user.id)
+      .neq('stato', 'completato')
+      .is('deleted_at', null),
   ])
 
   const alertCount = (alertData ?? []).filter(
     (item: any) => item.quantita < item.soglia_minima
   ).length
 
-  const ricorrentiCount = (ricorrenti ?? []).filter((r: any) => {
-    const key = getPeriodoKey(r.frequenza)
-    const completamenti: any[] = r.completamenti ?? []
-    return !completamenti.some((c: any) => c.userId === user.id && c.periodoKey === key)
-  }).length
+  const tasksCount = tasksData?.length ?? 0
+  const userName = `${profilo.nome ?? ''} ${profilo.cognome ?? ''}`.trim()
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar profilo={profilo as UserProfile} alertCount={alertCount} ricorrentiCount={ricorrentiCount} />
-      <main className="flex-1 overflow-auto">
-        <div className="md:hidden h-14 border-b border-obsidian-light/50 flex items-center px-14 bg-obsidian/95 sticky top-0 z-30">
-          <h2 className="font-serif text-cream tracking-[0.2em] text-sm font-light">RIDENTIUM</h2>
-        </div>
-        <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 sm:py-6 md:px-8 md:py-8">
-          {children}
-        </div>
-      </main>
-    </div>
+    <AdminShell
+      profilo={profilo as UserProfile}
+      alertCount={alertCount}
+      tasksCount={tasksCount}
+      userName={userName}
+      userRole={profilo.ruolo}
+    >
+      {children}
+    </AdminShell>
   )
 }
