@@ -6,14 +6,14 @@
 
 ---
 
-## ⚠️ MIGRATION DA APPLICARE IN SUPABASE (prima del prossimo deploy)
+## ✅ MIGRATION APPLICATE IN SUPABASE (2026-05-07)
 
-| File | Contenuto | Urgenza |
-|------|-----------|---------|
-| `20260506_nota_ricorrenti.sql` | Aggiunge p_nota alla RPC toggle_completamento | Alta |
-| `20260506_ordine_received_by.sql` | Aggiunge colonna received_by su ordini | Alta |
-| `20260507_attrezzature.sql` | Tabelle attrezzature + manutenzioni | Media |
-| `20260507_user_prefs.sql` | Tabella user_prefs JSONB | Media |
+| File | Contenuto | Status |
+|------|-----------|--------|
+| `20260506_nota_ricorrenti.sql` | Aggiunge p_nota alla RPC toggle_completamento | ✅ Applicata |
+| `20260506_ordine_received_by.sql` | Aggiunge colonna received_by su ordini | ✅ Applicata |
+| `20260507_attrezzature.sql` | Tabelle attrezzature + manutenzioni | ✅ Applicata |
+| `20260507_user_prefs.sql` | Tabella user_prefs JSONB | ✅ Applicata |
 
 ---
 
