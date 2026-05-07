@@ -4,10 +4,10 @@ const nextConfig = {
     domains: ['your-supabase-project.supabase.co', 'cnbghqlxarwdglxvmkti.supabase.co'],
   },
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
 }
 
