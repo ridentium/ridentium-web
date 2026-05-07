@@ -37,13 +37,7 @@ export default function AdempimentiView({ canEdit }: Props) {
   const [profili, setProfili]             = useState<{ id: string; nome: string; cognome: string; ruolo: string }[]>([])
   const [impostazioni, setImpostazioni]   = useState<ImpostazioniStudio>(DEFAULT_IMPOSTAZIONI)
   const [loading, setLoading]             = useState(true)
-  const [filtroStato, setFiltroStato]     = useState<FiltroStato>(() => {
-    if (typeof window === 'undefined') return 'tutti'
-    const f = new URL(window.location.href).searchParams.get('filter')
-    if (f === 'scaduto') return 'scaduti'
-    if (f === 'in_scadenza') return 'in_scadenza'
-    return 'tutti'
-  })
+  const [filtroStato, setFiltroStato]     = useState<FiltroStato>('tutti')
   const [filtroCategoria, setFiltroCategoria] = useState<'' | CategoriaAdempimento>('')
   const [search, setSearch]               = useState('')
   const [view, setView]                   = useState<ViewMode>('lista')
@@ -58,6 +52,13 @@ export default function AdempimentiView({ canEdit }: Props) {
   const [toast, setToast] = useState<ToastState | null>(null)
   const showToast = useCallback((message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type })
+  }, [])
+
+  // Legge ?filter= dall'URL solo lato client (evita hydration mismatch)
+  useEffect(() => {
+    const f = new URLSearchParams(window.location.search).get('filter')
+    if (f === 'scaduto') setFiltroStato('scaduti')
+    else if (f === 'in_scadenza') setFiltroStato('in_scadenza')
   }, [])
 
   const supabase = useMemo(() => createBrowserClient(), [])

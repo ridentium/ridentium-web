@@ -25,13 +25,21 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
   const [isPending, startTransition] = useTransition()
   const [showInvite, setShowInvite] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<UserProfile | null>(null)
+  const [roleTarget, setRoleTarget] = useState<{ member: UserProfile; ruolo: UserRole } | null>(null)
   const [actionError, setActionError] = useState('')
 
-  async function handleRoleChange(id: string, ruolo: UserRole) {
+  async function confirmRoleChange() {
+    if (!roleTarget) return
     setActionError('')
-    const res = await updateStaffRole(id, ruolo)
+    const res = await updateStaffRole(roleTarget.member.id, roleTarget.ruolo)
+    setRoleTarget(null)
     if (res.error) setActionError(res.error)
     else startTransition(() => router.refresh())
+  }
+
+  function handleRoleChange(member: UserProfile, ruolo: UserRole) {
+    if (ruolo === member.ruolo) return // nessun cambiamento
+    setRoleTarget({ member, ruolo })
   }
 
   async function handleToggleAttivo(id: string, attivo: boolean) {
@@ -102,7 +110,7 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                   <td>
                     <select
                       value={member.ruolo}
-                      onChange={e => handleRoleChange(member.id, e.target.value as UserRole)}
+                      onChange={e => handleRoleChange(member, e.target.value as UserRole)}
                       disabled={isPending}
                       className="bg-transparent border border-obsidian-light rounded px-2 py-1 text-xs focus:outline-none focus:border-gold transition-colors disabled:opacity-50"
                     >
@@ -171,6 +179,42 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                 className="flex-1 px-4 py-2 rounded bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/30 transition-colors"
               >
                 Elimina
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Conferma cambio ruolo */}
+      {roleTarget && (
+        <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-sm">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-9 h-9 rounded-full bg-amber-400/10 flex items-center justify-center">
+                <AlertTriangle size={16} className="text-amber-400" />
+              </div>
+              <div>
+                <p className="text-cream font-medium text-sm">Cambia ruolo</p>
+                <p className="text-stone/60 text-xs">Questa azione modifica i permessi di accesso</p>
+              </div>
+            </div>
+            <p className="text-stone text-sm mb-5">
+              Vuoi cambiare il ruolo di{' '}
+              <span className="text-cream font-medium">
+                {roleTarget.member.nome} {roleTarget.member.cognome}
+              </span>
+              {' '}a <span className="text-gold font-medium">{RUOLI.find(r => r.value === roleTarget.ruolo)?.label ?? roleTarget.ruolo}</span>?
+            </p>
+            <div className="flex gap-3">
+              <button onClick={() => setRoleTarget(null)} className="btn-secondary flex-1 text-sm">
+                Annulla
+              </button>
+              <button
+                onClick={confirmRoleChange}
+                disabled={isPending}
+                className="flex-1 px-4 py-2 rounded bg-gold/15 border border-gold/30 text-gold text-sm font-medium hover:bg-gold/25 transition-colors disabled:opacity-50"
+              >
+                Conferma
               </button>
             </div>
           </div>

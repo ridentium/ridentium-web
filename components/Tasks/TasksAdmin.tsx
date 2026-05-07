@@ -56,6 +56,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
 
   // Bulk selection
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false)
   function toggleSelect(id: string) {
     setSelected(prev => {
       const next = new Set(prev)
@@ -82,10 +83,10 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
   }
 
   async function bulkDelete() {
-    if (!confirm(`Eliminare ${selected.size} task selezionat${selected.size === 1 ? 'o' : 'i'}?`)) return
     const ids = Array.from(selected)
     await Promise.all(ids.map(id => fetch(`/api/tasks/${id}`, { method: 'DELETE' })))
     setSelected(new Set())
+    setConfirmBulkDelete(false)
     startTransition(() => router.refresh())
   }
 
@@ -285,9 +286,17 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
           <button onClick={bulkComplete} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-green-400/30 bg-green-400/10 text-green-400 hover:bg-green-400/20 transition-colors">
             <CheckCheck size={12} /> Segna completati
           </button>
-          <button onClick={bulkDelete} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-red-400/30 bg-red-400/10 text-red-400 hover:bg-red-400/20 transition-colors">
-            <Trash2 size={12} /> Elimina
-          </button>
+          {confirmBulkDelete ? (
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-red-400/80">Confermi eliminazione?</span>
+              <button onClick={bulkDelete} className="text-xs px-2 py-0.5 rounded bg-red-400/20 border border-red-400/30 text-red-400 hover:bg-red-400/30 transition-colors font-medium">Sì</button>
+              <button onClick={() => setConfirmBulkDelete(false)} className="text-xs text-stone hover:text-cream transition-colors">No</button>
+            </div>
+          ) : (
+            <button onClick={() => setConfirmBulkDelete(true)} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-red-400/30 bg-red-400/10 text-red-400 hover:bg-red-400/20 transition-colors">
+              <Trash2 size={12} /> Elimina
+            </button>
+          )}
           <button onClick={clearSelection} className="ml-auto text-xs text-stone/60 hover:text-stone transition-colors">
             Annulla selezione
           </button>

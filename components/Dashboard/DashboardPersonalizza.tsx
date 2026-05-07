@@ -7,9 +7,11 @@ import { useUserPref } from '@/lib/useUserPref'
 const WIDGETS = [
   { id: 'lina',       label: 'Briefing Lina AI' },
   { id: 'kpi',        label: 'KPI riepilogo' },
+  { id: 'oggi',       label: 'Agenda oggi' },
+  { id: 'prossimi',   label: 'Prossimi 3 giorni' },
   { id: 'scadenze',   label: 'Adempimenti urgenti' },
   { id: 'tasks',      label: 'Task & Ricorrenti' },
-  { id: 'riordini',   label: 'Richieste riordino' },
+  { id: 'crm',        label: 'Lead CRM recenti' },
 ] as const
 
 type WidgetId = typeof WIDGETS[number]['id']

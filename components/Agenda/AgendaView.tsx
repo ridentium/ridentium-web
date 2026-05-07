@@ -45,22 +45,26 @@ export default function AgendaView({ isAdmin, userId }: Props) {
   const now = new Date()
   const oggiStr = toISO(now.getFullYear(), now.getMonth(), now.getDate())
 
-  function initFromURL(): { view: 'giorno' | 'settimana' | 'mese'; day: string } {
-    if (typeof window === 'undefined') return { view: 'settimana', day: oggiStr }
+  // Stato calendario — valori di default sicuri per SSR (nessuna lettura di window)
+  const [calView, setCalView] = useState<'giorno' | 'settimana' | 'mese'>('settimana')
+  const [calYear, setCalYear] = useState(now.getFullYear())
+  const [calMonth, setCalMonth] = useState(now.getMonth())
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+  const [viewDay, setViewDay] = useState<string>(oggiStr)
+
+  // Legge ?view= e ?data= dall'URL solo lato client (evita hydration mismatch)
+  useEffect(() => {
     const p = new URLSearchParams(window.location.search)
     const v = p.get('view')
     const d = p.get('data')
-    const validView = (v === 'giorno' || v === 'settimana' || v === 'mese') ? v : 'settimana'
-    const validDay = d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : oggiStr
-    return { view: validView, day: validDay }
-  }
-
-  const { view: initView, day: initDay } = initFromURL()
-  const [calView, setCalView] = useState<'giorno' | 'settimana' | 'mese'>(initView)
-  const [calYear, setCalYear] = useState(() => new Date(initDay + 'T00:00:00').getFullYear())
-  const [calMonth, setCalMonth] = useState(() => new Date(initDay + 'T00:00:00').getMonth())
-  const [selectedDay, setSelectedDay] = useState<string | null>(null)
-  const [viewDay, setViewDay] = useState<string>(initDay)
+    if (v === 'giorno' || v === 'settimana' || v === 'mese') setCalView(v)
+    if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      const parsed = new Date(d + 'T00:00:00')
+      setViewDay(d)
+      setCalYear(parsed.getFullYear())
+      setCalMonth(parsed.getMonth())
+    }
+  }, [])
 
   // Navigazione giorno
   function prevDay() {

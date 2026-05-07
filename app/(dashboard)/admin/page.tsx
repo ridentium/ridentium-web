@@ -216,7 +216,7 @@ export default async function AdminHome() {
 
         {/* ── Prossimi 3 giorni ── */}
         {prossimiItems.length > 0 && (
-          <div className="lg:col-span-2 card">
+          <div id="widget-prossimi" className="lg:col-span-2 card">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <CalendarClock size={14} className="text-gold/70" />

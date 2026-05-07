@@ -22,7 +22,7 @@ export async function PATCH(
   const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   const { data: sopCorrente } = await adminDb
-    .from('altro').select('titolo').eq('id', params.id).single()
+    .from('sop').select('titolo').eq('id', params.id).single()
 
   const rawBody = await req.json().catch(() => null)
   if (!rawBody || typeof rawBody !== 'object') {
@@ -35,7 +35,7 @@ export async function PATCH(
   }
 
   const { data, error } = await adminDb
-    .from('altro')
+    .from('sop')
     .update({ ...parsed.data, updated_at: new Date().toISOString() })
     .eq('id', params.id)
     .select()
@@ -69,9 +69,9 @@ export async function DELETE(
   const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
 
   const { data: sop } = await adminDb
-    .from('altro').select('titolo').eq('id', params.id).single()
+    .from('sop').select('titolo').eq('id', params.id).single()
 
-  const { error } = await adminDb.from('altro').delete().eq('id', params.id)
+  const { error } = await adminDb.from('sop').delete().eq('id', params.id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   await logActivityServer(

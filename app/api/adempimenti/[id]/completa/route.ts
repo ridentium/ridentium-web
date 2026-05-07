@@ -33,6 +33,15 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Non autenticato' }, { status: 401 })
 
+  // Solo admin e manager possono completare adempimenti normativi
+  const adminDb = createAdminClient()
+  const { data: profiloAuth } = await adminDb
+    .from('profili').select('ruolo, nome, cognome').eq('id', user.id).single()
+  if (!profiloAuth || !['admin', 'manager'].includes(profiloAuth.ruolo)) {
+    return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
+  }
+  const userNome = `${profiloAuth.nome} ${profiloAuth.cognome}`.trim()
+
   const body = await req.json().catch(() => ({}))
   const { note, evidenza_descrizione, evidenza_url } = body
 
@@ -50,7 +59,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   // ── Auto-rinnovo + fetch dati per log ─────────────────────────────────────────
-  const adminDb = createAdminClient()
   const { data: adempimento } = await adminDb
     .from('adempimenti')
     .select('titolo, frequenza, prossima_scadenza')
@@ -72,10 +80,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   }
 
   // ── Log attività ──────────────────────────────────────────────────────────────
-  const { data: profilo } = await adminDb
-    .from('profili').select('nome, cognome').eq('id', user.id).single()
-  const userNome = profilo ? `${profilo.nome} ${profilo.cognome}`.trim() : 'Utente'
-
   await logActivityServer(
     user.id, userNome,
     'Adempimento completato',

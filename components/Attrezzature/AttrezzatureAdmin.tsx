@@ -4,10 +4,11 @@ import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Attrezzatura, Manutenzione, StatoAttrezzatura, FrequenzaManutenzione, TipoManutenzione } from '@/types'
 import { cn } from '@/lib/utils'
+import Toast, { type ToastState } from '@/components/ui/Toast'
 import {
   Wrench, Plus, ChevronDown, ChevronUp, AlertTriangle,
   CheckCircle2, Clock, XCircle, CalendarDays, ClipboardList,
-  Loader2,
+  Loader2, Pencil, Search, Filter,
 } from 'lucide-react'
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -61,13 +62,16 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
   const [items, setItems] = useState<Attrezzatura[]>(initialData)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [showAdd, setShowAdd] = useState(false)
+  const [editTarget, setEditTarget] = useState<Attrezzatura | null>(null)
   const [manutFor, setManutFor] = useState<Attrezzatura | null>(null)
   const [saving, setSaving] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+  const [toast, setToast] = useState<ToastState | null>(null)
+  const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [filtroStato, setFiltroStato] = useState('')
+  const [search, setSearch] = useState('')
 
-  function showToast(msg: string) {
-    setToast(msg)
-    setTimeout(() => setToast(null), 3000)
+  function showToast(msg: string, type: 'success' | 'error' = 'success') {
+    setToast({ message: msg, type })
   }
 
   function refresh() { startTransition(() => router.refresh()) }
@@ -93,7 +97,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
       body: JSON.stringify(body),
     })
     setSaving(false)
-    if (!res.ok) { showToast('Errore nel salvataggio'); return }
+    if (!res.ok) { showToast('Errore nel salvataggio', 'error'); return }
     const json = await res.json()
     setItems(prev => [...prev, { ...json.attrezzatura, manutenzioni: [] }])
     setShowAdd(false)
@@ -101,13 +105,48 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
     refresh()
   }
 
-  // ── Cambia stato ─────────────────────────────────────────────────────────
+  // ── Modifica attrezzatura ────────────────────────────────────────────────
+  async function handleEdit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    if (!editTarget) return
+    setSaving(true)
+    const fd = new FormData(e.currentTarget)
+    const body = {
+      nome:                       fd.get('nome'),
+      categoria:                  fd.get('categoria'),
+      numero_seriale:             fd.get('numero_seriale') || null,
+      fornitore_nome:             fd.get('fornitore_nome') || null,
+      data_acquisto:              fd.get('data_acquisto') || null,
+      frequenza_manutenzione:     fd.get('frequenza_manutenzione'),
+      data_prossima_manutenzione: fd.get('data_prossima_manutenzione') || null,
+    }
+    const res = await fetch(`/api/attrezzature/${editTarget.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    setSaving(false)
+    if (!res.ok) { showToast('Errore nel salvataggio', 'error'); return }
+    setItems(prev => prev.map(i => i.id === editTarget.id ? { ...i, ...body } as Attrezzatura : i))
+    setEditTarget(null)
+    showToast('Attrezzatura aggiornata')
+    refresh()
+  }
+
+  // ── Cambia stato (con rollback ottimistico) ──────────────────────────────
   async function handleStatoChange(id: string, stato: StatoAttrezzatura) {
+    const prev = items.find(i => i.id === id)?.stato
     setItems(prev => prev.map(i => i.id === id ? { ...i, stato } : i))
-    await fetch(`/api/attrezzature/${id}`, {
+    const res = await fetch(`/api/attrezzature/${id}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stato }),
     })
+    if (!res.ok) {
+      // rollback
+      if (prev) setItems(p => p.map(i => i.id === id ? { ...i, stato: prev } : i))
+      showToast('Errore aggiornamento stato', 'error')
+      return
+    }
+    showToast(`Stato: ${STATO_CONFIG[stato].label}`)
     refresh()
   }
 
@@ -129,7 +168,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
       body: JSON.stringify(body),
     })
     setSaving(false)
-    if (!res.ok) { showToast('Errore nel salvataggio'); return }
+    if (!res.ok) { showToast('Errore nel salvataggio', 'error'); return }
     const json = await res.json()
     setItems(prev => prev.map(i => {
       if (i.id !== manutFor.id) return i
@@ -144,6 +183,15 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
     refresh()
   }
 
+  // ── Filtri ───────────────────────────────────────────────────────────────
+  const categorieUniche = Array.from(new Set(items.map(i => i.categoria).filter(Boolean)))
+  const itemsFiltrati = items.filter(i => {
+    if (filtroCategoria && i.categoria !== filtroCategoria) return false
+    if (filtroStato && i.stato !== filtroStato) return false
+    if (search.trim() && !i.nome.toLowerCase().includes(search.toLowerCase())) return false
+    return true
+  })
+
   const scadenzeAlert = items.filter(i =>
     i.stato !== 'fuori_servizio' &&
     (isScadenzaSuperata(i.data_prossima_manutenzione) || isScadenzaVicina(i.data_prossima_manutenzione))
@@ -151,12 +199,8 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
 
   return (
     <div className="space-y-4">
-      {/* Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 z-50 px-4 py-2 rounded bg-obsidian border border-gold/30 text-cream text-sm shadow-lg">
-          {toast}
-        </div>
-      )}
+      {/* Toast standard */}
+      {toast && <Toast {...toast} onDismiss={() => setToast(null)} />}
 
       {/* Alert scadenze */}
       {scadenzeAlert.length > 0 && (
@@ -172,12 +216,45 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
         </div>
       )}
 
-      {/* Header azioni */}
-      <div className="flex items-center justify-between">
-        <p className="text-stone text-sm">{items.length} attrezzatur{items.length === 1 ? 'a' : 'e'}</p>
-        <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2 text-sm">
-          <Plus size={14} /> Aggiungi
-        </button>
+      {/* Header azioni + filtri */}
+      <div className="flex flex-wrap items-center gap-3 justify-between">
+        <p className="text-stone text-sm">
+          {itemsFiltrati.length === items.length
+            ? `${items.length} attrezzatur${items.length === 1 ? 'a' : 'e'}`
+            : `${itemsFiltrati.length} di ${items.length}`}
+        </p>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-stone/50" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Cerca…"
+              className="pl-7 pr-3 py-1 text-xs bg-obsidian-light/20 border border-obsidian-light rounded text-cream placeholder:text-stone/40 focus:outline-none focus:border-gold/40 w-36"
+            />
+          </div>
+          <select
+            value={filtroCategoria}
+            onChange={e => setFiltroCategoria(e.target.value)}
+            className="text-xs bg-obsidian-light/20 border border-obsidian-light rounded px-2 py-1 text-stone focus:outline-none focus:border-gold/40"
+          >
+            <option value="">Tutte le categorie</option>
+            {categorieUniche.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select
+            value={filtroStato}
+            onChange={e => setFiltroStato(e.target.value)}
+            className="text-xs bg-obsidian-light/20 border border-obsidian-light rounded px-2 py-1 text-stone focus:outline-none focus:border-gold/40"
+          >
+            <option value="">Tutti gli stati</option>
+            {(Object.keys(STATO_CONFIG) as StatoAttrezzatura[]).map(s => (
+              <option key={s} value={s}>{STATO_CONFIG[s].label}</option>
+            ))}
+          </select>
+          <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2 text-sm">
+            <Plus size={14} /> Aggiungi
+          </button>
+        </div>
       </div>
 
       {/* Lista */}
@@ -187,9 +264,17 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
           <p className="text-sm">Nessuna attrezzatura registrata.</p>
           <p className="text-xs mt-1 opacity-60">Inizia aggiungendo riuniti, autoclavi, compressori…</p>
         </div>
+      ) : itemsFiltrati.length === 0 ? (
+        <div className="card text-center py-8 text-stone text-sm">
+          Nessuna attrezzatura corrisponde ai filtri selezionati.
+          <button onClick={() => { setSearch(''); setFiltroCategoria(''); setFiltroStato('') }}
+            className="block mx-auto mt-2 text-xs text-gold hover:text-gold/80 transition-colors">
+            Reimposta filtri
+          </button>
+        </div>
       ) : (
         <div className="space-y-2">
-          {items.map(item => {
+          {itemsFiltrati.map(item => {
             const cfg = STATO_CONFIG[item.stato]
             const StatoIcon = cfg.icon
             const isOpen = expanded === item.id
@@ -232,6 +317,14 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
                       <StatoIcon size={10} />
                       {cfg.label}
                     </span>
+                    <button
+                      onClick={() => setEditTarget(item)}
+                      className="text-[11px] px-2 py-1 rounded border border-stone/20 text-stone/60 hover:text-cream hover:border-stone/40 transition-colors flex items-center gap-1"
+                      title="Modifica dati"
+                    >
+                      <Pencil size={11} />
+                      <span className="hidden sm:inline">Modifica</span>
+                    </button>
                     <button
                       onClick={() => setManutFor(item)}
                       className="text-[11px] px-2 py-1 rounded border border-gold/25 text-gold/70 hover:bg-gold/10 transition-colors flex items-center gap-1"
@@ -372,6 +465,70 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
                   {saving ? 'Salvataggio…' : 'Aggiungi'}
                 </button>
                 <button type="button" onClick={() => setShowAdd(false)} className="btn-secondary">
+                  Annulla
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal — Modifica attrezzatura */}
+      {editTarget && (
+        <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h2 className="font-serif text-lg text-cream font-light mb-1">Modifica Attrezzatura</h2>
+            <p className="text-stone text-xs mb-5">{editTarget.nome}</p>
+            <form onSubmit={handleEdit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="col-span-2">
+                  <label className="label-field block mb-1">Nome *</label>
+                  <input name="nome" required className="input" defaultValue={editTarget.nome} />
+                </div>
+                <div>
+                  <label className="label-field block mb-1">Categoria</label>
+                  <select name="categoria" className="input" defaultValue={editTarget.categoria ?? 'altro'}>
+                    <option value="riunito">Riunito</option>
+                    <option value="autoclave">Autoclave</option>
+                    <option value="compressore">Compressore</option>
+                    <option value="radiologia">Radiologia</option>
+                    <option value="strumentazione">Strumentazione</option>
+                    <option value="aspirazione">Aspirazione</option>
+                    <option value="altro">Altro</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label-field block mb-1">Frequenza manutenzione</label>
+                  <select name="frequenza_manutenzione" className="input" defaultValue={editTarget.frequenza_manutenzione ?? 'annuale'}>
+                    <option value="mensile">Mensile</option>
+                    <option value="trimestrale">Trimestrale</option>
+                    <option value="semestrale">Semestrale</option>
+                    <option value="annuale">Annuale</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="label-field block mb-1">N° Seriale</label>
+                  <input name="numero_seriale" className="input" defaultValue={editTarget.numero_seriale ?? ''} placeholder="opzionale" />
+                </div>
+                <div>
+                  <label className="label-field block mb-1">Fornitore</label>
+                  <input name="fornitore_nome" className="input" defaultValue={editTarget.fornitore_nome ?? ''} placeholder="opzionale" />
+                </div>
+                <div>
+                  <label className="label-field block mb-1">Data acquisto</label>
+                  <input name="data_acquisto" type="date" className="input" defaultValue={editTarget.data_acquisto ?? ''} />
+                </div>
+                <div>
+                  <label className="label-field block mb-1">Prossima manutenzione</label>
+                  <input name="data_prossima_manutenzione" type="date" className="input" defaultValue={editTarget.data_prossima_manutenzione ?? ''} />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" disabled={saving} className="btn-primary flex items-center gap-2 disabled:opacity-50">
+                  {saving ? <Loader2 size={14} className="animate-spin" /> : <Pencil size={14} />}
+                  {saving ? 'Salvataggio…' : 'Salva modifiche'}
+                </button>
+                <button type="button" onClick={() => setEditTarget(null)} className="btn-secondary">
                   Annulla
                 </button>
               </div>

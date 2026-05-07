@@ -72,7 +72,7 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
             {scadutiCount > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
                 style={{ background: 'rgba(248,113,113,0.15)', color: '#F87171', border: '1px solid rgba(248,113,113,0.3)' }}>
-                {scadutiCount} scadutt{scadutiCount === 1 ? 'o' : 'i'}
+                {scadutiCount} scadut{scadutiCount === 1 ? 'o' : 'i'}
               </span>
             )}
             {inScadenzaCount > 0 && (
