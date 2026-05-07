@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
 import { createNotifica } from '@/lib/notifiche'
+import { requireAuth } from '@/lib/auth-helpers'
 
 const RUOLI_MAP: Record<string, string[]> = {
   tutti:  ['admin', 'staff', 'aso', 'segretaria', 'manager'],
@@ -9,14 +9,9 @@ const RUOLI_MAP: Record<string, string[]> = {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: profilo } = await supabase
-    .from('profili').select('ruolo').eq('id', user.id).single()
-  if (profilo?.ruolo !== 'admin')
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  // Solo admin possono inviare messaggi al team
+  const auth = await requireAuth(['admin'])
+  if (auth instanceof NextResponse) return auth
 
   const { titolo, corpo, url, destinatari = 'tutti' } = await req.json()
   if (!titolo?.trim())

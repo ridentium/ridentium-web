@@ -1,22 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAuth } from '@/lib/auth-helpers'
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireAuth('any')
+  if (auth instanceof NextResponse) return auth
+  const { userId, adminDb } = auth
 
   const { id, all } = await req.json()
-  const adminDb = createAdminClient()
 
   if (all) {
     const { error } = await adminDb.from('notifiche').update({ letta: true })
-      .eq('user_id', user.id).eq('letta', false)
+      .eq('user_id', userId).eq('letta', false)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   } else if (id) {
     const { error } = await adminDb.from('notifiche').update({ letta: true })
-      .eq('id', id).eq('user_id', user.id)
+      .eq('id', id).eq('user_id', userId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   }
   return NextResponse.json({ ok: true })
