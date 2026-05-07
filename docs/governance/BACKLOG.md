@@ -92,11 +92,16 @@ Soluzione: `lib/rate-limit.ts` in-memory sliding window (documentato: per-instan
 ---
 
 ### Fase 2F — Refactoring AgendaView
-**Status: 🔜 DA PIANIFICARE**
+**Status: ✅ COMPLETATA (2026-05-07) — commit fba3e0b**
 **Priorità: P3**
 
-`AgendaView.tsx` è identificato come file fragile (>500 righe, logica multipla).
-Separare in sotto-componenti senza cambiare comportamento utente.
+`AgendaView.tsx` ridotto da 1832 a ~550 righe. Estratti:
+- `agendaConstants.ts` — tipi, costanti e helper condivisi
+- `EventRow.tsx` — riga singola evento con menu azioni
+- `EditModal.tsx` — drawer di modifica task/ricorrente/adempimento
+- `AggiungiPanel.tsx` — form creazione nuovi elementi
+
+Verificato con `tsc --noEmit` (zero errori).
 
 **Regola:** Ogni step di refactoring deve essere verificato con `tsc --noEmit` e testato manualmente prima del commit successivo.
 
