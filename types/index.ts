@@ -126,7 +126,24 @@ export interface Ricorrente {
 
 export type CategoriaRegistro =
   | 'todo' | 'magazzino' | 'ordini' | 'fornitori' | 'staff'
-  | 'ricorrenti' | 'crm' | 'sistema' | 'tasks' | 'adempimenti' | 'altro'
+  | 'ricorrenti' | 'crm' | 'sistema' | 'tasks' | 'adempimenti'
+  | 'attrezzature' | 'altro'
+
+// ── Notifiche ─────────────────────────────────────────────────────────────────
+
+export type TipoNotifica = 'magazzino' | 'task' | 'ricorrente' | 'messaggio' | 'crm'
+
+export interface Notifica {
+  id: string
+  user_id?: string
+  tipo: TipoNotifica
+  titolo: string
+  corpo?: string | null
+  url?: string | null
+  letta: boolean
+  created_at: string
+  metadata?: Record<string, unknown> | null
+}
 
 export interface RegistroEntry {
   id: string

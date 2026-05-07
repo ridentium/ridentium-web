@@ -7,15 +7,7 @@ import {
   CheckCheck, Send,
 } from 'lucide-react'
 
-interface Notifica {
-  id: string
-  tipo: 'magazzino' | 'task' | 'ricorrente' | 'messaggio' | 'crm'
-  titolo: string
-  corpo?: string | null
-  url?: string | null
-  letta: boolean
-  created_at: string
-}
+import type { Notifica } from '@/types'
 
 const TIPO_META = {
   magazzino:  { Icon: Package,       color: '#F87171', label: 'Magazzino' },

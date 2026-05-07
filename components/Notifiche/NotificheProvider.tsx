@@ -1,16 +1,9 @@
 'use client'
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
+import type { Notifica } from '@/types'
 
-export interface Notifica {
-  id: string
-  tipo: 'magazzino' | 'task' | 'ricorrente' | 'messaggio' | 'crm'
-  titolo: string
-  corpo?: string | null
-  url?: string | null
-  letta: boolean
-  created_at: string
-}
+export type { Notifica }
 
 interface NotificheContext {
   list: Notifica[]

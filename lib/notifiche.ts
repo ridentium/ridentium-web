@@ -1,19 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import webpush from 'web-push'
+import type { TipoNotifica } from '@/types'
 
-export type TipoNotifica = 'magazzino' | 'task' | 'ricorrente' | 'messaggio' | 'crm'
-
-export interface Notifica {
-  id: string
-  user_id: string
-  tipo: TipoNotifica
-  titolo: string
-  corpo?: string | null
-  url?: string | null
-  letta: boolean
-  created_at: string
-  metadata?: Record<string, unknown> | null
-}
+export type { TipoNotifica }
 
 interface CreateNotificaOpts {
   ruoli?: string[]
