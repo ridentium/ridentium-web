@@ -205,6 +205,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
         consenso_timestamp: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
+        anonimizzato: false,
+        gdpr_deleted_at: null,
       }
       setContatti(prev => [nuovoContatto, ...prev])
       setNuovoModal(false)

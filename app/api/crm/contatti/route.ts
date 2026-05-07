@@ -131,7 +131,13 @@ export async function GET(req: NextRequest) {
   const formato = searchParams.get('format')
   const stato   = searchParams.get('stato')
 
-  const base = adminDb.from('crm_contatti').select('*').order('created_at', { ascending: false })
+  // Esclude sempre i record anonimizzati dalla vista operativa.
+  // I record GDPR sono conservati solo per audit a livello DB.
+  const base = adminDb
+    .from('crm_contatti')
+    .select('*')
+    .eq('anonimizzato', false)
+    .order('created_at', { ascending: false })
   const { data, error } = await (stato ? base.eq('stato', stato) : base)
 
   if (error) return NextResponse.json({ error: 'Errore nel recupero dati' }, { status: 500 })

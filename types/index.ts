@@ -269,4 +269,7 @@ export interface CRMContatto {
   consenso_timestamp: string | null
   created_at: string
   updated_at: string
+  // GDPR art. 17 — diritto all'oblio
+  anonimizzato: boolean
+  gdpr_deleted_at: string | null
 }
