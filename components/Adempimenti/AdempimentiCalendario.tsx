@@ -63,14 +63,14 @@ export default function AdempimentiCalendario({ adempimenti, giorniApertura, onS
       <div className="flex items-center justify-between">
         <button
           onClick={() => setMese(new Date(mese.getFullYear(), mese.getMonth() - 1, 1))}
-          className="w-9 h-9 flex items-center justify-center rounded border border-obsidian-light/40 text-stone hover:text-cream transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded border border-stone/30 text-stone hover:text-obsidian transition-colors"
         >
           <ChevronLeft size={15} />
         </button>
-        <h3 className="text-sm font-medium text-cream capitalize">{meseLabel}</h3>
+        <h3 className="text-sm font-medium text-obsidian capitalize">{meseLabel}</h3>
         <button
           onClick={() => setMese(new Date(mese.getFullYear(), mese.getMonth() + 1, 1))}
-          className="w-9 h-9 flex items-center justify-center rounded border border-obsidian-light/40 text-stone hover:text-cream transition-colors"
+          className="w-9 h-9 flex items-center justify-center rounded border border-stone/30 text-stone hover:text-obsidian transition-colors"
         >
           <ChevronRight size={15} />
         </button>
@@ -158,7 +158,7 @@ export default function AdempimentiCalendario({ adempimenti, giorniApertura, onS
 
       {/* Legenda */}
       <div
-        className="flex gap-4 flex-wrap text-[10px] pt-2 border-t border-obsidian-light/20"
+        className="flex gap-4 flex-wrap text-[10px] pt-2 border-t border-stone/15"
         style={{ color: 'rgba(160,144,126,0.5)' }}
       >
         <span className="flex items-center gap-1.5">
@@ -178,7 +178,7 @@ export default function AdempimentiCalendario({ adempimenti, giorniApertura, onS
         <div className="card" style={{ borderColor: 'rgba(201,168,76,0.3)', borderWidth: 1 }}>
           <div className="flex items-center justify-between mb-3 gap-2">
             <div className="flex items-center gap-2 flex-wrap">
-              <h4 className="text-sm font-medium text-cream capitalize">
+              <h4 className="text-sm font-medium text-obsidian capitalize">
                 {new Date(giornoSel + 'T12:00:00').toLocaleDateString('it-IT', {
                   weekday: 'long', day: 'numeric', month: 'long',
                 })}
@@ -194,7 +194,7 @@ export default function AdempimentiCalendario({ adempimenti, giorniApertura, onS
             </div>
             <button
               onClick={() => setGiornoSel(null)}
-              className="flex items-center justify-center text-stone/50 hover:text-cream transition-colors flex-shrink-0"
+              className="flex items-center justify-center text-stone/50 hover:text-obsidian transition-colors flex-shrink-0"
               style={{ minWidth: 32, minHeight: 32 }}
             >
               <X size={14} />
@@ -206,7 +206,7 @@ export default function AdempimentiCalendario({ adempimenti, giorniApertura, onS
               Nessun adempimento in scadenza questo giorno.
             </p>
           ) : (
-            <div className="space-y-0 divide-y divide-obsidian-light/20">
+            <div className="space-y-0 divide-y divide-stone/15">
               {giornoPanelItems.map(a => {
                 const stato = calcolaStato(a)
                 const stCol = stato === 'scaduto' ? '#F87171' : stato === 'in_scadenza' ? '#FBBF24' : '#4ADE80'
@@ -217,7 +217,7 @@ export default function AdempimentiCalendario({ adempimenti, giorniApertura, onS
                       style={{ background: CATEGORIA_COLOR[a.categoria] }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-cream truncate">{a.titolo}</p>
+                      <p className="text-xs text-obsidian truncate">{a.titolo}</p>
                       <p className="text-[10px] mt-0.5" style={{ color: 'rgba(160,144,126,0.6)' }}>
                         {CATEGORIA_LABEL[a.categoria]} · {FREQUENZA_LABEL[a.frequenza]}
                       </p>

@@ -99,7 +99,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                   </span>
                 )}
               </div>
-              <div className="flex-1 border-t border-obsidian-light/20" />
+              <div className="flex-1 border-t border-stone/15" />
             </div>
 
             {/* Adempimenti del mese */}
@@ -112,9 +112,9 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                 {/* Linea verticale */}
                 <div
                   className="absolute left-0 top-0 bottom-0 w-px"
-                  style={{ background: 'rgba(74,59,44,0.5)', left: '3px' }}
+                  style={{ background: '#DDD5C8', left: '3px' }}
                 />
-                <div className="space-y-0 divide-y divide-obsidian-light/15">
+                <div className="space-y-0 divide-y divide-stone/10">
                   {sorted.map(a => {
                     const stato = calcolaStato(a)
                     const stCol = stato === 'scaduto' ? '#F87171' : stato === 'in_scadenza' ? '#FBBF24' : 'rgba(74,222,128,0.7)'
@@ -128,7 +128,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                           className="absolute left-0 w-2 h-2 rounded-full flex-shrink-0 border"
                           style={{
                             background: CATEGORIA_COLOR[a.categoria],
-                            borderColor: '#1A1009',
+                            borderColor: '#DDD5C8',
                             left: '-1px',
                             top: '50%',
                             transform: 'translateY(-50%)',
@@ -138,7 +138,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                         {/* Data */}
                         {scadDate && (
                           <div className="flex-shrink-0 text-center w-10">
-                            <div className="text-[13px] font-semibold leading-none text-cream">
+                            <div className="text-[13px] font-semibold leading-none text-obsidian">
                               {String(scadDate.getDate()).padStart(2, '0')}
                             </div>
                             <div className="text-[9px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(160,144,126,0.5)' }}>
@@ -150,7 +150,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                         {/* Contenuto */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-xs text-cream leading-snug">{a.titolo}</span>
+                            <span className="text-xs text-obsidian leading-snug">{a.titolo}</span>
                             {chiuso && (
                               <span
                                 className="text-[9px] px-1.5 py-0.5 rounded border flex-shrink-0"

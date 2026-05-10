@@ -234,7 +234,7 @@ export default function AdempimentiView({ canEdit }: Props) {
     <div className="space-y-4">
       {/* Toggle vista */}
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-1 p-1 rounded border border-obsidian-light/30" style={{ background: 'rgba(26,16,9,0.6)' }}>
+        <div className="flex gap-1 p-1 rounded border border-stone/20" style={{ background: 'rgba(247,244,239,0.8)' }}>
           {([
             { id: 'lista'     as const, label: 'Lista',      Icon: LayoutList  },
             { id: 'calendario' as const, label: 'Calendario', Icon: CalendarDays },
@@ -280,13 +280,13 @@ export default function AdempimentiView({ canEdit }: Props) {
             className={`flex items-center gap-2 text-xs px-3 py-2 rounded border transition-colors ${
               filtroStato === t.id
                 ? 'border-gold/50 bg-gold/15 text-gold'
-                : 'border-obsidian-light/40 text-stone hover:text-cream'
+                : 'border-stone/30 text-stone hover:text-obsidian'
             }`}
             style={{ minHeight: 36 }}
           >
             <t.Icon size={12} style={{ color: filtroStato === t.id ? undefined : t.color }} />
             {t.label}
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filtroStato === t.id ? 'bg-gold/30' : 'bg-obsidian-light/40'}`}>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${filtroStato === t.id ? 'bg-gold/30' : 'bg-stone/15'}`}>
               {counts[t.id]}
             </span>
           </button>
@@ -295,12 +295,12 @@ export default function AdempimentiView({ canEdit }: Props) {
 
       {/* Filtro categoria */}
       {categorie.length > 0 && (
-        <div className="flex gap-1.5 flex-wrap items-center pb-3 border-b border-obsidian-light/20">
+        <div className="flex gap-1.5 flex-wrap items-center pb-3 border-b border-stone/15">
           <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Categoria</span>
           <button
             onClick={() => setFiltroCategoria('')}
             className={`text-[11px] px-2.5 py-1 rounded border transition-colors ${
-              filtroCategoria === '' ? 'bg-gold/15 border-gold/40 text-gold' : 'border-obsidian-light/30 text-stone/70 hover:text-cream'
+              filtroCategoria === '' ? 'bg-gold/15 border-gold/40 text-gold' : 'border-stone/20 text-stone/70 hover:text-obsidian'
             }`}
           >
             Tutte
@@ -310,7 +310,7 @@ export default function AdempimentiView({ canEdit }: Props) {
               key={c}
               onClick={() => setFiltroCategoria(filtroCategoria === c ? '' : c)}
               className={`text-[11px] px-2.5 py-1 rounded border transition-colors ${
-                filtroCategoria === c ? 'bg-gold/15 border-gold/40 text-gold' : 'border-obsidian-light/30 text-stone/70 hover:text-cream'
+                filtroCategoria === c ? 'bg-gold/15 border-gold/40 text-gold' : 'border-stone/20 text-stone/70 hover:text-obsidian'
               }`}
               style={{
                 borderColor: filtroCategoria === c ? undefined : CATEGORIA_COLOR[c] + '40',
@@ -336,7 +336,7 @@ export default function AdempimentiView({ canEdit }: Props) {
           {search && (
             <button
               onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone/40 hover:text-cream transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone/40 hover:text-obsidian transition-colors"
             >
               <X size={13} />
             </button>
@@ -406,7 +406,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                       <div className="flex items-start justify-between gap-2 flex-wrap">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h3 className="text-sm font-medium text-cream leading-snug">{a.titolo}</h3>
+                            <h3 className="text-sm font-medium text-obsidian leading-snug">{a.titolo}</h3>
                             {/* Badge SCADUTO prominente */}
                             {isScaduto && (
                               <span
@@ -424,7 +424,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                             >
                               {CATEGORIA_LABEL[a.categoria]}
                             </span>
-                            <span className="text-[10px] text-stone/70 border border-obsidian-light/30 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] text-stone/70 border border-stone/20 px-1.5 py-0.5 rounded">
                               {FREQUENZA_LABEL[a.frequenza]}
                             </span>
                             <span className="text-[10px] text-stone/70">
@@ -460,14 +460,14 @@ export default function AdempimentiView({ canEdit }: Props) {
                         </button>
                         <button
                           onClick={() => setExpandedId(isExpanded ? null : a.id)}
-                          className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded border border-obsidian-light/40 text-stone hover:text-cream transition-colors"
+                          className="flex items-center gap-1 text-[11px] px-2.5 py-1.5 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors"
                         >
                           Dettagli <ChevronDown size={11} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                         </button>
                         {canEdit && (
                           <button
                             onClick={() => setEditTarget(a)}
-                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-obsidian-light/40 text-stone hover:text-gold hover:border-gold/40 transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-stone/30 text-stone hover:text-gold hover:border-gold/40 transition-colors"
                           >
                             <Pencil size={11} /> Modifica
                           </button>
@@ -475,7 +475,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                         {canEdit && confirmDeleteId !== a.id && (
                           <button
                             onClick={() => setConfirmDeleteId(a.id)}
-                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-obsidian-light/40 text-stone/60 hover:text-red-400 hover:border-red-400/40 transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-stone/30 text-stone/60 hover:text-red-400 hover:border-red-400/40 transition-colors"
                           >
                             <Trash2 size={11} /> Elimina
                           </button>
@@ -491,13 +491,13 @@ export default function AdempimentiView({ canEdit }: Props) {
                               {deletingId === a.id ? '…' : 'Sì'}
                             </button>
                             <span className="text-stone/40 text-[10px]">/</span>
-                            <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] text-stone hover:text-cream">No</button>
+                            <button onClick={() => setConfirmDeleteId(null)} className="text-[10px] text-stone hover:text-obsidian">No</button>
                           </div>
                         )}
                       </div>
 
                       {isExpanded && (
-                        <div className="mt-3 pt-3 border-t border-obsidian-light/30 space-y-2">
+                        <div className="mt-3 pt-3 border-t border-stone/20 space-y-2">
                           {a.descrizione && (
                             <p className="text-xs text-stone/80 leading-relaxed">{a.descrizione}</p>
                           )}
@@ -512,9 +512,9 @@ export default function AdempimentiView({ canEdit }: Props) {
                                 onChange={e => onAssegnaResponsabile(a.id, e.target.value || null)}
                                 className="flex-1 min-w-0 text-xs rounded border px-2 py-1 outline-none"
                                 style={{
-                                  background: 'rgba(26,16,9,0.8)',
-                                  borderColor: 'rgba(74,59,44,0.6)',
-                                  color: '#D2C6B6',
+                                  background: '#FDFCFA',
+                                  borderColor: '#DDD5C8',
+                                  color: '#3D2B1F',
                                 }}
                               >
                                 <option value="">— Nessuno / etichetta —</option>
@@ -525,7 +525,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                                 ))}
                               </select>
                             ) : (
-                              <span className="text-cream/80">{responsabileLabel(a)}</span>
+                              <span className="text-obsidian/80">{responsabileLabel(a)}</span>
                             )}
                             {canEdit && a.responsabile_etichetta && !a.responsabile_profilo_id && (
                               <span className="text-stone/50 truncate">({a.responsabile_etichetta})</span>
@@ -537,7 +537,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                               <FileText size={12} className="text-gold/70 mt-0.5 flex-shrink-0" />
                               <div>
                                 <span className="text-stone/60">Evidenza richiesta:</span>{' '}
-                                <span className="text-cream/80">{a.evidenza_richiesta}</span>
+                                <span className="text-obsidian/80">{a.evidenza_richiesta}</span>
                               </div>
                             </div>
                           )}
@@ -546,7 +546,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                               <ShieldCheck size={12} className="text-blue-400/70 mt-0.5 flex-shrink-0" />
                               <div>
                                 <span className="text-stone/60">Riferimento:</span>{' '}
-                                <span className="text-cream/70 italic">{a.riferimento_normativo}</span>
+                                <span className="text-obsidian/70 italic">{a.riferimento_normativo}</span>
                               </div>
                             </div>
                           )}
@@ -560,12 +560,12 @@ export default function AdempimentiView({ canEdit }: Props) {
                             </div>
                           )}
                           {(a.evidenza_descrizione || a.evidenza_url) && (
-                            <div className="flex items-start gap-2 text-xs pt-1 border-t border-obsidian-light/20">
+                            <div className="flex items-start gap-2 text-xs pt-1 border-t border-stone/15">
                               <Paperclip size={12} className="text-gold/60 mt-0.5 flex-shrink-0" />
                               <div className="min-w-0">
                                 <span className="text-stone/60 block text-[10px] uppercase tracking-wider mb-0.5">Ultima evidenza</span>
                                 {a.evidenza_descrizione && (
-                                  <p className="text-cream/70 text-xs">{a.evidenza_descrizione}</p>
+                                  <p className="text-obsidian/70 text-xs">{a.evidenza_descrizione}</p>
                                 )}
                                 {a.evidenza_url && (
                                   <a
@@ -680,13 +680,14 @@ function CompletaModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
       <div
-        className="bg-obsidian border border-obsidian-light rounded-t-xl sm:rounded-xl p-5 sm:p-6 w-full sm:max-w-md mx-0 sm:mx-4 shadow-2xl max-h-[90vh] overflow-y-auto"
+        className="rounded-t-xl sm:rounded-xl p-5 sm:p-6 w-full sm:max-w-md mx-0 sm:mx-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-taupe"
+        style={{ backgroundColor: '#FDFCFA' }}
         style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
       >
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">
             <p className="text-[10px] uppercase tracking-widest text-gold/70">Segna come fatto</p>
-            <h3 className="text-base font-medium text-cream mt-1 leading-snug">{adempimento.titolo}</h3>
+            <h3 className="text-base font-medium text-obsidian mt-1 leading-snug">{adempimento.titolo}</h3>
           </div>
           <button
             onClick={onClose}
@@ -726,7 +727,7 @@ function CompletaModal({
               Allega file <span className="text-stone/40">(opzionale)</span>
             </label>
             <label className={`flex items-center gap-2.5 cursor-pointer px-3 py-2.5 rounded border transition-colors ${
-              file ? 'border-green-400/40 bg-green-400/5' : 'border-obsidian-light/60 hover:border-stone/40 bg-obsidian/40'
+              file ? 'border-green-600/40 bg-green-600/5' : 'border-taupe hover:border-stone/40 bg-cream'
             }`}>
               <input
                 type="file"
@@ -736,8 +737,8 @@ function CompletaModal({
               />
               {file ? (
                 <>
-                  <Paperclip size={13} className="text-green-400 flex-shrink-0" />
-                  <span className="text-xs text-green-400 truncate flex-1">{file.name}</span>
+                  <Paperclip size={13} className="text-green-700 flex-shrink-0" />
+                  <span className="text-xs text-green-700 truncate flex-1">{file.name}</span>
                   <button
                     type="button"
                     onClick={e => { e.preventDefault(); setFile(null) }}
@@ -847,14 +848,14 @@ function EditAdempimentoModal({
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
       <div
-        className="w-full sm:max-w-lg mx-0 sm:mx-4 rounded-t-xl sm:rounded-xl border border-obsidian-light/50 overflow-y-auto max-h-[90vh] shadow-2xl"
-        style={{ backgroundColor: '#1A1009', color: '#F2EDE4', paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+        className="w-full sm:max-w-lg mx-0 sm:mx-4 rounded-t-xl sm:rounded-xl border border-taupe overflow-y-auto max-h-[90vh] shadow-2xl"
+        style={{ backgroundColor: '#FDFCFA', color: '#3D2B1F', paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-obsidian-light/30">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-stone/20">
           <div>
             <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(201,168,76,0.7)' }}>Modifica adempimento</p>
-            <h3 className="text-sm font-medium text-cream mt-0.5 truncate max-w-xs">{a.titolo}</h3>
+            <h3 className="text-sm font-medium text-obsidian mt-0.5 truncate max-w-xs">{a.titolo}</h3>
           </div>
           <button onClick={onClose} className="p-2 rounded hover:bg-white/5 transition-colors" style={{ color: 'rgba(160,144,126,0.6)' }}>
             <X size={16} />
@@ -909,7 +910,7 @@ function EditAdempimentoModal({
             <div className="flex gap-2 mb-2">
               {(['profilo', 'etichetta'] as const).map(m => (
                 <button key={m} type="button" onClick={() => setRespMode(m)}
-                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === m ? 'border-gold/40 text-gold' : 'border-obsidian-light/40 text-stone hover:text-cream'}`}
+                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === m ? 'border-gold/40 text-gold' : 'border-stone/30 text-stone hover:text-obsidian'}`}
                   style={respMode === m ? { background: 'rgba(201,168,76,0.12)' } : undefined}>
                   {m === 'profilo' ? 'Persona interna' : 'Etichetta libera'}
                 </button>
