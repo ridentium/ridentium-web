@@ -2,7 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
+import { requireAuth } from '@/lib/auth-helpers'
 import { updateFornitoreSchema, zodError } from '@/lib/validation'
+
+// GET /api/fornitori/[id] — dettaglio fornitore (tutti i ruoli autenticati, sola lettura)
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const auth = await requireAuth('any')
+  if (auth instanceof NextResponse) return auth
+
+  const { adminDb } = auth
+  const { data, error } = await adminDb
+    .from('fornitori')
+    .select('id, nome, note, created_at')
+    .eq('id', params.id)
+    .single()
+
+  if (error) return NextResponse.json({ error: 'Fornitore non trovato' }, { status: 404 })
+  return NextResponse.json({ fornitore: data })
+}
 
 // PATCH /api/fornitori/[id] — aggiorna nome/note fornitore (admin/manager)
 export async function PATCH(

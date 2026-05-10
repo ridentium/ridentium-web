@@ -39,14 +39,15 @@ const adminSistema: NavItem[] = [
 const adminAI: NavItem[] = [{ href:'/admin/ai', label:'Lina AI', icon:Sparkles, highlight:true }]
 
 const staffNav: NavItem[] = [
-  { href:'/staff',             label:'Home',        icon:LayoutDashboard },
-  { href:'/staff/agenda',      label:'Agenda',      icon:CalendarDays },
-  { href:'/staff/magazzino',   label:'Magazzino',   icon:Package },
-  { href:'/staff/tasks',       label:'I miei task', icon:CheckSquare },
-  { href:'/staff/ricorrenti',  label:'Ricorrenti',  icon:RefreshCw },
-  { href:'/staff/adempimenti', label:'Adempimenti', icon:ShieldCheck },
-  { href:'/staff/sop',         label:'Protocolli',  icon:BookOpen },
-  { href:'/staff/notifiche',   label:'Notifiche',   icon:Bell },
+  { href:'/staff',              label:'Home',        icon:LayoutDashboard },
+  { href:'/staff/agenda',       label:'Agenda',      icon:CalendarDays },
+  { href:'/staff/magazzino',    label:'Magazzino',   icon:Package },
+  { href:'/staff/fornitori',    label:'Fornitori',   icon:Building2 },
+  { href:'/staff/tasks',        label:'I miei task', icon:CheckSquare },
+  { href:'/staff/ricorrenti',   label:'Ricorrenti',  icon:RefreshCw },
+  { href:'/staff/adempimenti',  label:'Adempimenti', icon:ShieldCheck },
+  { href:'/staff/sop',          label:'Protocolli',  icon:BookOpen },
+  { href:'/staff/notifiche',    label:'Notifiche',   icon:Bell },
 ]
 
 interface SidebarProps { profilo:UserProfile; alertCount?:number; tasksCount?:number; ricorrentiCount?:number; onClose?:()=>void; onSearchOpen?:()=>void }

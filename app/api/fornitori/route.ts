@@ -2,7 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
+import { requireAuth } from '@/lib/auth-helpers'
 import { createFornitoreSchema, zodError } from '@/lib/validation'
+
+// GET /api/fornitori — lista fornitori (tutti i ruoli autenticati, sola lettura)
+export async function GET() {
+  const auth = await requireAuth('any')
+  if (auth instanceof NextResponse) return auth
+
+  const { adminDb } = auth
+  const { data, error } = await adminDb
+    .from('fornitori')
+    .select('id, nome, note, created_at')
+    .order('nome', { ascending: true })
+
+  if (error) return NextResponse.json({ error: 'Errore nel recupero fornitori' }, { status: 500 })
+  return NextResponse.json({ fornitori: data })
+}
 
 // POST /api/fornitori — crea un nuovo fornitore (admin/manager)
 export async function POST(req: NextRequest) {
