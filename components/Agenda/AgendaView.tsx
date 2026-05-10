@@ -318,11 +318,11 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           return (
             <button key={id} onClick={() => setTab(id)}
               className={`relative flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
-                tab === id ? 'border-gold text-gold' : 'border-transparent text-stone hover:text-cream'}`}>
+                tab === id ? 'border-gold text-gold' : 'border-transparent text-stone hover:text-obsidian'}`}>
               <Icon size={13} />{label}
               {badge > 0 && (
                 <span className="ml-0.5 text-[9px] px-1.5 py-0.5 rounded-full font-bold leading-none"
-                  style={{ background: '#F87171', color: '#1A1009' }}>
+                  style={{ background: '#F87171', color: '#FFF' }}>
                   {badge}
                 </span>
               )}
@@ -345,7 +345,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             <input className="input w-full pl-8 pr-8 text-sm" placeholder="Cerca nell'agenda…"
               value={search} onChange={ev => setSearch(ev.target.value)} />
             {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone/40 hover:text-cream transition-colors">
+              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone/40 hover:text-obsidian transition-colors">
                 <X size={13} />
               </button>
             )}
@@ -361,7 +361,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                     className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                       tipoFilter === t
                         ? cfg ? `${cfg.bg} ${cfg.color}` : 'bg-gold/10 border-gold/30 text-gold'
-                        : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'}`}>
+                        : 'border-obsidian-light text-stone hover:border-stone hover:text-obsidian'}`}>
                     {Icon && <Icon size={11} />}
                     {t === 'tutti' ? 'Tutti' : cfg!.label}
                   </button>
@@ -371,7 +371,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             <div className="flex items-center gap-2 ml-auto flex-wrap">
               <button onClick={() => setSoloAperti(v => !v)}
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
-                  soloAperti ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'}`}>
+                  soloAperti ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'border-obsidian-light text-stone hover:border-stone hover:text-obsidian'}`}>
                 <Check size={11} />Da completare
               </button>
               {isAdmin && profili.length > 0 && (
@@ -384,7 +384,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
               {isAdmin && (
                 <button onClick={() => setMostraTutti(v => !v)}
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
-                    mostraTutti ? 'bg-stone/10 border-stone/30 text-cream' : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'}`}>
+                    mostraTutti ? 'bg-stone/10 border-stone/30 text-obsidian' : 'border-obsidian-light text-stone hover:border-stone hover:text-obsidian'}`}>
                   {mostraTutti ? <Users size={11} /> : <User size={11} />}
                   {mostraTutti ? 'Team' : 'Solo miei'}
                 </button>
@@ -464,7 +464,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                 { id: 'mese',      label: 'Mese' },
               ] as const).map(({ id, label }) => (
                 <button key={id} onClick={() => setCalView(id)}
-                  className={`text-xs px-3 py-1.5 transition-colors ${calView === id ? 'bg-gold/20 text-gold' : 'text-stone hover:text-cream'}`}>
+                  className={`text-xs px-3 py-1.5 transition-colors ${calView === id ? 'bg-gold/20 text-gold' : 'text-stone hover:text-obsidian'}`}>
                   {label}
                 </button>
               ))}
@@ -479,11 +479,11 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             return (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <button onClick={prevDay} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                  <button onClick={prevDay} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-obsidian transition-colors">
                     <ChevronLeft size={16} />
                   </button>
                   <div className="text-center">
-                    <h2 className={`text-sm font-medium ${isOggiView ? 'text-red-400' : 'text-cream'}`}>
+                    <h2 className={`text-sm font-medium ${isOggiView ? 'text-red-400' : 'text-obsidian'}`}>
                       {isOggiView ? '🔴 ' : ''}{label.charAt(0).toUpperCase() + label.slice(1)}
                     </h2>
                     {!isOggiView && (
@@ -492,7 +492,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                       </button>
                     )}
                   </div>
-                  <button onClick={nextDay} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                  <button onClick={nextDay} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-obsidian transition-colors">
                     <ChevronRight size={16} />
                   </button>
                 </div>
@@ -516,7 +516,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                         className="btn-primary text-xs py-1.5 px-3 disabled:opacity-50 flex-shrink-0">
                         {quickSaving ? '…' : 'Aggiungi'}
                       </button>
-                      <button onClick={closeQuickAdd} className="p-1.5 text-stone hover:text-cream transition-colors">
+                      <button onClick={closeQuickAdd} className="p-1.5 text-stone hover:text-obsidian transition-colors">
                         <X size={14} />
                       </button>
                     </div>
@@ -578,11 +578,11 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             return (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <button onClick={prevWeek} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                  <button onClick={prevWeek} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-obsidian transition-colors">
                     <ChevronLeft size={16} />
                   </button>
                   <div className="text-center">
-                    <h2 className="text-sm font-medium text-cream">
+                    <h2 className="text-sm font-medium text-obsidian">
                       {weekStartDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })} –{' '}
                       {weekEndDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short', year: 'numeric' })}
                     </h2>
@@ -592,7 +592,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                       </button>
                     )}
                   </div>
-                  <button onClick={nextWeek} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                  <button onClick={nextWeek} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-obsidian transition-colors">
                     <ChevronRight size={16} />
                   </button>
                 </div>
@@ -611,7 +611,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                             {GIORNI_IT[i === 6 ? 6 : i]}
                           </p>
                           <button onClick={() => goToDay(iso)} title="Vai alla vista giornaliera"
-                            className={`text-sm font-medium w-7 h-7 rounded-full flex items-center justify-center mx-auto hover:bg-obsidian-light/50 transition-colors ${isOggi ? 'text-red-400 bg-red-400/10' : isPast ? 'text-stone/40' : 'text-cream/80'}`}>
+                            className={`text-sm font-medium w-7 h-7 rounded-full flex items-center justify-center mx-auto hover:bg-obsidian-light/50 transition-colors ${isOggi ? 'text-red-400 bg-red-400/10' : isPast ? 'text-stone/40' : 'text-obsidian/80'}`}>
                             {d.getDate()}
                           </button>
                         </div>
@@ -673,11 +673,11 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           {calView === 'mese' && (
             <>
               <div className="flex items-center justify-between">
-                <button onClick={prevMonth} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                <button onClick={prevMonth} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-obsidian transition-colors">
                   <ChevronLeft size={16} />
                 </button>
-                <h2 className="text-base font-medium text-cream tracking-wide">{MESI_IT[calMonth]} {calYear}</h2>
-                <button onClick={nextMonth} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-cream transition-colors">
+                <h2 className="text-base font-medium text-obsidian tracking-wide">{MESI_IT[calMonth]} {calYear}</h2>
+                <button onClick={nextMonth} className="p-2 rounded hover:bg-obsidian-light/40 text-stone hover:text-obsidian transition-colors">
                   <ChevronRight size={16} />
                 </button>
               </div>
@@ -700,7 +700,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                       <button key={idx} onClick={() => goToDay(iso)}
                         className={`flex flex-col items-center rounded py-1.5 px-0.5 transition-colors min-h-[52px] ${
                           isOggi ? 'bg-red-400/10 ring-1 ring-red-400/30' : dayEvs.length > 0 ? 'hover:bg-obsidian-light/30' : 'hover:bg-obsidian-light/10'}`}>
-                        <span className={`text-xs font-medium ${isOggi ? 'text-red-400' : hasPast ? 'text-stone/50' : 'text-cream/80'}`}>{day}</span>
+                        <span className={`text-xs font-medium ${isOggi ? 'text-red-400' : hasPast ? 'text-stone/50' : 'text-obsidian/80'}`}>{day}</span>
                         {tipos.length > 0 && (
                           <div className="flex items-center gap-0.5 mt-1 flex-wrap justify-center">
                             {tipos.map(tipo => (
@@ -787,8 +787,8 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           {fabOpen && (
             <>
               <div className="fixed inset-0" onClick={() => setFabOpen(false)} />
-              <div className="absolute bottom-16 right-0 rounded-xl border border-obsidian-light/60 shadow-2xl overflow-hidden min-w-[190px]"
-                style={{ backgroundColor: '#1A1009' }}>
+              <div className="absolute bottom-16 right-0 rounded-xl border border-stone/25 shadow-2xl overflow-hidden min-w-[190px]"
+                style={{ backgroundColor: '#FDFCFA' }}>
                 {([
                   { tipo: 'task' as TipoNuovo,        label: 'Nuovo task',        Icon: TIPO_CONFIG.task.icon },
                   { tipo: 'ricorrente' as TipoNuovo,  label: 'Nuova ricorrente',  Icon: TIPO_CONFIG.ricorrente.icon },
@@ -808,7 +808,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
           )}
           <button onClick={() => setFabOpen(v => !v)}
             className={`w-14 h-14 rounded-full shadow-2xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 ${fabOpen ? 'rotate-45' : ''}`}
-            style={{ backgroundColor: '#C9A84C', color: '#1A1009' }}
+            style={{ backgroundColor: '#665647', color: '#F7F4EF' }}
             title="Aggiungi elemento">
             <Plus size={24} />
           </button>

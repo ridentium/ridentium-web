@@ -412,7 +412,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
               className={`text-xs px-4 py-1.5 rounded border transition-colors ${
                 filtro === t.id
                   ? 'bg-gold/20 border-gold/40 text-gold'
-                  : 'border-obsidian-light/40 text-stone hover:text-cream'
+                  : 'border-obsidian-light/40 text-stone hover:text-obsidian'
               }`}
             >
               {t.label}
@@ -454,7 +454,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap mb-1">
-                      <h3 className="text-sm font-medium text-cream">{ordine.fornitore_nome}</h3>
+                      <h3 className="text-sm font-medium text-obsidian">{ordine.fornitore_nome}</h3>
                       <span className={`text-[10px] px-2 py-0.5 rounded border ${STATO_COLOR[ordine.stato]}`}>
                         {STATO_LABEL[ordine.stato]}
                       </span>
@@ -490,7 +490,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     {ordine.righe && ordine.righe.length > 0 && (
                       <button
                         onClick={() => setExpandedId(isExpanded ? null : ordine.id)}
-                        className="text-stone hover:text-cream transition-colors p-1 flex items-center gap-1"
+                        className="text-stone hover:text-obsidian transition-colors p-1 flex items-center gap-1"
                       >
                         <Package size={12} />
                         <span className="text-[10px]">{ordine.righe.length}</span>
@@ -505,7 +505,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                   <div className="mt-3 pt-3 border-t border-obsidian-light/30 space-y-1.5">
                     {ordine.righe.map(r => (
                       <div key={r.id} className="flex items-center justify-between text-sm">
-                        <span className="text-cream/80">{r.prodotto_nome}</span>
+                        <span className="text-obsidian/80">{r.prodotto_nome}</span>
                         <span className="text-stone text-xs">
                           {r.quantita_ordinata} {r.unita ?? 'pz'}
                         </span>
@@ -627,7 +627,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
           <button
             onClick={caricaAltri}
             disabled={loadingMore}
-            className="text-xs px-5 py-2 rounded border border-obsidian-light/40 text-stone hover:text-cream hover:border-stone/40 transition-colors disabled:opacity-50"
+            className="text-xs px-5 py-2 rounded border border-stone/30 text-stone hover:text-obsidian hover:border-stone/60 transition-colors disabled:opacity-50"
           >
             {loadingMore ? 'Caricamento…' : 'Carica ordini precedenti'}
           </button>
@@ -637,13 +637,13 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
       {/* Modal ricezione ordine */}
       {ricezioneModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="border border-obsidian-light/60 rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl" style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}>
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl" style={{ backgroundColor: '#FDFCFA', color: '#3D2B1F' }}>
 
             {ricezioneStep === 'tipo' ? (
               <>
-                <h2 className="text-cream font-medium mb-1">Ricezione ordine</h2>
+                <h2 className="text-obsidian font-medium mb-1">Ricezione ordine</h2>
                 <p className="text-stone text-xs mb-6">
-                  Ordine da <span className="text-cream">{ricezioneModal.ordine.fornitore_nome}</span> — come è stato consegnato?
+                  Ordine da <span className="text-obsidian">{ricezioneModal.ordine.fornitore_nome}</span> — come è stato consegnato?
                 </p>
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <button
@@ -666,7 +666,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 <div className="flex justify-end">
                   <button
                     onClick={() => setRicezioneModal(null)}
-                    className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                    className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors"
                   >
                     Annulla
                   </button>
@@ -674,7 +674,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
               </>
             ) : (
               <>
-                <h2 className="text-cream font-medium mb-1">
+                <h2 className="text-obsidian font-medium mb-1">
                   {ricezioneTipo === 'totale' ? 'Ricezione totale' : 'Ricezione parziale'}
                 </h2>
                 <p className="text-stone text-xs mb-4">
@@ -685,8 +685,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
 
                 <div className="space-y-2 mb-4 max-h-60 overflow-y-auto pr-1">
                   {ricezioneModal.ordine.righe?.map(r => (
-                    <div key={r.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
-                      <span className="text-sm text-cream/80 flex-1 truncate">{r.prodotto_nome}</span>
+                    <div key={r.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-stone/20 last:border-0">
+                      <span className="text-sm text-obsidian/80 flex-1 truncate">{r.prodotto_nome}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {ricezioneTipo === 'parziale' ? (
                           <input
@@ -698,7 +698,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                               ...prev,
                               [r.id]: Math.max(0, Math.min(r.quantita_ordinata, parseInt(e.target.value) || 0))
                             }))}
-                            className="w-16 text-center bg-obsidian-light border border-obsidian-light/60 rounded px-2 py-1 text-cream text-xs focus:outline-none focus:border-gold/50"
+                            className="w-16 text-center bg-cream border border-stone/30 rounded px-2 py-1 text-obsidian text-xs focus:outline-none focus:border-gold/50"
                           />
                         ) : (
                           <span className="text-green-400 text-sm font-medium">{r.quantita_ordinata}</span>
@@ -716,7 +716,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                   value={ricezioneNote}
                   onChange={e => setRicezioneNote(e.target.value)}
                   placeholder="Note (opzionale)..."
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
+                  className="input resize-none mb-4"
                   rows={2}
                 />
 
@@ -729,7 +729,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 <div className="flex gap-3 justify-end">
                   <button
                     onClick={() => setRicezioneStep('tipo')}
-                    className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                    className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors"
                   >
                     ← Indietro
                   </button>
@@ -757,8 +757,8 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
         const isRipristino = annullaModal.isRipristino === true
         return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="border border-obsidian-light/60 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl" style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}>
-            <h2 className="font-medium mb-1" style={{ color: '#F2EDE4' }}>
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl" style={{ backgroundColor: '#FDFCFA', color: '#3D2B1F' }}>
+            <h2 className="font-medium mb-1" style={{ color: '#3D2B1F' }}>
               {isRipristino ? 'Annulla ricezione' : 'Annulla ordine'}
             </h2>
             {isRipristino ? (
@@ -766,13 +766,13 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 ⚠ Le quantità aggiunte al magazzino verranno stornate. L&apos;ordine tornerà nello stato &ldquo;Inviato&rdquo; e potrà essere confermato di nuovo.
               </p>
             ) : (
-              <p className="text-xs mb-4" style={{ color: 'rgba(210,198,182,0.6)' }}>Motivo annullamento (opzionale)</p>
+              <p className="text-xs mb-4" style={{ color: 'rgba(102,86,71,0.5)' }}>Motivo annullamento (opzionale)</p>
             )}
             <textarea
               value={annullaNote}
               onChange={e => setAnnullaNote(e.target.value)}
               placeholder="Note..."
-              className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
+              className="input resize-none mb-4"
               rows={3}
               autoFocus
             />
@@ -785,7 +785,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
               <button
                 onClick={() => { setAnnullaModal(null); setAnnullaNote(''); setAnnullaError(null) }}
                 disabled={annullaSaving}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
+                className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -809,12 +809,12 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
       {/* Modal nuovo ordine */}
       {nuovoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-          <div className="border border-obsidian-light/60 rounded-xl p-6 w-full max-w-xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}>
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-xl mx-4 shadow-2xl max-h-[90vh] overflow-y-auto" style={{ backgroundColor: '#FDFCFA', color: '#3D2B1F' }}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-cream font-medium">Nuovo ordine</h2>
+              <h2 className="text-obsidian font-medium">Nuovo ordine</h2>
               <button
                 onClick={() => setNuovoModal(false)}
-                className="text-stone hover:text-cream transition-colors"
+                className="text-stone hover:text-obsidian transition-colors"
               >
                 <X size={16} />
               </button>
@@ -828,7 +828,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 value={nuovoFornitore}
                 onChange={e => setNuovoFornitore(e.target.value)}
                 placeholder="Es. Neodent, Nobel Biocare..."
-                className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                className="input"
                 autoFocus
               />
             </div>
@@ -844,7 +844,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     className={`flex flex-col items-center gap-1.5 py-2.5 rounded-lg border text-xs transition-colors ${
                       nuovoCanale === c.id
                         ? 'border-gold/50 bg-gold/15 text-gold'
-                        : 'border-obsidian-light/40 text-stone hover:text-cream hover:border-obsidian-light'
+                        : 'border-stone/30 text-stone hover:text-obsidian hover:border-stone/60'
                     }`}
                   >
                     {c.icon}
@@ -866,7 +866,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                         <select
                           value={riga.magazzino_id}
                           onChange={e => aggiornaRiga(idx, 'magazzino_id', e.target.value)}
-                          className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
+                          className="w-full bg-cream border border-stone/30 rounded-lg px-2 py-1.5 text-obsidian text-xs focus:outline-none focus:border-gold/50"
                         >
                           <option value="">— Seleziona prodotto —</option>
                           {magazzino.map(m => (
@@ -879,7 +879,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                           value={riga.prodotto_nome}
                           onChange={e => aggiornaRiga(idx, 'prodotto_nome', e.target.value)}
                           placeholder="Nome prodotto..."
-                          className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
+                          className="w-full bg-cream border border-stone/30 rounded-lg px-2 py-1.5 text-obsidian text-xs focus:outline-none focus:border-gold/50"
                         />
                       )}
                     </div>
@@ -889,7 +889,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                       min={1}
                       value={riga.quantita}
                       onChange={e => aggiornaRiga(idx, 'quantita', Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-16 text-center bg-obsidian-light border border-obsidian-light/60 rounded-lg px-2 py-1.5 text-cream text-xs focus:outline-none focus:border-gold/50"
+                      className="w-16 text-center bg-cream border border-stone/30 rounded-lg px-2 py-1.5 text-obsidian text-xs focus:outline-none focus:border-gold/50"
                     />
                     <span className="text-stone text-xs w-6 flex-shrink-0">{riga.unita}</span>
                     {/* Rimuovi riga */}
@@ -948,7 +948,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 value={nuovoNote}
                 onChange={e => setNuovoNote(e.target.value)}
                 placeholder="Riferimento ordine, istruzioni di consegna..."
-                className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
+                className="input resize-none"
                 rows={2}
               />
             </div>
@@ -957,7 +957,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setNuovoModal(false)}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors"
+                className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors"
               >
                 Annulla
               </button>

@@ -146,7 +146,7 @@ export function EventRow({
         title="Clicca per modificare"
       >
         <div className="flex items-start gap-2 flex-wrap">
-          <p className={`text-sm font-medium truncate ${isCompleted ? 'text-green-400/80' : isOwn ? 'text-cream' : 'text-cream/70'}`}>
+          <p className={`text-sm font-medium truncate ${isCompleted ? 'text-green-700/70' : isOwn ? 'text-obsidian' : 'text-obsidian/70'}`}>
             {e.titolo}
           </p>
           {isCompleted && (
@@ -210,13 +210,13 @@ export function EventRow({
               {deleting ? '…' : 'Sì'}
             </button>
             <span className="text-stone/40 text-[10px]">/</span>
-            <button onClick={() => setConfirmDel(false)} className="text-[10px] text-stone hover:text-cream">No</button>
+            <button onClick={() => setConfirmDel(false)} className="text-[10px] text-stone hover:text-obsidian">No</button>
           </div>
         ) : (canEdit || canDelete) ? (
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen(v => !v)}
-              className={`p-1.5 rounded transition-colors ${menuOpen ? 'bg-gold/10 text-gold' : 'text-stone/50 hover:text-cream hover:bg-obsidian-light/40'}`}
+              className={`p-1.5 rounded transition-colors ${menuOpen ? 'bg-gold/10 text-gold' : 'text-stone/50 hover:text-obsidian hover:bg-obsidian-light/40'}`}
               title="Azioni"
             >
               <MoreHorizontal size={15} />
@@ -224,7 +224,7 @@ export function EventRow({
             {menuOpen && (
               <div
                 className="absolute right-0 top-full mt-1 z-[100] min-w-[130px] rounded-lg border shadow-2xl overflow-hidden"
-                style={{ backgroundColor: '#1A1009', borderColor: 'rgba(74,59,44,0.7)' }}
+                style={{ backgroundColor: '#FDFCFA', borderColor: '#DDD5C8' }}
               >
                 {canEdit && (
                   <button

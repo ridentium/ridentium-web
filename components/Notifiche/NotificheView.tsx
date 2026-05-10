@@ -10,11 +10,11 @@ import {
 import type { Notifica } from '@/types'
 
 const TIPO_META = {
-  magazzino:  { Icon: Package,       color: '#F87171', label: 'Magazzino' },
-  task:       { Icon: CheckSquare,   color: '#C9A84C', label: 'Task' },
-  ricorrente: { Icon: RefreshCw,     color: '#60A5FA', label: 'Ricorrenti' },
-  messaggio:  { Icon: MessageCircle, color: '#A78BFA', label: 'Messaggi' },
-  crm:        { Icon: UserCircle2,   color: '#34D399', label: 'CRM' },
+  magazzino:  { Icon: Package,       color: '#B91C1C', label: 'Magazzino' },
+  task:       { Icon: CheckSquare,   color: '#665647', label: 'Task' },
+  ricorrente: { Icon: RefreshCw,     color: '#2563EB', label: 'Ricorrenti' },
+  messaggio:  { Icon: MessageCircle, color: '#7C3AED', label: 'Messaggi' },
+  crm:        { Icon: UserCircle2,   color: '#059669', label: 'CRM' },
 } as const
 
 function fmt(d: string) {
@@ -82,8 +82,8 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
 
   const unread = notifiche.filter(n => !n.letta).length
   const chipBase  = { borderRadius: 20, fontSize: 12, padding: '6px 14px', transition: 'all .15s', border: '1px solid' }
-  const chipActive  = { ...chipBase, background: 'rgba(201,168,76,0.2)', borderColor: 'rgba(201,168,76,0.5)', color: '#C9A84C' }
-  const chipInactive = { ...chipBase, background: 'rgba(74,59,44,0.3)', borderColor: 'rgba(74,59,44,0.5)', color: 'rgba(160,144,126,0.7)' }
+  const chipActive  = { ...chipBase, background: 'rgba(102,86,71,0.12)', borderColor: 'rgba(102,86,71,0.4)', color: '#665647' }
+  const chipInactive = { ...chipBase, background: 'rgba(61,43,31,0.04)', borderColor: 'rgba(61,43,31,0.15)', color: 'rgba(102,86,71,0.55)' }
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -92,11 +92,11 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
         <div>
           <h1
             className="text-2xl font-light tracking-wide"
-            style={{ fontFamily: '"Cormorant Garamond",Georgia,serif', color: '#F2EDE4' }}
+            style={{ fontFamily: '"Cormorant Garamond",Georgia,serif', color: '#3D2B1F' }}
           >
             Notifiche
           </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'rgba(160,144,126,0.6)' }}>
+          <p className="text-sm mt-0.5" style={{ color: 'rgba(102,86,71,0.5)' }}>
             {unread > 0 ? `${unread} non ${unread === 1 ? 'letta' : 'lette'}` : 'Tutte lette'}
           </p>
         </div>
@@ -104,9 +104,9 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
           <button
             onClick={markAllRead}
             className="flex items-center gap-2 text-sm px-4 py-2 rounded transition-colors"
-            style={{ background: 'rgba(201,168,76,0.1)', border: '1px solid rgba(201,168,76,0.3)', color: '#C9A84C' }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(201,168,76,0.18)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(201,168,76,0.1)' }}
+            style={{ background: 'rgba(102,86,71,0.08)', border: '1px solid rgba(102,86,71,0.25)', color: '#665647' }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(102,86,71,0.14)' }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(102,86,71,0.08)' }}
           >
             <CheckCheck size={14} /> Segna tutte lette
           </button>
@@ -115,10 +115,10 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
 
       {/* Form invio (solo admin) */}
       {isAdmin && (
-        <div className="rounded-lg p-5" style={{ background: '#221A12', border: '1px solid rgba(74,59,44,0.5)' }}>
+        <div className="rounded-lg p-5" style={{ background: '#EDE9E2', border: '1px solid #DDD5C8' }}>
           <div className="flex items-center gap-2 mb-4">
-            <MessageCircle size={14} style={{ color: '#A78BFA' }} />
-            <h2 className="text-sm font-medium tracking-wide" style={{ color: '#F2EDE4' }}>
+            <MessageCircle size={14} style={{ color: '#7C3AED' }} />
+            <h2 className="text-sm font-medium tracking-wide" style={{ color: '#3D2B1F' }}>
               Invia messaggio al team
             </h2>
           </div>
@@ -126,21 +126,18 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
             <input
               value={msgTitolo} onChange={e => setMsgTitolo(e.target.value)}
               placeholder="Titolo"
-              className="w-full px-3 py-2 rounded text-sm outline-none"
-              style={{ background: '#1A1009', border: '1px solid rgba(74,59,44,0.5)', color: '#F2EDE4' }}
+              className="input"
             />
             <textarea
               value={msgCorpo} onChange={e => setMsgCorpo(e.target.value)}
               placeholder="Testo del messaggio (opzionale)"
               rows={2}
-              className="w-full px-3 py-2 rounded text-sm outline-none resize-none"
-              style={{ background: '#1A1009', border: '1px solid rgba(74,59,44,0.5)', color: '#F2EDE4' }}
+              className="input resize-none"
             />
             <div className="flex items-center gap-3">
               <select
                 value={msgDest} onChange={e => setMsgDest(e.target.value as any)}
-                className="flex-1 px-3 py-2 rounded text-sm outline-none"
-                style={{ background: '#1A1009', border: '1px solid rgba(74,59,44,0.5)', color: '#F2EDE4' }}
+                className="input flex-1"
               >
                 <option value="tutti">Tutto il team</option>
                 <option value="staff">Solo staff</option>
@@ -149,12 +146,12 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
               <button
                 type="submit" disabled={sending || !msgTitolo.trim()}
                 className="flex items-center gap-2 px-4 py-2 rounded text-sm font-medium transition-colors disabled:opacity-40"
-                style={{ background: 'rgba(167,139,250,0.15)', border: '1px solid rgba(167,139,250,0.4)', color: '#A78BFA' }}
+                style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.3)', color: '#7C3AED' }}
               >
                 <Send size={13} /> {sending ? 'Invio…' : 'Invia'}
               </button>
             </div>
-            {msgOk && <p className="text-xs" style={{ color: '#34D399' }}>{msgOk}</p>}
+            {msgOk && <p className="text-xs" style={{ color: '#15803D' }}>{msgOk}</p>}
           </form>
         </div>
       )}
@@ -167,7 +164,7 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
             {{ tutte: 'Tutte', nonlette: 'Non lette', lette: 'Lette' }[f]}
           </button>
         ))}
-        <span style={{ width: 1, height: 18, background: 'rgba(74,59,44,0.5)', display: 'inline-block', margin: '0 4px' }} />
+        <span style={{ width: 1, height: 18, background: '#DDD5C8', display: 'inline-block', margin: '0 4px' }} />
         {(['tutti', ...Object.keys(TIPO_META)] as string[]).map(t => (
           <button key={t} onClick={() => setFiltroTipo(t)}
             style={filtroTipo === t ? chipActive : chipInactive}>
@@ -181,16 +178,16 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
         <div className="flex items-center justify-center py-16">
           <div
             className="w-6 h-6 rounded-full border-2 animate-spin"
-            style={{ borderColor: 'rgba(201,168,76,0.3)', borderTopColor: '#C9A84C' }}
+            style={{ borderColor: 'rgba(102,86,71,0.15)', borderTopColor: '#665647' }}
           />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
-          <Bell size={32} style={{ color: 'rgba(160,144,126,0.2)' }} />
-          <p style={{ color: 'rgba(160,144,126,0.45)' }}>Nessuna notifica</p>
+          <Bell size={32} style={{ color: 'rgba(102,86,71,0.2)' }} />
+          <p style={{ color: 'rgba(102,86,71,0.4)' }}>Nessuna notifica</p>
         </div>
       ) : (
-        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid rgba(74,59,44,0.45)' }}>
+        <div className="rounded-lg overflow-hidden" style={{ border: '1px solid #DDD5C8' }}>
           {filtered.map((n, i) => {
             const meta = TIPO_META[n.tipo] ?? TIPO_META.messaggio
             const Icon = meta.Icon
@@ -199,9 +196,9 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
                 key={n.id}
                 style={{
                   background: n.letta
-                    ? (i % 2 === 0 ? '#1C1208' : '#1A1009')
-                    : 'rgba(201,168,76,0.04)',
-                  borderBottom: i < filtered.length - 1 ? '1px solid rgba(74,59,44,0.25)' : 'none',
+                    ? (i % 2 === 0 ? '#FDFCFA' : '#F7F4EF')
+                    : 'rgba(102,86,71,0.05)',
+                  borderBottom: i < filtered.length - 1 ? '1px solid #E8E2D9' : 'none',
                 }}
               >
                 <div className="flex gap-4 px-5 py-4">
@@ -219,17 +216,17 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
                         )}
                         <p
                           className="text-sm leading-snug"
-                          style={{ color: n.letta ? 'rgba(210,198,182,0.6)' : '#F2EDE4', fontWeight: n.letta ? 400 : 500 }}
+                          style={{ color: n.letta ? 'rgba(102,86,71,0.5)' : '#3D2B1F', fontWeight: n.letta ? 400 : 500 }}
                         >
                           {n.titolo}
                         </p>
                       </div>
-                      <span className="text-[11px] flex-shrink-0 tabular-nums" style={{ color: 'rgba(160,144,126,0.45)' }}>
+                      <span className="text-[11px] flex-shrink-0 tabular-nums" style={{ color: 'rgba(102,86,71,0.4)' }}>
                         {fmt(n.created_at)}
                       </span>
                     </div>
                     {n.corpo && (
-                      <p className="text-xs mt-1" style={{ color: 'rgba(160,144,126,0.65)' }}>{n.corpo}</p>
+                      <p className="text-xs mt-1" style={{ color: 'rgba(102,86,71,0.55)' }}>{n.corpo}</p>
                     )}
                     <div className="flex items-center gap-3 mt-2">
                       <span
@@ -242,9 +239,9 @@ export default function NotificheView({ isAdmin }: { isAdmin: boolean }) {
                         <Link
                           href={n.url}
                           className="text-xs transition-colors"
-                          style={{ color: 'rgba(160,144,126,0.5)' }}
-                          onMouseEnter={e => (e.currentTarget.style.color = '#C9A84C')}
-                          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(160,144,126,0.5)')}
+                          style={{ color: 'rgba(102,86,71,0.45)' }}
+                          onMouseEnter={e => (e.currentTarget.style.color = '#665647')}
+                          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(102,86,71,0.45)')}
                         >
                           Vai →
                         </Link>
