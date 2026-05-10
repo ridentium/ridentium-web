@@ -149,7 +149,7 @@ export default function SottoSogliaOrdina({
         if (!fornitore) return null
         const { canale, telefono, email, sitoEshop, nomeContatto } = resolveContact(fornitore)
         return (
-          <div key={fornitoreId} className="rounded border border-obsidian-light/40 p-3 space-y-2">
+          <div key={fornitoreId} className="rounded border border-stone/25 p-3 space-y-2">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
                 <p className="text-xs font-medium text-gold uppercase tracking-wider">{fornitore.nome}</p>
@@ -191,8 +191,8 @@ export default function SottoSogliaOrdina({
             </div>
             <div className="space-y-1">
               {prodotti.map(p => (
-                <div key={p.id} className="flex items-center justify-between py-1 border-b border-obsidian-light/20 last:border-0">
-                  <span className="text-sm text-cream/80">{p.prodotto}</span>
+                <div key={p.id} className="flex items-center justify-between py-1 border-b border-stone/10 last:border-0">
+                  <span className="text-sm text-obsidian/80">{p.prodotto}</span>
                   <span className="badge-alert text-xs"><AlertTriangle size={9} />{p.quantita}/{p.soglia_minima} {p.unita ?? 'pz'}</span>
                 </div>
               ))}
@@ -219,8 +219,8 @@ export default function SottoSogliaOrdina({
             Apri il prodotto in Magazzino → modifica → assegna un fornitore per abilitare l&apos;ordine rapido.
           </p>
           {senzaFornitore.map(p => (
-            <div key={p.id} className="flex items-center justify-between py-1 border-b border-obsidian-light/20 last:border-0">
-              <span className="text-sm text-cream/70">{p.prodotto}</span>
+            <div key={p.id} className="flex items-center justify-between py-1 border-b border-stone/10 last:border-0">
+              <span className="text-sm text-obsidian/70">{p.prodotto}</span>
               <span className="badge-alert text-xs"><AlertTriangle size={9} />{p.quantita}/{p.soglia_minima} {p.unita ?? 'pz'}</span>
             </div>
           ))}
@@ -229,13 +229,13 @@ export default function SottoSogliaOrdina({
 
       {/* ── In riassortimento (già ordinati) ── */}
       {inRiassortimento.length > 0 && (
-        <div className="rounded border border-obsidian-light/20 bg-obsidian-light/10 p-3 space-y-2">
+        <div className="rounded border border-stone/15 bg-stone/5 p-3 space-y-2">
           <div className="flex items-center gap-2">
             <Clock size={11} className="text-stone/50" />
             <p className="text-xs font-medium text-stone uppercase tracking-wider">In riassortimento</p>
           </div>
           {inRiassortimento.map(p => (
-            <div key={p.id} className="flex items-center justify-between py-1 border-b border-obsidian-light/20 last:border-0">
+            <div key={p.id} className="flex items-center justify-between py-1 border-b border-stone/10 last:border-0">
               <span className="text-sm text-stone/70">{p.prodotto}</span>
               <span className="text-[10px] text-stone/50 flex items-center gap-1">
                 <Clock size={9} /> ordinato

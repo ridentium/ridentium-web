@@ -41,7 +41,7 @@ export default function QuickActionsBar() {
             <Icon size={15} className="text-gold/70 group-hover:text-gold transition-colors" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-cream font-medium">{label}</p>
+            <p className="text-sm text-obsidian font-medium">{label}</p>
             <p className="text-[11px] text-stone mt-0.5 hidden sm:block leading-tight">{desc}</p>
           </div>
           <Plus size={12} className="text-stone/30 group-hover:text-gold/50 transition-colors flex-shrink-0 mr-1" />

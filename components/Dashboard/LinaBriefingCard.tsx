@@ -57,24 +57,24 @@ export default function LinaBriefingCard({ briefingFallback, firstName, alertCou
 
   function openLina() { document.dispatchEvent(new CustomEvent('lina:open')) }
   return (
-    <div className="card lg:col-span-2 relative overflow-hidden" style={{ background:'linear-gradient(135deg,#3A2E22 0%,#2C2018 100%)', borderColor:'rgba(201,168,76,0.25)' }}>
-      <div style={{ position:'absolute', top:-60, right:-60, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(201,168,76,0.1),transparent 70%)', pointerEvents:'none' }} />
+    <div className="card lg:col-span-2 relative overflow-hidden" style={{ backgroundColor: '#FDFCFA', borderColor: '#DDD5C8' }}>
+      <div style={{ position:'absolute', top:-60, right:-60, width:200, height:200, borderRadius:'50%', background:'radial-gradient(circle,rgba(102,86,71,0.06),transparent 70%)', pointerEvents:'none' }} />
       <div className="flex items-start gap-4 relative">
-        <div style={{ width:52, height:52, borderRadius:'50%', background:'radial-gradient(circle at 38% 38%,#E8C566,#9A7220)', border:'2px solid rgba(201,168,76,0.7)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 0 20px rgba(201,168,76,0.2)' }}>
-          <span style={{ fontFamily:'"Cormorant Garamond",Georgia,serif', fontSize:'1.3rem', fontWeight:600, color:'#1A0E04' }}>L</span>
+        <div style={{ width:52, height:52, borderRadius:'50%', background:'radial-gradient(circle at 38% 38%,#E8C566,#9A7220)', border:'2px solid rgba(201,168,76,0.5)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 2px 12px rgba(201,168,76,0.15)' }}>
+          <span style={{ fontFamily:'"Cormorant Garamond",Georgia,serif', fontSize:'1.3rem', fontWeight:600, color:'#FDFCFA' }}>L</span>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.2em] mb-2 font-medium" style={{ color:'rgba(201,168,76,0.7)' }}>Lina · Briefing del giorno</p>
+          <p className="text-[10px] uppercase tracking-[0.2em] mb-2 font-medium text-gold">Lina · Briefing del giorno</p>
           <div className="min-h-[2.5rem] flex items-center gap-2">
-            {loading && <Loader2 size={13} className="animate-spin flex-shrink-0" style={{ color:'#C9A84C' }} />}
-            <p className={"text-sm leading-relaxed transition-opacity duration-300 "+(loading?'opacity-60':'opacity-100')} style={{ color:'#F2EDE4' }}>{briefing}</p>
+            {loading && <Loader2 size={13} className="animate-spin flex-shrink-0 text-gold" />}
+            <p className={"text-sm leading-relaxed transition-opacity duration-300 text-obsidian "+(loading?'opacity-60':'opacity-100')}>{briefing}</p>
           </div>
           <div className="flex flex-wrap gap-2 mt-4">
-            {alertCount > 0 && <Link href="/admin/magazzino?filter=alert" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(224,85,69,0.35)', color:'#F87171', background:'rgba(224,85,69,0.12)' }}><Package size={11}/>{alertCount} sotto soglia<ArrowRight size={10}/></Link>}
-            {tasksCount > 0 && <Link href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(201,168,76,0.3)', color:'rgba(201,168,76,0.85)', background:'rgba(201,168,76,0.1)' }}><CheckSquare size={11}/>{tasksCount} task<ArrowRight size={10}/></Link>}
-            {riordiniCount > 0 && <Link href="/admin/magazzino" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(201,168,76,0.3)', color:'rgba(201,168,76,0.85)', background:'rgba(201,168,76,0.1)' }}><ShoppingCart size={11}/>{riordiniCount} riordini<ArrowRight size={10}/></Link>}
-            {ricorrentiCount > 0 && <Link href="/admin/ricorrenti" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(242,237,228,0.12)', color:'rgba(242,237,228,0.45)', background:'rgba(242,237,228,0.05)' }}><RefreshCw size={11}/>{ricorrentiCount} ricorrenti<ArrowRight size={10}/></Link>}
-            <button onClick={openLina} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(201,168,76,0.45)', color:'#C9A84C', background:'rgba(201,168,76,0.1)' }}>Chiedi a Lina →</button>
+            {alertCount > 0 && <Link href="/admin/magazzino?filter=alert" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(224,85,69,0.35)', color:'#F87171', background:'rgba(224,85,69,0.08)' }}><Package size={11}/>{alertCount} sotto soglia<ArrowRight size={10}/></Link>}
+            {tasksCount > 0 && <Link href="/admin/tasks" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(201,168,76,0.4)', color:'#665647', background:'rgba(201,168,76,0.08)' }}><CheckSquare size={11}/>{tasksCount} task<ArrowRight size={10}/></Link>}
+            {riordiniCount > 0 && <Link href="/admin/magazzino" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(201,168,76,0.4)', color:'#665647', background:'rgba(201,168,76,0.08)' }}><ShoppingCart size={11}/>{riordiniCount} riordini<ArrowRight size={10}/></Link>}
+            {ricorrentiCount > 0 && <Link href="/admin/ricorrenti" className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'#DDD5C8', color:'#9E8E7E', background:'rgba(158,142,126,0.06)' }}><RefreshCw size={11}/>{ricorrentiCount} ricorrenti<ArrowRight size={10}/></Link>}
+            <button onClick={openLina} className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors" style={{ borderColor:'rgba(201,168,76,0.45)', color:'#665647', background:'rgba(201,168,76,0.08)' }}>Chiedi a Lina →</button>
           </div>
         </div>
       </div>

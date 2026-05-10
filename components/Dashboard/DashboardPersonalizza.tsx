@@ -85,7 +85,7 @@ export default function DashboardPersonalizza() {
         <div className="fixed inset-0 bg-obsidian/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-4">
           <div className="card w-full max-w-xs">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-cream">Personalizza dashboard</h3>
+              <h3 className="text-sm font-medium text-obsidian">Personalizza dashboard</h3>
               <button onClick={() => setOpen(false)} className="btn-ghost p-1">
                 <X size={14} />
               </button>
@@ -98,9 +98,9 @@ export default function DashboardPersonalizza() {
                   <button
                     key={w.id}
                     onClick={() => toggle(w.id)}
-                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-obsidian-light/20 transition-colors"
+                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-stone/10 transition-colors"
                   >
-                    <span className={`text-sm ${isVisible ? 'text-cream' : 'text-stone/50'}`}>{w.label}</span>
+                    <span className={`text-sm ${isVisible ? 'text-obsidian' : 'text-stone/50'}`}>{w.label}</span>
                     {isVisible
                       ? <Eye size={14} className="text-gold/60" />
                       : <EyeOff size={14} className="text-stone/40" />
@@ -111,7 +111,7 @@ export default function DashboardPersonalizza() {
             </div>
 
             {hidden.size > 0 && (
-              <button onClick={resetAll} className="w-full mt-3 text-xs text-stone hover:text-cream transition-colors py-1.5">
+              <button onClick={resetAll} className="w-full mt-3 text-xs text-stone hover:text-obsidian transition-colors py-1.5">
                 Ripristina tutto
               </button>
             )}

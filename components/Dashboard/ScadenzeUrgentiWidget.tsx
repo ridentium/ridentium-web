@@ -65,7 +65,7 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <h3 className="text-xs font-medium text-cream uppercase tracking-widest">
+          <h3 className="text-xs font-medium text-obsidian uppercase tracking-widest">
             Adempimenti urgenti
           </h3>
           <div className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-cream truncate">{a.titolo}</p>
+                    <p className="text-sm text-obsidian truncate">{a.titolo}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-[10px] px-1.5 py-0.5 rounded"
                         style={{ color: catColor, background: catColor + '18', border: `1px solid ${catColor}40` }}>

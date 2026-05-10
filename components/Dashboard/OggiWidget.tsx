@@ -54,7 +54,7 @@ export default function OggiWidget({ items: initialItems }: { items: OggiItem[] 
           <Check size={14} className="text-green-400" />
         </div>
         <div>
-          <p className="text-sm text-cream/80">Tutto completato per oggi</p>
+          <p className="text-sm text-obsidian/80">Tutto completato per oggi</p>
           <p className="text-xs text-stone/50">Ottimo lavoro!</p>
         </div>
       </div>
@@ -66,7 +66,7 @@ export default function OggiWidget({ items: initialItems }: { items: OggiItem[] 
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CalendarDays size={14} className="text-gold" />
-          <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Oggi</h3>
+          <h3 className="text-xs font-medium text-obsidian uppercase tracking-widest">Oggi</h3>
         </div>
         <span className="text-[10px] text-stone/40">{visible.length} element{visible.length === 1 ? 'o' : 'i'}</span>
       </div>
@@ -76,17 +76,17 @@ export default function OggiWidget({ items: initialItems }: { items: OggiItem[] 
           const Icon = tipoIcon[item.tipo]
           const isLoading = completing === item.id
           return (
-            <div key={item.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-obsidian-light/20 transition-colors group">
+            <div key={item.id} className="flex items-center gap-3 py-2 px-2 rounded-lg hover:bg-stone/10 transition-colors group">
               {item.tipo === 'task' ? (
                 <button
                   onClick={() => complete(item)}
                   disabled={!!completing}
-                  className="flex-shrink-0 w-5 h-5 rounded border border-obsidian-light/60 hover:border-green-400/60 hover:bg-green-400/10 flex items-center justify-center transition-colors disabled:opacity-50"
+                  className="flex-shrink-0 w-5 h-5 rounded border border-stone/35 hover:border-green-600/60 hover:bg-green-600/10 flex items-center justify-center transition-colors disabled:opacity-50"
                   title="Segna come fatto"
                 >
                   {isLoading
                     ? <Loader2 size={10} className="animate-spin text-stone" />
-                    : <Check size={10} className="text-stone/40 group-hover:text-green-400 transition-colors" />
+                    : <Check size={10} className="text-stone/40 group-hover:text-green-700 transition-colors" />
                   }
                 </button>
               ) : (
@@ -94,7 +94,7 @@ export default function OggiWidget({ items: initialItems }: { items: OggiItem[] 
               )}
               <Link
                 href={item.href}
-                className={`flex-1 text-sm truncate transition-colors ${item.urgente ? 'text-red-400' : 'text-cream/80'} hover:text-cream`}
+                className={`flex-1 text-sm truncate transition-colors ${item.urgente ? 'text-red-400' : 'text-obsidian/80'} hover:text-obsidian`}
               >
                 {item.titolo}
               </Link>
@@ -109,7 +109,7 @@ export default function OggiWidget({ items: initialItems }: { items: OggiItem[] 
       </div>
 
       {(tasks.length > 0 || adempimenti.length > 0 || ricorrenti.length > 0) && (
-        <div className="flex gap-3 mt-3 pt-3 border-t border-obsidian-light/30">
+        <div className="flex gap-3 mt-3 pt-3 border-t border-stone/20">
           {tasks.length > 0 && (
             <Link href="/admin/tasks" className="text-[10px] text-stone/50 hover:text-gold transition-colors">
               {tasks.length} task →

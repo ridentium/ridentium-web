@@ -39,7 +39,7 @@ interface Props {
 function NotePopup({ onSave, onSkip }: { onSave: (nota: string) => void; onSkip: () => void }) {
   const [nota, setNota] = useState('')
   return (
-    <div className="ml-6 mt-1 mb-2 p-3 rounded bg-obsidian-light/40 border border-obsidian-light/60 space-y-2">
+    <div className="ml-6 mt-1 mb-2 p-3 rounded bg-stone/20 border border-stone/35 space-y-2">
       <input
         type="text"
         placeholder="Aggiungi una nota (facoltativo)"
@@ -133,7 +133,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
       {/* Task */}
       {pendingTasks.slice(0, 6).map(task => (
         <div key={task.id}>
-          <div className="flex items-start gap-3 py-2 border-b border-obsidian-light/30 last:border-0">
+          <div className="flex items-start gap-3 py-2 border-b border-stone/20 last:border-0">
             <input
               type="checkbox"
               checked={completedTaskIds.has(task.id)}
@@ -142,7 +142,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
               className="mt-0.5 cursor-pointer accent-gold shrink-0"
             />
             <div className="flex-1 min-w-0">
-              <p className={`text-sm ${completedTaskIds.has(task.id) ? 'line-through text-stone' : 'text-cream/80'}`}>
+              <p className={`text-sm ${completedTaskIds.has(task.id) ? 'line-through text-stone' : 'text-obsidian/80'}`}>
                 {task.titolo}
               </p>
               <p className="text-xs text-stone mt-0.5">
@@ -165,7 +165,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
       {/* Ricorrenti */}
       {pendingRicorrenti.slice(0, 6).map(r => (
         <div key={r.id}>
-          <div className="flex items-start gap-3 py-2 border-b border-obsidian-light/30 last:border-0">
+          <div className="flex items-start gap-3 py-2 border-b border-stone/20 last:border-0">
             <input
               type="checkbox"
               checked={completedRicorrentiIds.has(r.id)}
@@ -174,7 +174,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
               className="mt-0.5 cursor-pointer accent-gold shrink-0"
             />
             <div className="flex-1 min-w-0">
-              <p className={`text-sm ${completedRicorrentiIds.has(r.id) ? 'line-through text-stone' : 'text-cream/80'}`}>
+              <p className={`text-sm ${completedRicorrentiIds.has(r.id) ? 'line-through text-stone' : 'text-obsidian/80'}`}>
                 {r.titolo}
               </p>
               <p className="text-xs text-stone mt-0.5 capitalize flex items-center gap-1">
