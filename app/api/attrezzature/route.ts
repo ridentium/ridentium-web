@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
-  await logActivityServer(user.id, userNome, `Attrezzatura aggiunta: ${body.nome.trim()}`, undefined, 'altro')
+  await logActivityServer(user.id, userNome, `Attrezzatura aggiunta: ${body.nome.trim()}`, undefined, 'attrezzature')
 
   return NextResponse.json({ attrezzatura: data })
 }

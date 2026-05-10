@@ -36,7 +36,7 @@ export async function PATCH(
 
   const userNome = `${profilo.nome} ${profilo.cognome}`.trim()
   if (body.stato) {
-    await logActivityServer(user.id, userNome, `Attrezzatura stato → ${body.stato}`, params.id, 'altro')
+    await logActivityServer(user.id, userNome, `Attrezzatura stato → ${body.stato}`, params.id, 'attrezzature')
   }
 
   return NextResponse.json({ ok: true, updates })

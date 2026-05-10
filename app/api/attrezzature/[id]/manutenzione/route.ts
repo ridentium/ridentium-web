@@ -59,7 +59,7 @@ export async function POST(
   await logActivityServer(
     user.id, userNome,
     `Manutenzione registrata: ${attr?.nome ?? params.id}`,
-    undefined, 'altro'
+    undefined, 'attrezzature'
   )
 
   return NextResponse.json({ ok: true, manutenzione: manut, attrUpdates })
