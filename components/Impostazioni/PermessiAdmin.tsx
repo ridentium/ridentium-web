@@ -68,7 +68,7 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
   }
 
   return (
-    <div className="card border-obsidian-light/60 mt-6">
+    <div className="card border-stone/35 mt-6">
       <div className="mb-6">
         <p className="text-stone text-xs tracking-widest uppercase mb-1">Permessi Sezioni</p>
         <p className="text-stone/50 text-xs">
@@ -92,11 +92,11 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-obsidian-light/30">
+          <tbody className="divide-y divide-stone/20">
             {SEZIONI.map(s => (
               <tr key={s.key}>
                 <td className="py-3.5 pr-4">
-                  <span className="text-cream text-sm">{s.label}</span>
+                  <span className="text-obsidian text-sm">{s.label}</span>
                 </td>
                 {RUOLI.map(r => {
                   const key = s.key + '-' + r.key
@@ -109,7 +109,7 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
                         disabled={isSaving}
                         aria-label={`Toggle ${s.label} per ${r.label}`}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 ${
-                          vis ? 'bg-gold' : 'bg-obsidian-light'
+                          vis ? 'bg-gold' : 'bg-stone/30'
                         }`}
                       >
                         <span
@@ -127,13 +127,13 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
         </table>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-obsidian-light/30 flex flex-wrap items-center gap-4 text-xs text-stone/40">
+      <div className="mt-4 pt-4 border-t border-stone/20 flex flex-wrap items-center gap-4 text-xs text-stone/40">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-full bg-gold/80" />
           <span>Visibile</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="inline-block w-3 h-3 rounded-full bg-obsidian-light" />
+          <span className="inline-block w-3 h-3 rounded-full bg-stone/30" />
           <span>Nascosta</span>
         </div>
         <span className="ml-auto">Salvataggio automatico</span>

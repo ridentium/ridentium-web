@@ -681,8 +681,7 @@ function CompletaModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm">
       <div
         className="rounded-t-xl sm:rounded-xl p-5 sm:p-6 w-full sm:max-w-md mx-0 sm:mx-4 shadow-2xl max-h-[90vh] overflow-y-auto border border-taupe"
-        style={{ backgroundColor: '#FDFCFA' }}
-        style={{ paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
+        style={{ backgroundColor: '#FDFCFA', paddingBottom: 'max(1.25rem, env(safe-area-inset-bottom))' }}
       >
         <div className="flex items-start justify-between gap-3 mb-4">
           <div className="flex-1 min-w-0">

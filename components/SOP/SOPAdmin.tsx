@@ -37,7 +37,7 @@ function SOPContenuto({ contenuto }: { contenuto: string }) {
 
   if (!hasChecklist) {
     return (
-      <div className="prose-sm text-cream/80 whitespace-pre-wrap leading-relaxed text-sm">
+      <div className="prose-sm text-obsidian/80 whitespace-pre-wrap leading-relaxed text-sm">
         {contenuto}
       </div>
     )
@@ -56,7 +56,7 @@ function SOPContenuto({ contenuto }: { contenuto: string }) {
     <div className="space-y-1.5">
       {totalCheck > 0 && (
         <div className="flex items-center gap-2 mb-3">
-          <div className="flex-1 h-1 rounded-full bg-obsidian-light/40 overflow-hidden">
+          <div className="flex-1 h-1 rounded-full bg-stone/20 overflow-hidden">
             <div
               className="h-full rounded-full bg-gold transition-all duration-300"
               style={{ width: `${(doneCheck / totalCheck) * 100}%` }}
@@ -68,7 +68,7 @@ function SOPContenuto({ contenuto }: { contenuto: string }) {
       {blocks.map((block, i) => {
         if (block.type === 'text') {
           if (!block.content.trim()) return <div key={i} className="h-2" />
-          return <p key={i} className="text-sm text-cream/80 leading-relaxed">{block.content}</p>
+          return <p key={i} className="text-sm text-obsidian/80 leading-relaxed">{block.content}</p>
         }
         const isChecked = checked.has(block.index!)
         return (
@@ -82,11 +82,11 @@ function SOPContenuto({ contenuto }: { contenuto: string }) {
               })
             }}
             className={`w-full flex items-start gap-3 text-left px-3 py-2.5 rounded-lg transition-colors ${
-              isChecked ? 'bg-green-500/8 text-stone/60' : 'hover:bg-obsidian-light/20 text-cream/80'
+              isChecked ? 'bg-green-700/8 text-stone/60' : 'hover:bg-stone/10 text-obsidian/80'
             }`}
           >
             {isChecked
-              ? <CheckSquare size={15} className="text-green-400 flex-shrink-0 mt-0.5" />
+              ? <CheckSquare size={15} className="text-green-700 flex-shrink-0 mt-0.5" />
               : <Square size={15} className="text-stone/40 flex-shrink-0 mt-0.5" />
             }
             <span className={`text-sm leading-relaxed ${isChecked ? 'line-through' : ''}`}>{block.content}</span>
@@ -140,9 +140,9 @@ export default function SOPAdmin({ sops }: { sops: SOP[] }) {
             {items.map((sop: SOP) => {
               const hasChecklist = /^- \[[ x]\] /m.test(sop.contenuto ?? '')
               return (
-                <div key={sop.id} className="border border-obsidian-light rounded overflow-hidden">
+                <div key={sop.id} className="border border-stone/30 rounded overflow-hidden">
                   <div
-                    className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-obsidian-light/30 transition-colors"
+                    className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-stone/10 transition-colors"
                     onClick={() => setExpanded(expanded === sop.id ? null : sop.id)}
                   >
                     <div className="flex items-center gap-3">
@@ -150,7 +150,7 @@ export default function SOPAdmin({ sops }: { sops: SOP[] }) {
                         ? <ChevronDown size={14} className="text-gold" />
                         : <ChevronRight size={14} className="text-stone" />
                       }
-                      <span className="text-sm text-cream font-medium">{sop.titolo}</span>
+                      <span className="text-sm text-obsidian font-medium">{sop.titolo}</span>
                       <span className="text-xs text-stone">v{sop.versione}</span>
                       {hasChecklist && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold/10 text-gold/70 border border-gold/20">
@@ -169,9 +169,9 @@ export default function SOPAdmin({ sops }: { sops: SOP[] }) {
                     </div>
                   </div>
                   {expanded === sop.id && (
-                    <div className="px-4 py-4 border-t border-obsidian-light bg-obsidian/50">
+                    <div className="px-4 py-4 border-t border-stone/20 bg-ivory">
                       <SOPContenuto contenuto={sop.contenuto ?? ''} />
-                      <p className="text-xs text-stone mt-4 pt-3 border-t border-obsidian-light/30">
+                      <p className="text-xs text-stone mt-4 pt-3 border-t border-stone/20">
                         Visibile a: {(sop.ruoli_visibili ?? []).join(', ')}
                         {sop.autore_profilo && ` · Autore: ${sop.autore_profilo.nome} ${sop.autore_profilo.cognome}`}
                       </p>
@@ -276,7 +276,7 @@ function SOPModal({ sop, onClose, onSave }: { sop: any | null; onClose: () => vo
                   className={`text-xs px-3 py-1.5 rounded border transition-colors ${
                     (form.ruoli_visibili as string[]).includes(r)
                       ? 'bg-gold/10 text-gold border-gold/30'
-                      : 'border-obsidian-light text-stone'
+                      : 'border-stone/30 text-stone'
                   }`}>
                   {r}
                 </button>

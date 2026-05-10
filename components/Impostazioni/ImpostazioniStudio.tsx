@@ -78,7 +78,7 @@ export default function ImpostazioniStudio() {
       {/* Giorni apertura */}
       <div className="card space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-cream">Giorni di apertura</h3>
+          <h3 className="text-sm font-medium text-obsidian">Giorni di apertura</h3>
           <p className="text-xs text-stone mt-1">
             Seleziona i giorni in cui lo studio è aperto. Il calendario mostrerà i giorni chiusi in grigio
             e segnalerà gli adempimenti che scadono in quei giorni.
@@ -94,9 +94,9 @@ export default function ImpostazioniStudio() {
                 onClick={() => toggleGiorno(d)}
                 className="flex flex-col items-center gap-0.5 px-3 py-2.5 rounded border transition-all"
                 style={{
-                  background: aperto ? 'rgba(201,168,76,0.15)' : 'rgba(26,16,9,0.4)',
-                  borderColor: aperto ? 'rgba(201,168,76,0.5)' : 'rgba(74,59,44,0.5)',
-                  color: aperto ? '#C9A84C' : 'rgba(160,144,126,0.5)',
+                  background: aperto ? 'rgba(201,168,76,0.15)' : 'rgba(247,244,239,0.8)',
+                  borderColor: aperto ? 'rgba(201,168,76,0.5)' : '#DDD5C8',
+                  color: aperto ? '#665647' : 'rgba(158,142,126,0.5)',
                   minWidth: 52,
                   minHeight: 52,
                 }}
@@ -121,7 +121,7 @@ export default function ImpostazioniStudio() {
       {/* Orari */}
       <div className="card space-y-4">
         <div>
-          <h3 className="text-sm font-medium text-cream flex items-center gap-2">
+          <h3 className="text-sm font-medium text-obsidian flex items-center gap-2">
             <Clock size={15} className="text-gold/70" /> Orario di apertura
           </h3>
           <p className="text-xs text-stone mt-1">

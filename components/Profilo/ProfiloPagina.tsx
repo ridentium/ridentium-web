@@ -164,7 +164,7 @@ export default function ProfiloPagina({ profilo }: Props) {
           </span>
         </div>
         <div>
-          <h2 className="font-serif text-2xl text-cream font-light tracking-wide">
+          <h2 className="font-serif text-2xl text-obsidian font-light tracking-wide">
             {profilo.nome} {profilo.cognome}
           </h2>
           <span className={cn('text-xs font-medium uppercase tracking-widest mt-1 inline-block', roleColor(profilo.ruolo))}>
@@ -179,7 +179,7 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Feedback */}
       {success && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded bg-ok/10 border border-ok/30 text-green-400 text-sm">
+        <div className="flex items-center gap-2 px-4 py-3 rounded bg-green-700/8 border border-green-700/30 text-green-700 text-sm">
           <CheckCircle size={15} />
           Profilo aggiornato con successo.
         </div>
@@ -193,7 +193,7 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Dati modificabili */}
       <div className="card space-y-5">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-obsidian-light pb-3">
+        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-stone/20 pb-3">
           Dati Anagrafici
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -234,7 +234,7 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Dati read-only */}
       <div className="card space-y-4">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-obsidian-light pb-3">
+        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-stone/20 pb-3">
           Account
         </h3>
         <div>
@@ -262,7 +262,7 @@ export default function ProfiloPagina({ profilo }: Props) {
       {/* Notifiche push */}
       {pushSupported && (
         <div className="card space-y-4">
-          <div className="flex items-center justify-between border-b border-obsidian-light pb-3">
+          <div className="flex items-center justify-between border-b border-stone/20 pb-3">
             <h3 className="text-xs uppercase tracking-widest text-stone font-medium">
               Notifiche Push
             </h3>
@@ -298,16 +298,16 @@ export default function ProfiloPagina({ profilo }: Props) {
                 visibleTypes.map(({ tipo, label, desc }) => {
                   const enabled = prefs[tipo] !== false // default: enabled
                   return (
-                    <div key={tipo} className="flex items-center justify-between py-2 border-b border-obsidian-light/50 last:border-0">
+                    <div key={tipo} className="flex items-center justify-between py-2 border-b border-stone/30 last:border-0">
                       <div>
-                        <p className="text-sm text-cream">{label}</p>
+                        <p className="text-sm text-obsidian">{label}</p>
                         <p className="text-xs text-stone mt-0.5">{desc}</p>
                       </div>
                       <button
                         onClick={() => handleTogglePref(tipo, enabled)}
                         className={cn(
                           'relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0 ml-4',
-                          enabled ? 'bg-gold' : 'bg-obsidian-light'
+                          enabled ? 'bg-gold' : 'bg-stone/30'
                         )}
                         role="switch"
                         aria-checked={enabled}
@@ -332,18 +332,18 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Sicurezza */}
       <div className="card space-y-4">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-obsidian-light pb-3">
+        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-stone/20 pb-3">
           Sicurezza
         </h3>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-cream text-sm font-medium">Password</p>
+            <p className="text-obsidian text-sm font-medium">Password</p>
             <p className="text-stone text-xs mt-0.5">
               Riceverai un&apos;email con il link per cambiare la password.
             </p>
           </div>
           {resetSent ? (
-            <span className="flex items-center gap-1.5 text-green-400 text-xs">
+            <span className="flex items-center gap-1.5 text-green-700 text-xs">
               <CheckCircle size={13} />
               Email inviata
             </span>

@@ -13,7 +13,7 @@ const CANALE_ICON: Record<string, React.ReactNode> = {
 const STATO_COLOR: Record<string, string> = {
   inviato: 'text-gold bg-gold/10 border-gold/30',
   confermato: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-  ricevuto: 'text-green-400 bg-green-500/10 border-green-500/30',
+  ricevuto: 'text-green-700 bg-green-700/10 border-green-700/30',
   annullato: 'text-stone bg-stone/10 border-stone/20',
 }
 
@@ -53,11 +53,11 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
 
       {/* Header */}
       <div className="flex items-start gap-4">
-        <Link href="/admin/fornitori" className="mt-1 p-1.5 rounded text-stone hover:text-cream transition-colors">
+        <Link href="/admin/fornitori" className="mt-1 p-1.5 rounded text-stone hover:text-obsidian transition-colors">
           <ArrowLeft size={16} />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-light font-serif text-cream">{fornitore.nome}</h1>
+          <h1 className="text-2xl font-light font-serif text-obsidian">{fornitore.nome}</h1>
           {fornitore.note && (
             <p className="text-sm text-stone mt-1">{fornitore.note}</p>
           )}
@@ -68,15 +68,15 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
 
         {/* ── Contatti ── */}
         <div className="card">
-          <h2 className="text-xs font-medium text-cream uppercase tracking-widest mb-4">Contatti</h2>
+          <h2 className="text-xs font-medium text-obsidian uppercase tracking-widest mb-4">Contatti</h2>
           {contatti.length === 0 ? (
             <p className="text-xs text-stone">Nessun contatto registrato</p>
           ) : (
             <div className="space-y-4">
               {contatti.map((c: any) => (
-                <div key={c.id} className="pb-4 border-b border-obsidian-light/30 last:border-0 last:pb-0">
+                <div key={c.id} className="pb-4 border-b border-stone/20 last:border-0 last:pb-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="text-sm text-cream font-medium">{c.nome || '—'}</p>
+                    <p className="text-sm text-obsidian font-medium">{c.nome || '—'}</p>
                     {c.is_predefinito && (
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">★ predefinito</span>
                     )}
@@ -103,11 +103,11 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
         {/* ── KPI ── */}
         <div className="space-y-4">
           <div className="card text-center">
-            <p className="text-3xl font-light font-serif text-cream mb-1">{totaleOrdini}</p>
+            <p className="text-3xl font-light font-serif text-obsidian mb-1">{totaleOrdini}</p>
             <p className="text-[10px] text-stone uppercase tracking-widest">Ordini totali</p>
           </div>
           <div className="card text-center">
-            <p className="text-3xl font-light font-serif text-cream mb-1">{magazzino?.length ?? 0}</p>
+            <p className="text-3xl font-light font-serif text-obsidian mb-1">{magazzino?.length ?? 0}</p>
             <p className="text-[10px] text-stone uppercase tracking-widest">Prodotti associati</p>
           </div>
         </div>
@@ -116,7 +116,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
         <div className="card">
           <div className="flex items-center gap-2 mb-4">
             <Package size={13} className="text-stone/60" />
-            <h2 className="text-xs font-medium text-cream uppercase tracking-widest">Prodotti in magazzino</h2>
+            <h2 className="text-xs font-medium text-obsidian uppercase tracking-widest">Prodotti in magazzino</h2>
           </div>
           {!magazzino?.length ? (
             <p className="text-xs text-stone">Nessun prodotto associato</p>
@@ -125,9 +125,9 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
               {magazzino.map(item => {
                 const isAlert = item.quantita < item.soglia_minima
                 return (
-                  <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-obsidian-light/20 last:border-0">
-                    <span className="text-sm text-cream/80 truncate mr-2">{item.prodotto}</span>
-                    <span className={`text-xs font-medium flex-shrink-0 ${isAlert ? 'text-red-400' : 'text-green-400/80'}`}>
+                  <div key={item.id} className="flex items-center justify-between py-1.5 border-b border-stone/15 last:border-0">
+                    <span className="text-sm text-obsidian/80 truncate mr-2">{item.prodotto}</span>
+                    <span className={`text-xs font-medium flex-shrink-0 ${isAlert ? 'text-red-400' : 'text-green-700/80'}`}>
                       {item.quantita} {item.unita ?? 'pz'}
                     </span>
                   </div>
@@ -143,7 +143,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
       <div className="card">
         <div className="flex items-center gap-2 mb-5">
           <ShoppingCart size={13} className="text-stone/60" />
-          <h2 className="text-xs font-medium text-cream uppercase tracking-widest">Storico Ordini</h2>
+          <h2 className="text-xs font-medium text-obsidian uppercase tracking-widest">Storico Ordini</h2>
           <span className="text-[10px] text-stone/40">({totaleOrdini})</span>
         </div>
 
@@ -154,7 +154,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
             {ordini.map((ordine: any) => {
               const righe: any[] = ordine.ordine_righe ?? []
               return (
-                <div key={ordine.id} className="border border-obsidian-light/40 rounded-lg p-4 hover:border-obsidian-light transition-colors">
+                <div key={ordine.id} className="border border-stone/25 rounded-lg p-4 hover:border-stone/40 transition-colors">
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-2">
                       {CANALE_ICON[ordine.canale] && (
@@ -176,7 +176,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
                     <div className="space-y-1">
                       {righe.map((r: any, i: number) => (
                         <div key={i} className="flex items-center justify-between text-xs">
-                          <span className="text-cream/70">{r.prodotto}</span>
+                          <span className="text-obsidian/70">{r.prodotto}</span>
                           <span className="text-stone">{r.quantita} {r.unita ?? 'pz'}</span>
                         </div>
                       ))}
@@ -184,7 +184,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
                   )}
 
                   {ordine.note && (
-                    <p className="text-xs text-stone/60 italic mt-2 border-t border-obsidian-light/20 pt-2">{ordine.note}</p>
+                    <p className="text-xs text-stone/60 italic mt-2 border-t border-stone/15 pt-2">{ordine.note}</p>
                   )}
                 </div>
               )

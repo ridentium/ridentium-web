@@ -119,7 +119,7 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg bg-obsidian border border-obsidian-light rounded-xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg border border-taupe rounded-xl shadow-2xl overflow-hidden" style={{ backgroundColor: '#FDFCFA' }}>
 
         {/* Skip button */}
         <button
@@ -132,7 +132,7 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
         </button>
 
         {/* Progress bar */}
-        <div className="h-0.5 bg-obsidian-light">
+        <div className="h-0.5 bg-stone/20">
           <div
             className="h-full bg-gold transition-all duration-500 ease-out"
             style={{ width: `${progress}%` }}
@@ -152,7 +152,7 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
           </p>
 
           {/* Title */}
-          <h2 className="font-serif text-2xl text-cream font-light mb-4 leading-snug">
+          <h2 className="font-serif text-2xl text-obsidian font-light mb-4 leading-snug">
             {current.titolo}
           </h2>
 
@@ -172,7 +172,7 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
                     ? 'w-4 h-1.5 bg-gold'
                     : i < step
                     ? 'w-1.5 h-1.5 bg-gold/40'
-                    : 'w-1.5 h-1.5 bg-obsidian-light'
+                    : 'w-1.5 h-1.5 bg-stone/20'
                 }`}
                 aria-label={`Passo ${i + 1}`}
               />
@@ -184,7 +184,7 @@ export default function OnboardingWizard({ userId, isAdmin }: Props) {
             {step > 0 && (
               <button
                 onClick={() => setStep(s => s - 1)}
-                className="btn-ghost flex items-center gap-1.5 text-stone/60 hover:text-cream text-sm px-3 py-2"
+                className="btn-ghost flex items-center gap-1.5 text-stone/60 hover:text-obsidian text-sm px-3 py-2"
               >
                 <ChevronLeft size={14} />
                 Indietro
