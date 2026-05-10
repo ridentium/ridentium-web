@@ -25,3 +25,12 @@ package-lock.json
 # supabase CLI — file locali generati dal link al progetto remoto
 # contengono URL di connessione e metadati di sessione, non vanno in git
 supabase/.temp/
+
+# ── Sicurezza — file da non committare mai ───────────────────────────────────
+# File di setup/documentazione che contengono o contenevano credenziali reali
+VAPID_SETUP.md
+# File credenziali locali
+credenziali*.txt
+# Qualsiasi file segreto locale
+*.secret
+*.secrets
