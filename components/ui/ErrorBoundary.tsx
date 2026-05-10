@@ -32,7 +32,7 @@ export default class ErrorBoundary extends React.Component<Props, State> {
         <div className="card flex flex-col items-center justify-center py-12 text-center gap-4">
           <AlertTriangle size={28} className="text-amber-400" />
           <div>
-            <p className="text-sm font-medium text-cream">
+            <p className="text-sm font-medium text-obsidian">
               {this.props.fallback ?? 'Qualcosa è andato storto'}
             </p>
             <p className="text-xs text-stone mt-1">Prova a ricaricare la pagina</p>

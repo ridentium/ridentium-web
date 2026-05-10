@@ -159,11 +159,12 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-xl bg-obsidian border border-obsidian-light rounded-xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-xl rounded-xl shadow-2xl overflow-hidden border border-taupe"
+        style={{ backgroundColor: '#FDFCFA' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Input */}
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-obsidian-light">
+        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-taupe">
           <Search size={16} className="text-stone flex-shrink-0" />
           <input
             ref={inputRef}
@@ -171,7 +172,7 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
             onChange={e => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Cerca in magazzino, task, protocolli…"
-            className="flex-1 bg-transparent text-cream placeholder-stone/50 outline-none text-sm"
+            className="flex-1 bg-transparent text-obsidian placeholder-stone/50 outline-none text-sm"
           />
           {loading && <Loader2 size={14} className="text-stone animate-spin flex-shrink-0" />}
           {!loading && query && (
@@ -179,7 +180,7 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
               <X size={14} />
             </button>
           )}
-          <kbd className="hidden sm:inline-flex items-center text-[10px] text-stone/40 border border-obsidian-light rounded px-1.5 py-0.5 font-mono">
+          <kbd className="hidden sm:inline-flex items-center text-[10px] text-stone/40 border border-stone/30 rounded px-1.5 py-0.5 font-mono">
             ESC
           </kbd>
         </div>
@@ -211,11 +212,11 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
                           onClick={() => navigate(r)}
                           className={cn(
                             'w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors',
-                            isSelected ? 'bg-obsidian-light' : 'hover:bg-obsidian-light/50'
+                            isSelected ? 'bg-stone/15' : 'hover:bg-stone/10'
                           )}
                         >
                           <div className="min-w-0">
-                            <p className="text-sm text-cream truncate">{r.titolo}</p>
+                            <p className="text-sm text-obsidian truncate">{r.titolo}</p>
                             {r.sottotitolo && (
                               <p className="text-xs text-stone mt-0.5 capitalize">{r.sottotitolo}</p>
                             )}
@@ -240,8 +241,8 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
               Digita almeno 2 caratteri per cercare
             </p>
             <div className="flex items-center justify-center gap-4 mt-4 text-stone/40 text-xs">
-              <span className="flex items-center gap-1"><kbd className="font-mono border border-obsidian-light rounded px-1">↑↓</kbd> naviga</span>
-              <span className="flex items-center gap-1"><kbd className="font-mono border border-obsidian-light rounded px-1">↵</kbd> apri</span>
+              <span className="flex items-center gap-1"><kbd className="font-mono border border-stone/30 rounded px-1">↑↓</kbd> naviga</span>
+              <span className="flex items-center gap-1"><kbd className="font-mono border border-stone/30 rounded px-1">↵</kbd> apri</span>
             </div>
           </div>
         )}

@@ -114,7 +114,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
               className={`text-xs px-3 py-1.5 rounded border transition-colors ${
                 filterCat === cat
                   ? 'bg-gold text-obsidian border-gold'
-                  : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                  : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
               }`}>
               {cat !== 'tutte' && (CAT_ICON[cat] ?? '📋') + ' '}{CAT_LABEL[cat] ?? cat}
               {' '}({count})
@@ -200,12 +200,12 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
           <div className="card p-0 overflow-hidden">
             {paginated.map(entry => (
               <div key={entry.id}
-                className="flex items-start gap-4 px-5 py-4 border-b border-obsidian-light/40 last:border-0 hover:bg-obsidian-light/20 transition-colors">
+                className="flex items-start gap-4 px-5 py-4 border-b border-stone/25 last:border-0 hover:bg-stone/10 transition-colors">
                 <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm flex-shrink-0 ${CAT_COLOR[entry.categoria] ?? 'text-stone bg-stone/10'}`}>
                   {CAT_ICON[entry.categoria] ?? '📋'}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-cream font-medium">{entry.azione}</p>
+                  <p className="text-sm text-obsidian font-medium">{entry.azione}</p>
                   {entry.dettaglio && <p className="text-xs text-stone mt-0.5">{entry.dettaglio}</p>}
                   <p className="text-xs text-stone/60 mt-1">{entry.user_nome}</p>
                 </div>
@@ -221,7 +221,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
           {hasMore && (
             <button
               onClick={() => setPage(p => p + 1)}
-              className="w-full flex items-center justify-center gap-2 py-3 text-xs text-stone hover:text-cream transition-colors border border-obsidian-light rounded-lg hover:border-stone"
+              className="w-full flex items-center justify-center gap-2 py-3 text-xs text-stone hover:text-obsidian transition-colors border border-stone/30 rounded-lg hover:border-stone"
             >
               <ChevronDown size={13} />
               Mostra altri {Math.min(PAGE_SIZE, filtered.length - page * PAGE_SIZE)} — totale {filtered.length}

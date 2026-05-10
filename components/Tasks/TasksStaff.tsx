@@ -40,10 +40,10 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
     return (
       <div className={`rounded-xl border transition-all ${
         task.stato === 'completato'
-          ? 'border-obsidian-light/30 bg-obsidian/40 opacity-60'
+          ? 'border-stone/20 bg-stone/5 opacity-60'
           : task.stato === 'in_corso'
           ? 'border-gold/25 bg-gold/5'
-          : 'border-obsidian-light/50 bg-obsidian-light/10'
+          : 'border-stone/25 bg-stone/5'
       }`}>
         {/* Header riga */}
         <button
@@ -53,7 +53,7 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
           {/* Icona stato */}
           <div className="mt-0.5 flex-shrink-0">
             {task.stato === 'completato'
-              ? <CheckCircle2 size={22} className="text-green-400" />
+              ? <CheckCircle2 size={22} className="text-green-700" />
               : task.stato === 'in_corso'
               ? <Clock size={22} className="text-gold" />
               : <Circle size={22} className="text-stone/50" />
@@ -62,7 +62,7 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
 
           <div className="flex-1 min-w-0">
             <p className={`text-sm font-medium leading-snug ${
-              task.stato === 'completato' ? 'line-through text-stone' : 'text-cream'
+              task.stato === 'completato' ? 'line-through text-stone' : 'text-obsidian'
             }`}>
               {task.titolo}
             </p>
@@ -84,9 +84,9 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
 
         {/* Contenuto espandibile */}
         {expanded && (
-          <div className="px-4 pb-4 space-y-3 border-t border-obsidian-light/30 pt-3">
+          <div className="px-4 pb-4 space-y-3 border-t border-stone/20 pt-3">
             {task.descrizione && (
-              <p className="text-xs text-cream/70 leading-relaxed">{task.descrizione}</p>
+              <p className="text-xs text-obsidian/70 leading-relaxed">{task.descrizione}</p>
             )}
 
             {/* Bottoni azione grandi per mobile */}
@@ -106,14 +106,14 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
                     <button
                       onClick={() => updateStato(task.id, 'da_fare')}
                       disabled={loading}
-                      className="flex-1 py-3 rounded-xl border border-obsidian-light text-stone text-sm hover:border-stone hover:text-cream active:bg-obsidian-light/30 transition-colors disabled:opacity-50"
+                      className="flex-1 py-3 rounded-xl border border-stone/30 text-stone text-sm hover:border-stone hover:text-obsidian active:bg-stone/15 transition-colors disabled:opacity-50"
                     >
                       {loading ? '…' : 'Metti in pausa'}
                     </button>
                     <button
                       onClick={() => updateStato(task.id, 'completato')}
                       disabled={loading}
-                      className="flex-1 py-3 rounded-xl border border-green-500/30 bg-green-500/10 text-green-400 text-sm font-medium hover:bg-green-500/20 active:bg-green-500/30 transition-colors disabled:opacity-50"
+                      className="flex-1 py-3 rounded-xl border border-green-700/30 bg-green-700/10 text-green-700 text-sm font-medium hover:bg-green-700/20 active:bg-green-700/30 transition-colors disabled:opacity-50"
                     >
                       {loading ? '…' : 'Completato ✓'}
                     </button>
@@ -140,8 +140,8 @@ export default function TasksStaff({ tasks, userId, userNome = '' }: { tasks: Ta
   if (tasks.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16 text-center">
-        <CheckCircle2 size={40} className="text-green-400 mb-4" />
-        <p className="text-cream/70 font-medium">Nessun task assegnato</p>
+        <CheckCircle2 size={40} className="text-green-700 mb-4" />
+        <p className="text-obsidian/70 font-medium">Nessun task assegnato</p>
         <p className="text-stone text-sm mt-1">Ottimo lavoro, sei in pari!</p>
         <p className="text-stone/40 text-xs mt-3">I task vengono assegnati dall&apos;admin o dal manager</p>
       </div>

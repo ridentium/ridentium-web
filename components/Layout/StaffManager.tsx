@@ -97,7 +97,7 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                         {member.nome[0]}{member.cognome[0]}
                       </div>
                       <div>
-                        <p className="text-cream font-medium text-sm">
+                        <p className="text-obsidian font-medium text-sm">
                           {member.nome} {member.cognome}
                         </p>
                         {member.telefono && (
@@ -112,7 +112,7 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                       value={member.ruolo}
                       onChange={e => handleRoleChange(member, e.target.value as UserRole)}
                       disabled={isPending}
-                      className="bg-transparent border border-obsidian-light rounded px-2 py-1 text-xs focus:outline-none focus:border-gold transition-colors disabled:opacity-50"
+                      className="bg-cream border border-taupe rounded px-2 py-1 text-xs focus:outline-none focus:border-gold transition-colors disabled:opacity-50 text-obsidian"
                     >
                       {RUOLI.map(r => (
                         <option key={r.value} value={r.value}>{r.label}</option>
@@ -120,7 +120,7 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                     </select>
                   </td>
                   <td>
-                    <span className={`text-xs font-medium ${member.attivo ? 'text-green-400' : 'text-stone'}`}>
+                    <span className={`text-xs font-medium ${member.attivo ? 'text-green-700' : 'text-stone'}`}>
                       {member.attivo ? '● Attivo' : '○ Disattivo'}
                     </span>
                   </td>
@@ -159,13 +159,13 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                 <AlertTriangle size={16} className="text-red-400" />
               </div>
               <div>
-                <p className="text-cream font-medium text-sm">Elimina account</p>
+                <p className="text-obsidian font-medium text-sm">Elimina account</p>
                 <p className="text-stone/60 text-xs">Questa azione è irreversibile</p>
               </div>
             </div>
             <p className="text-stone text-sm mb-5">
               Sei sicuro di voler eliminare l&apos;account di{' '}
-              <span className="text-cream font-medium">
+              <span className="text-obsidian font-medium">
                 {deleteTarget.nome} {deleteTarget.cognome}
               </span>
               ? Verranno eliminati anche tutti i dati associati.
@@ -194,13 +194,13 @@ export default function StaffManager({ staff }: { staff: UserProfile[] }) {
                 <AlertTriangle size={16} className="text-amber-400" />
               </div>
               <div>
-                <p className="text-cream font-medium text-sm">Cambia ruolo</p>
+                <p className="text-obsidian font-medium text-sm">Cambia ruolo</p>
                 <p className="text-stone/60 text-xs">Questa azione modifica i permessi di accesso</p>
               </div>
             </div>
             <p className="text-stone text-sm mb-5">
               Vuoi cambiare il ruolo di{' '}
-              <span className="text-cream font-medium">
+              <span className="text-obsidian font-medium">
                 {roleTarget.member.nome} {roleTarget.member.cognome}
               </span>
               {' '}a <span className="text-gold font-medium">{RUOLI.find(r => r.value === roleTarget.ruolo)?.label ?? roleTarget.ruolo}</span>?
@@ -294,9 +294,9 @@ function InviteModal({ onClose, onSave }: { onClose: () => void; onSave: () => v
           <div className="flex justify-center mb-4">
             <CheckCircle2 size={40} className="text-green-400" />
           </div>
-          <p className="text-cream font-medium text-lg mb-1">Account creato</p>
+          <p className="text-obsidian font-medium text-lg mb-1">Account creato</p>
           <p className="text-stone text-sm">
-            <span className="text-cream font-medium">{created.nome} {created.cognome}</span>{' '}
+            <span className="text-obsidian font-medium">{created.nome} {created.cognome}</span>{' '}
             è ora nel team. La pagina si aggiornerà automaticamente.
           </p>
         </div>

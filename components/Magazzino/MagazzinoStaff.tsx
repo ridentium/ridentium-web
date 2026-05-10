@@ -76,7 +76,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   className={`text-xs px-3 py-1.5 rounded border transition-colors ${
                     categoria === cat
                       ? 'bg-gold text-obsidian border-gold'
-                      : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                      : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                   }`}>
             {cat}
           </button>
@@ -86,7 +86,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                     soloAlert
                       ? 'bg-red-400/10 text-red-400 border-red-400/30'
-                      : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                      : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                   }`}>
             <AlertTriangle size={11} />
             Sotto soglia ({alertCount})
@@ -95,7 +95,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                     soloScadenza
                       ? 'bg-amber-400/10 text-amber-400 border-amber-400/30'
-                      : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                      : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                   }`}>
             <Clock size={11} />
             In scadenza ({scadenzaCount})
@@ -133,7 +133,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                 : expiryStatus === 'expiring' ? 'bg-amber-400/5' : ''
               return (
                 <tr key={item.id} className={rowBg}>
-                  <td className="font-medium text-cream">{item.prodotto}</td>
+                  <td className="font-medium text-obsidian">{item.prodotto}</td>
                   <td className="text-stone">{item.categoria}</td>
                   <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
                   <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
@@ -173,7 +173,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                         ?? f.fornitore_contatti?.[0]
                       return (
                         <div className="space-y-0.5">
-                          <p className="text-xs text-cream/80 font-medium">{f.nome}</p>
+                          <p className="text-xs text-obsidian/80 font-medium">{f.nome}</p>
                           {contatto?.telefono && (
                             <a
                               href={`tel:${contatto.telefono}`}
@@ -196,7 +196,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   </td>
                   <td>
                     {riordinato ? (
-                      <span className="flex items-center gap-1 text-xs text-green-400">
+                      <span className="flex items-center gap-1 text-xs text-green-700">
                         <Check size={11} /> Segnalato
                       </span>
                     ) : (
@@ -205,7 +205,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                         className={`flex items-center gap-1 text-xs px-2 py-1 rounded border transition-colors ${
                           isAlert
                             ? 'border-gold/40 text-gold hover:bg-gold/10'
-                            : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                            : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                         }`}
                       >
                         <ShoppingCart size={11} /> Riordina

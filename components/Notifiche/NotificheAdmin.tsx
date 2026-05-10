@@ -133,7 +133,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
           <Smartphone size={18} className="text-gold" />
         </div>
         <div className="flex-1">
-          <h2 className="text-cream font-medium text-sm">Questo dispositivo</h2>
+          <h2 className="text-obsidian font-medium text-sm">Questo dispositivo</h2>
           <p className="text-stone text-xs mt-0.5">
             Usa il pulsante a destra per attivare o disattivare le notifiche push su questo dispositivo.
             Ogni utente può gestire il proprio dispositivo dal profilo.
@@ -156,12 +156,12 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
               <div key={setting.tipo} className="card space-y-3">
                 {/* Row 1: toggle + label */}
                 <div className="flex items-start gap-4">
-                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${setting.abilitata ? 'bg-gold/10 border border-gold/20' : 'bg-obsidian-light/30 border border-obsidian-light/50'}`}>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${setting.abilitata ? 'bg-gold/10 border border-gold/20' : 'bg-stone/15 border border-stone/30'}`}>
                     <Icon size={16} className={setting.abilitata ? info.color : 'text-stone/40'} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
-                      <p className={`font-medium text-sm ${setting.abilitata ? 'text-cream' : 'text-stone/60'}`}>
+                      <p className={`font-medium text-sm ${setting.abilitata ? 'text-obsidian' : 'text-stone/60'}`}>
                         {info.label}
                       </p>
                       {/* Toggle switch */}
@@ -169,7 +169,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
                         onClick={() => toggleAbilitata(setting)}
                         disabled={isSaving}
                         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors flex-shrink-0
-                                    ${setting.abilitata ? 'bg-gold' : 'bg-obsidian-light'}
+                                    ${setting.abilitata ? 'bg-gold' : 'bg-stone/30'}
                                     ${isSaving ? 'opacity-60' : ''}`}
                       >
                         <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-cream shadow transition-transform
@@ -196,7 +196,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
                             className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors
                                         ${active
                                           ? 'bg-gold/20 border-gold/40 text-gold'
-                                          : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                                          : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                                         } ${saving === key ? 'opacity-60' : ''}`}
                           >
                             {active && <Check size={10} />}
@@ -217,7 +217,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <div>
-            <h2 className="text-cream font-medium text-sm">Test — Controllo scorte</h2>
+            <h2 className="text-obsidian font-medium text-sm">Test — Controllo scorte</h2>
             <p className="text-stone text-xs mt-0.5">
               Controlla immediatamente le scorte e invia notifiche se ci sono prodotti sotto soglia
             </p>
@@ -235,8 +235,8 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
           </button>
         </div>
         {testResult && (
-          <div className="flex items-center gap-2 text-xs text-stone bg-obsidian-light/30 rounded px-3 py-2 mt-2">
-            <Check size={12} className="text-green-400 flex-shrink-0" />
+          <div className="flex items-center gap-2 text-xs text-stone bg-stone/15 rounded px-3 py-2 mt-2">
+            <Check size={12} className="text-green-700 flex-shrink-0" />
             {testResult}
           </div>
         )}
@@ -258,10 +258,10 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
         ) : (
           <div className="card p-0 overflow-hidden">
             {subscriptions.map(sub => (
-              <div key={sub.id} className="flex items-center gap-3 px-5 py-3 border-b border-obsidian-light/40 last:border-0">
+              <div key={sub.id} className="flex items-center gap-3 px-5 py-3 border-b border-stone/25 last:border-0">
                 <Smartphone size={14} className="text-stone flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-cream text-sm font-medium capitalize">{sub.ruolo}</p>
+                  <p className="text-obsidian text-sm font-medium capitalize">{sub.ruolo}</p>
                   <p className="text-stone/50 text-xs truncate">{sub.endpoint.split('/').pop()?.slice(0, 40)}…</p>
                   <p className="text-stone/40 text-xs">
                     Registrato il {new Date(sub.created_at).toLocaleDateString('it-IT')}

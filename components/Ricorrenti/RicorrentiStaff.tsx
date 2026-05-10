@@ -65,7 +65,7 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
         <div className="flex items-center gap-3">
           <RefreshCw size={16} className="text-stone" />
           <div>
-            <p className="text-sm text-cream font-medium">{completate.length} / {mie.length} completate</p>
+            <p className="text-sm text-obsidian font-medium">{completate.length} / {mie.length} completate</p>
             <p className="text-xs text-stone">Periodo corrente</p>
           </div>
         </div>
@@ -77,17 +77,17 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
       {/* Azioni da completare */}
       {pendenti.length === 0 ? (
         <div className="card text-center py-8">
-          <p className="text-green-400 font-medium text-sm">✓ Tutte le azioni completate per questo periodo!</p>
+          <p className="text-green-700 font-medium text-sm">✓ Tutte le azioni completate per questo periodo!</p>
         </div>
       ) : (
         <div className="card p-0 overflow-hidden">
-          <div className="px-5 py-3 border-b border-obsidian-light">
+          <div className="px-5 py-3 border-b border-stone/20">
             <h3 className="text-xs uppercase tracking-widest text-stone font-medium">Da completare</h3>
           </div>
           {pendenti.map(az => (
             <label
               key={az.id}
-              className={`flex items-center gap-4 px-5 py-3.5 border-b border-obsidian-light/40 last:border-0 cursor-pointer hover:bg-obsidian-light/20 transition-colors ${toggling === az.id ? 'opacity-60 pointer-events-none' : ''}`}
+              className={`flex items-center gap-4 px-5 py-3.5 border-b border-stone/15 last:border-0 cursor-pointer hover:bg-stone/10 transition-colors ${toggling === az.id ? 'opacity-60 pointer-events-none' : ''}`}
             >
               <input
                 type="checkbox"
@@ -97,7 +97,7 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
                 className="w-4 h-4 accent-gold cursor-pointer flex-shrink-0 disabled:cursor-wait"
               />
               <div className="flex-1">
-                <p className="text-sm text-cream">{az.titolo}</p>
+                <p className="text-sm text-obsidian">{az.titolo}</p>
                 {az.descrizione && <p className="text-xs text-stone mt-0.5">{az.descrizione}</p>}
               </div>
               <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20 flex-shrink-0">
@@ -111,13 +111,13 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
       {/* Azioni completate */}
       {completate.length > 0 && (
         <div className="card p-0 overflow-hidden opacity-60">
-          <div className="px-5 py-3 border-b border-obsidian-light">
+          <div className="px-5 py-3 border-b border-stone/20">
             <h3 className="text-xs uppercase tracking-widest text-stone font-medium">Completate ({completate.length})</h3>
           </div>
           {completate.map(az => (
             <label
               key={az.id}
-              className={`flex items-center gap-4 px-5 py-3.5 border-b border-obsidian-light/40 last:border-0 cursor-pointer hover:bg-obsidian-light/20 transition-colors ${toggling === az.id ? 'opacity-60 pointer-events-none' : ''}`}
+              className={`flex items-center gap-4 px-5 py-3.5 border-b border-stone/15 last:border-0 cursor-pointer hover:bg-stone/10 transition-colors ${toggling === az.id ? 'opacity-60 pointer-events-none' : ''}`}
             >
               <input
                 type="checkbox"
@@ -127,7 +127,7 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
                 className="w-4 h-4 accent-gold cursor-pointer flex-shrink-0 disabled:cursor-wait"
               />
               <div className="flex-1">
-                <p className="text-sm text-cream line-through">{az.titolo}</p>
+                <p className="text-sm text-obsidian line-through">{az.titolo}</p>
               </div>
               <span className="text-xs px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20 flex-shrink-0">
                 {FREQ_LABEL[az.frequenza] ?? az.frequenza}

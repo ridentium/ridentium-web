@@ -165,7 +165,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                   className="mt-1 w-4 h-4 accent-gold cursor-pointer flex-shrink-0 disabled:cursor-wait"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-medium ${mioCompletamento ? 'line-through text-stone' : 'text-cream'}`}>
+                  <p className={`text-sm font-medium ${mioCompletamento ? 'line-through text-stone' : 'text-obsidian'}`}>
                     {az.titolo}
                   </p>
                   {az.descrizione && <p className="text-xs text-stone mt-0.5">{az.descrizione}</p>}
