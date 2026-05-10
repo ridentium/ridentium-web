@@ -75,7 +75,7 @@ export default async function StaffHome() {
         {/* I miei task */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs uppercase tracking-widest text-stone flex items-center gap-2">
+            <h3 className="text-xs uppercase tracking-widest text-obsidian/70 flex items-center gap-2">
               <CheckSquare size={13} /> I miei task
             </h3>
             <Link href="/staff/tasks" className="text-xs text-gold hover:text-gold-light transition-colors">
@@ -83,7 +83,7 @@ export default async function StaffHome() {
             </Link>
           </div>
           {myTasks?.length === 0 ? (
-            <p className="text-stone text-sm py-4 text-center">Nessun task assegnato</p>
+            <p className="text-obsidian/70 text-sm py-4 text-center">Nessun task assegnato</p>
           ) : (
             <div className="space-y-2">
               {myTasks?.map((task: any) => (
@@ -91,12 +91,12 @@ export default async function StaffHome() {
                                                border-b border-obsidian-light/40 last:border-0">
                   <div>
                     <p className="text-sm text-obsidian">{task.titolo}</p>
-                    <span className={`text-xs ${task.priorita === 'alta' ? 'text-red-400' : task.priorita === 'media' ? 'text-gold/70' : 'text-stone'}`}>
+                    <span className={`text-xs ${task.priorita === 'alta' ? 'text-red-700' : task.priorita === 'media' ? 'text-gold' : 'text-obsidian/60'}`}>
                       {task.priorita}
                     </span>
                   </div>
                   {task.scadenza && (
-                    <span className="text-xs text-stone shrink-0 ml-3">
+                    <span className="text-xs text-obsidian/70 shrink-0 ml-3">
                       {formatDate(task.scadenza)}
                     </span>
                   )}
@@ -109,7 +109,7 @@ export default async function StaffHome() {
         {/* Magazzino alert */}
         <div className="card">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs uppercase tracking-widest text-stone flex items-center gap-2">
+            <h3 className="text-xs uppercase tracking-widest text-obsidian/70 flex items-center gap-2">
               <Package size={13} /> Magazzino
             </h3>
             <Link href="/staff/magazzino" className="text-xs text-gold hover:text-gold-light transition-colors">
@@ -120,7 +120,7 @@ export default async function StaffHome() {
             <p className="text-stone text-sm py-4 text-center">✓ Tutto in ordine</p>
           ) : (
             <div className="space-y-2">
-              <p className="text-xs text-red-400 mb-3 flex items-center gap-1.5">
+              <p className="text-xs text-red-700 mb-3 flex items-center gap-1.5">
                 <AlertTriangle size={11} />
                 {alertItems.length} prodott{alertItems.length === 1 ? 'o' : 'i'} sotto scorta minima
               </p>
@@ -141,7 +141,7 @@ export default async function StaffHome() {
         {mieRicorrenti.length > 0 && (
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs uppercase tracking-widest text-stone flex items-center gap-2">
+              <h3 className="text-xs uppercase tracking-widest text-obsidian/70 flex items-center gap-2">
                 <RefreshCw size={13} /> Azioni Ricorrenti
               </h3>
               <Link href="/staff/ricorrenti" className="text-xs text-gold hover:text-gold-light transition-colors">
@@ -153,10 +153,10 @@ export default async function StaffHome() {
             ) : (
               <div className="space-y-1">
                 {ricorrentiPendenti.slice(0, 4).map((az: any) => (
-                  <div key={az.id} className="flex items-center gap-3 py-2 border-b border-obsidian-light/40 last:border-0">
-                    <span className="text-stone text-sm">○</span>
+                  <div key={az.id} className="flex items-center gap-3 py-2 border-b border-stone/20 last:border-0">
+                    <span className="text-obsidian/50 text-sm">○</span>
                     <span className="text-sm text-obsidian/80 flex-1">{az.titolo}</span>
-                    <span className="text-xs text-stone capitalize">{az.frequenza}</span>
+                    <span className="text-xs text-obsidian/70 capitalize">{az.frequenza}</span>
                   </div>
                 ))}
               </div>
@@ -166,20 +166,20 @@ export default async function StaffHome() {
 
         {/* Link rapidi */}
         <div className="card lg:col-span-2">
-          <h3 className="text-xs uppercase tracking-widest text-stone mb-4 flex items-center gap-2">
+          <h3 className="text-xs uppercase tracking-widest text-obsidian/70 mb-4 flex items-center gap-2">
             <BookOpen size={13} /> Accesso rapido
           </h3>
           <div className="grid grid-cols-3 gap-3">
             <Link href="/staff/magazzino" className="card hover:border-gold/30 transition-colors text-center py-4">
-              <Package size={18} className="text-stone mx-auto mb-2" />
+              <Package size={18} className="text-obsidian/50 mx-auto mb-2" />
               <p className="text-xs text-obsidian/70">Magazzino</p>
             </Link>
             <Link href="/staff/tasks" className="card hover:border-gold/30 transition-colors text-center py-4">
-              <CheckSquare size={18} className="text-stone mx-auto mb-2" />
+              <CheckSquare size={18} className="text-obsidian/50 mx-auto mb-2" />
               <p className="text-xs text-obsidian/70">I miei task</p>
             </Link>
             <Link href="/staff/ricorrenti" className="card hover:border-gold/30 transition-colors text-center py-4">
-              <RefreshCw size={18} className="text-stone mx-auto mb-2" />
+              <RefreshCw size={18} className="text-obsidian/50 mx-auto mb-2" />
               <p className="text-xs text-obsidian/70">Ricorrenti</p>
             </Link>
           </div>
