@@ -44,8 +44,8 @@ function templateDefault(sorgente: string | null): EmailTemplate {
 
 const STATI: { id: CRMStato; label: string; color: string; bg: string; icon: React.ElementType }[] = [
   { id: 'nuovo',       label: 'Nuovo',        color: 'text-gold',       bg: 'bg-gold/10 border-gold/30',         icon: Clock },
-  { id: 'contattato',  label: 'Contattato',   color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/30', icon: Phone },
-  { id: 'appuntamento',label: 'Appuntamento', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/30', icon: CheckCircle2 },
+  { id: 'contattato',  label: 'Contattato',   color: 'text-blue-600',   bg: 'bg-blue-500/10 border-blue-500/30', icon: Phone },
+  { id: 'appuntamento',label: 'Appuntamento', color: 'text-violet-600', bg: 'bg-violet-500/10 border-violet-500/30', icon: CheckCircle2 },
   { id: 'cliente',     label: 'Cliente',      color: 'text-green-700',  bg: 'bg-green-500/10 border-green-500/30',   icon: Star },
   { id: 'perso',       label: 'Perso',        color: 'text-stone',      bg: 'bg-stone/10 border-stone/30',        icon: UserX },
 ]
@@ -416,7 +416,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             onClick={() => setFiltroMarketing(f.id)}
             className={`text-xs px-3 py-1 rounded border transition-colors flex items-center gap-1.5 ${
               filtroMarketing === f.id
-                ? 'bg-blue-500/20 border-blue-500/40 text-blue-400'
+                ? 'bg-blue-500/20 border-blue-500/40 text-blue-600'
                 : 'border-stone/25 text-stone hover:text-obsidian'
             }`}
           >
@@ -568,7 +568,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                         <a
                           href={`tel:${c.telefono.replace(/\s/g, '')}`}
                           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
-                                     bg-violet-500/10 border border-violet-500/30 text-violet-400
+                                     bg-violet-500/10 border border-violet-500/30 text-violet-600
                                      hover:bg-violet-500/20 transition-colors"
                         >
                           <Phone size={11} /> Chiama
@@ -617,7 +617,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                         <button
                           onClick={() => eliminaContatto(c.id)}
                           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
-                                     bg-red-500/10 border border-red-500/30 text-red-400
+                                     bg-red-500/10 border border-red-500/30 text-red-700
                                      hover:bg-red-500/20 transition-colors ml-auto"
                         >
                           <Trash2 size={11} /> Elimina
@@ -739,7 +739,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             </div>
 
             {nuovoError && (
-              <p className="text-red-400 text-xs mt-3 flex items-center gap-1.5">
+              <p className="text-red-700 text-xs mt-3 flex items-center gap-1.5">
                 <AlertCircle size={12} /> {nuovoError}
               </p>
             )}
@@ -818,7 +818,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             {/* Testo libero per template personalizzata */}
             {emailTemplate === 'personalizzata' && (
               <div className="mb-4">
-                <label className="block text-xs text-stone mb-1">Messaggio <span className="text-red-400">*</span></label>
+                <label className="block text-xs text-stone mb-1">Messaggio <span className="text-red-700">*</span></label>
                 <textarea
                   value={emailCustomBody}
                   onChange={e => setEmailCustomBody(e.target.value)}
@@ -830,7 +830,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             )}
 
             {emailError && (
-              <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+              <p className="text-red-700 text-xs mb-3 flex items-center gap-1.5">
                 <AlertCircle size={12} /> {emailError}
               </p>
             )}
@@ -934,7 +934,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             </div>
 
             {taskError && (
-              <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+              <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-700">
                 {taskError}
               </div>
             )}

@@ -15,11 +15,11 @@ const CAT_LABEL: Record<string, string> = {
 }
 
 const CAT_COLOR: Record<string, string> = {
-  magazzino: 'text-green-400 bg-green-400/10', ordini: 'text-blue-400 bg-blue-400/10',
-  fornitori: 'text-violet-400 bg-violet-400/10', ricorrenti: 'text-gold bg-gold/10',
-  todo: 'text-purple-400 bg-purple-400/10', tasks: 'text-blue-400 bg-blue-400/10',
-  crm: 'text-pink-400 bg-pink-400/10', staff: 'text-red-400 bg-red-400/10',
-  adempimenti: 'text-amber-400 bg-amber-400/10', sistema: 'text-stone bg-stone/10',
+  magazzino: 'text-green-700 bg-green-700/10', ordini: 'text-blue-600 bg-blue-600/10',
+  fornitori: 'text-violet-600 bg-violet-600/10', ricorrenti: 'text-gold bg-gold/10',
+  todo: 'text-purple-700 bg-purple-700/10', tasks: 'text-blue-600 bg-blue-600/10',
+  crm: 'text-pink-700 bg-pink-700/10', staff: 'text-red-700 bg-red-700/10',
+  adempimenti: 'text-amber-700 bg-amber-700/10', sistema: 'text-stone bg-stone/10',
   altro: 'text-stone bg-stone/10',
 }
 

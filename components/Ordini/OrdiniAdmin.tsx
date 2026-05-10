@@ -28,7 +28,7 @@ const STATO_LABEL: Record<string, string> = {
 const STATO_COLOR: Record<string, string> = {
   inviato:              'text-gold border-gold/30 bg-gold/10',
   confermato_fornitore: 'text-amber-400 border-amber-400/30 bg-amber-400/10',
-  in_consegna:          'text-blue-400 border-blue-400/30 bg-blue-400/10',
+  in_consegna:          'text-blue-600 border-blue-600/30 bg-blue-600/10',
   ricevuto:             'text-green-700 border-green-500/30 bg-green-500/10',
   parziale:             'text-teal-400 border-teal-500/30 bg-teal-500/10',
   annullato:            'text-stone border-stone/30 bg-stone/10',
@@ -549,7 +549,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                           href={forn.sito_eshop}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-600 hover:bg-blue-500/20 transition-colors"
                         >
                           <Globe size={11} /> Vai eshop
                         </a>
@@ -557,7 +557,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                       {ordine.canale === 'telefono' && forn?.telefono && (
                         <a
                           href={`tel:${forn.telefono.replace(/\s/g, '')}`}
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 transition-colors"
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-600 hover:bg-violet-500/20 transition-colors"
                         >
                           <Phone size={11} /> Chiama
                         </a>
@@ -579,7 +579,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                         <button
                           onClick={() => cambiaStatoSemplice(ordine.id, 'in_consegna')}
                           disabled={isLoading}
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-400 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-blue-500/10 border border-blue-500/30 text-blue-600 hover:bg-blue-500/20 transition-colors disabled:opacity-50"
                         >
                           <Package size={11} /> In consegna
                         </button>
@@ -595,7 +595,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                       <button
                         onClick={() => { setAnnullaModal({ ordineId: ordine.id }); setAnnullaNote(''); setAnnullaError(null) }}
                         disabled={isLoading}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-red-500/10 border border-red-500/30 text-red-700 hover:bg-red-500/20 transition-colors disabled:opacity-50"
                       >
                         <X size={11} /> Annulla
                       </button>
@@ -656,11 +656,11 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                   </button>
                   <button
                     onClick={() => selezionaTipo('parziale')}
-                    className="flex flex-col items-center gap-2 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors"
+                    className="flex flex-col items-center gap-2 p-4 rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 transition-colors"
                   >
                     <AlertCircle size={20} />
                     <span className="text-sm font-medium">Parzialmente</span>
-                    <span className="text-xs text-blue-400/70">Solo in parte</span>
+                    <span className="text-xs text-blue-600/70">Solo in parte</span>
                   </button>
                 </div>
                 <div className="flex justify-end">
@@ -721,7 +721,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 />
 
                 {ricezioneError && (
-                  <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+                  <p className="text-red-700 text-xs mb-3 flex items-center gap-1.5">
                     <AlertCircle size={12} /> {ricezioneError}
                   </p>
                 )}
@@ -739,7 +739,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     className={`text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50 ${
                       ricezioneTipo === 'totale'
                         ? 'bg-green-500/20 border-green-500/40 text-green-700 hover:bg-green-500/30'
-                        : 'bg-blue-500/20 border-blue-500/40 text-blue-400 hover:bg-blue-500/30'
+                        : 'bg-blue-500/20 border-blue-500/40 text-blue-600 hover:bg-blue-500/30'
                     }`}
                   >
                     {ricezioneSaving ? 'Salvataggio...' : 'Conferma ricezione'}
@@ -777,7 +777,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
               autoFocus
             />
             {annullaError && (
-              <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+              <p className="text-red-700 text-xs mb-3 flex items-center gap-1.5">
                 <AlertCircle size={12} /> {annullaError}
               </p>
             )}
@@ -795,7 +795,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 className={`text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50 ${
                   isRipristino
                     ? 'bg-orange-500/20 border-orange-500/40 text-orange-400 hover:bg-orange-500/30'
-                    : 'bg-red-500/20 border-red-500/40 text-red-400 hover:bg-red-500/30'
+                    : 'bg-red-500/20 border-red-500/40 text-red-700 hover:bg-red-500/30'
                 }`}
               >
                 {annullaSaving ? 'Salvataggio…' : isRipristino ? 'Conferma annulla ricezione' : 'Conferma annullamento'}
@@ -896,7 +896,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     {nuovoRighe.length > 1 && (
                       <button
                         onClick={() => rimuoviRiga(idx)}
-                        className="text-stone/50 hover:text-red-400 transition-colors flex-shrink-0"
+                        className="text-obsidian/50 hover:text-red-700 transition-colors flex-shrink-0"
                       >
                         <Trash2 size={13} />
                       </button>
@@ -935,7 +935,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 />
               </div>
               {csvError && (
-                <p className="mt-1.5 text-[11px] text-red-400 flex items-center gap-1">
+                <p className="mt-1.5 text-[11px] text-red-700 flex items-center gap-1">
                   <AlertCircle size={11} /> {csvError}
                 </p>
               )}

@@ -296,7 +296,7 @@ export default function AdempimentiView({ canEdit }: Props) {
       {/* Filtro categoria */}
       {categorie.length > 0 && (
         <div className="flex gap-1.5 flex-wrap items-center pb-3 border-b border-stone/15">
-          <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Categoria</span>
+          <span className="text-[10px] text-obsidian/60 uppercase tracking-widest mr-1">Categoria</span>
           <button
             onClick={() => setFiltroCategoria('')}
             className={`text-[11px] px-2.5 py-1 rounded border transition-colors ${
@@ -438,7 +438,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                             {scadenzaLabel(a)}
                           </span>
                           {a.prossima_scadenza && (
-                            <span className="text-[10px] text-stone/50">
+                            <span className="text-[10px] text-obsidian/60">
                               {new Date(a.prossima_scadenza).toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </span>
                           )}
@@ -475,14 +475,14 @@ export default function AdempimentiView({ canEdit }: Props) {
                         {canEdit && confirmDeleteId !== a.id && (
                           <button
                             onClick={() => setConfirmDeleteId(a.id)}
-                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-stone/30 text-stone/60 hover:text-red-400 hover:border-red-400/40 transition-colors"
+                            className="flex items-center gap-1.5 text-[11px] px-2.5 py-1.5 rounded border border-stone/30 text-obsidian/60 hover:text-red-700 hover:border-red-700/40 transition-colors"
                           >
                             <Trash2 size={11} /> Elimina
                           </button>
                         )}
                         {confirmDeleteId === a.id && (
-                          <div className="flex items-center gap-1 bg-red-400/10 border border-red-400/20 rounded px-2 py-1">
-                            <span className="text-[10px] text-red-400/80 mr-1">Elimina?</span>
+                          <div className="flex items-center gap-1 bg-red-700/10 border border-red-700/20 rounded px-2 py-1">
+                            <span className="text-[10px] text-red-700/80 mr-1">Elimina?</span>
                             <button
                               onClick={() => onElimina(a.id)}
                               disabled={deletingId === a.id}
@@ -528,7 +528,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                               <span className="text-obsidian/80">{responsabileLabel(a)}</span>
                             )}
                             {canEdit && a.responsabile_etichetta && !a.responsabile_profilo_id && (
-                              <span className="text-stone/50 truncate">({a.responsabile_etichetta})</span>
+                              <span className="text-obsidian/60 truncate">({a.responsabile_etichetta})</span>
                             )}
                           </div>
 
@@ -551,11 +551,11 @@ export default function AdempimentiView({ canEdit }: Props) {
                             </div>
                           )}
                           {a.ultima_esecuzione && (
-                            <div className="text-[11px] text-stone/50 italic">
+                            <div className="text-[11px] text-obsidian/60 italic">
                               Ultima esecuzione:{' '}
                               {new Date(a.ultima_esecuzione).toLocaleString('it-IT', { dateStyle: 'medium', timeStyle: 'short' })}
                               {a.ultima_esecuzione_da && (
-                                <span className="ml-1 text-stone/40">— da {a.ultima_esecuzione_da}</span>
+                                <span className="ml-1 text-obsidian/50">— da {a.ultima_esecuzione_da}</span>
                               )}
                             </div>
                           )}
@@ -712,7 +712,7 @@ function CompletaModal({
           <div>
             <label className="block text-xs text-stone mb-1.5">
               Estremi evidenza{' '}
-              <span className="text-stone/40">(es. "F24 n. 12345", "Bolla del 22/04", link Drive)</span>
+              <span className="text-obsidian/50">(es. "F24 n. 12345", "Bolla del 22/04", link Drive)</span>
             </label>
             <input
               value={evidenza}
@@ -723,7 +723,7 @@ function CompletaModal({
           </div>
           <div>
             <label className="block text-xs text-stone mb-1.5">
-              Allega file <span className="text-stone/40">(opzionale)</span>
+              Allega file <span className="text-obsidian/50">(opzionale)</span>
             </label>
             <label className={`flex items-center gap-2.5 cursor-pointer px-3 py-2.5 rounded border transition-colors ${
               file ? 'border-green-600/40 bg-green-600/5' : 'border-taupe hover:border-stone/40 bg-cream'
@@ -741,22 +741,22 @@ function CompletaModal({
                   <button
                     type="button"
                     onClick={e => { e.preventDefault(); setFile(null) }}
-                    className="text-stone/50 hover:text-red-400 transition-colors flex-shrink-0"
+                    className="text-obsidian/50 hover:text-red-700 transition-colors flex-shrink-0"
                   >
                     <X size={12} />
                   </button>
                 </>
               ) : (
                 <>
-                  <Upload size={13} className="text-stone/50 flex-shrink-0" />
-                  <span className="text-xs text-stone/60">Seleziona PDF, immagine o documento…</span>
+                  <Upload size={13} className="text-obsidian/50 flex-shrink-0" />
+                  <span className="text-xs text-obsidian/60">Seleziona PDF, immagine o documento…</span>
                 </>
               )}
             </label>
           </div>
           <div>
             <label className="block text-xs text-stone mb-1.5">
-              Note <span className="text-stone/40">(opzionali)</span>
+              Note <span className="text-obsidian/50">(opzionali)</span>
             </label>
             <textarea
               value={note}
@@ -769,7 +769,7 @@ function CompletaModal({
         </div>
 
         {error && (
-          <p className="text-red-400 text-xs mb-3 flex items-center gap-1.5">
+          <p className="text-red-700 text-xs mb-3 flex items-center gap-1.5">
             <AlertTriangle size={12} /> {error}
           </p>
         )}
@@ -940,7 +940,7 @@ function EditAdempimentoModal({
           </div>
 
           {errore && (
-            <div className="flex items-center gap-2 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2">
+            <div className="flex items-center gap-2 text-sm text-red-700 bg-red-700/10 border border-red-700/20 rounded px-3 py-2">
               <AlertTriangle size={13} /> {errore}
             </div>
           )}

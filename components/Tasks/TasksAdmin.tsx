@@ -26,7 +26,7 @@ const statoColBg: Record<string, string> = {
   completato: 'border-green-400/20 bg-green-400/5',
 }
 const prioritaColor: Record<string, string> = {
-  bassa: 'text-stone', media: 'text-gold/70', alta: 'text-red-400',
+  bassa: 'text-stone', media: 'text-gold/70', alta: 'text-red-700',
 }
 
 export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks: Task[]; staff: UserProfile[]; currentUserId?: string }) {
@@ -288,12 +288,12 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
           </button>
           {confirmBulkDelete ? (
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-red-400/80">Confermi eliminazione?</span>
-              <button onClick={bulkDelete} className="text-xs px-2 py-0.5 rounded bg-red-400/20 border border-red-400/30 text-red-400 hover:bg-red-400/30 transition-colors font-medium">Sì</button>
+              <span className="text-xs text-red-700/80">Confermi eliminazione?</span>
+              <button onClick={bulkDelete} className="text-xs px-2 py-0.5 rounded bg-red-700/20 border border-red-700/30 text-red-700 hover:bg-red-700/30 transition-colors font-medium">Sì</button>
               <button onClick={() => setConfirmBulkDelete(false)} className="text-xs text-stone hover:text-obsidian transition-colors">No</button>
             </div>
           ) : (
-            <button onClick={() => setConfirmBulkDelete(true)} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-red-400/30 bg-red-400/10 text-red-400 hover:bg-red-400/20 transition-colors">
+            <button onClick={() => setConfirmBulkDelete(true)} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-red-700/30 bg-red-700/10 text-red-700 hover:bg-red-700/20 transition-colors">
               <Trash2 size={12} /> Elimina
             </button>
           )}
@@ -513,7 +513,7 @@ function KanbanCard({ task, onStatusChange, onDelete }: {
           >
             <Icon size={13} />
           </button>
-          <button onClick={del} className="text-stone/30 hover:text-red-400 transition-colors p-0.5">
+          <button onClick={del} className="text-stone/30 hover:text-red-700 transition-colors p-0.5">
             <X size={11} />
           </button>
         </div>
@@ -531,7 +531,7 @@ function DeleteTask({ id, onDelete }: { id: string; onDelete: () => void }) {
     onDelete()
   }
   return (
-    <button onClick={del} className="btn-ghost p-1.5 text-stone/50 hover:text-red-400">
+    <button onClick={del} className="btn-ghost p-1.5 text-obsidian/50 hover:text-red-700">
       <X size={13} />
     </button>
   )
@@ -599,7 +599,7 @@ function NewTaskModal({ staff, onClose, onSave }: {
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-400 text-sm">
+          <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded bg-alert/10 border border-alert/30 text-red-700 text-sm">
             <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
             <span>{error}</span>
           </div>

@@ -29,10 +29,10 @@ const CANALE_ICON: Record<CanaleOrdine, React.ReactNode> = {
 }
 
 const CANALE_COLOR: Record<CanaleOrdine, string> = {
-  whatsapp: 'text-green-400 bg-green-500/10 border-green-500/30',
+  whatsapp: 'text-green-700 bg-green-500/10 border-green-500/30',
   email: 'text-gold bg-gold/10 border-gold/30',
-  eshop: 'text-blue-400 bg-blue-500/10 border-blue-500/30',
-  telefono: 'text-violet-400 bg-violet-500/10 border-violet-500/30',
+  eshop: 'text-blue-600 bg-blue-500/10 border-blue-500/30',
+  telefono: 'text-violet-600 bg-violet-500/10 border-violet-500/30',
 }
 
 function emptyContactForm(): Partial<FornitoreContatto> {
@@ -272,7 +272,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                         {defaultContact.metodo_predefinito === 'whatsapp' && (defaultContact.whatsapp ?? defaultContact.telefono) && (
                           <a href={`https://wa.me/${(defaultContact.whatsapp ?? defaultContact.telefono ?? '').replace(/[^0-9+]/g, '')}`}
                             target="_blank" rel="noopener noreferrer"
-                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors flex-shrink-0">
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-700 hover:bg-green-500/20 transition-colors flex-shrink-0">
                             <MessageCircle size={12} /> Apri
                           </a>
                         )}
@@ -284,7 +284,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                         )}
                         {defaultContact.metodo_predefinito === 'telefono' && defaultContact.telefono && (
                           <a href={`tel:${defaultContact.telefono.replace(/\s/g, '')}`}
-                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-400 hover:bg-violet-500/20 transition-colors flex-shrink-0">
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-violet-500/10 border border-violet-500/30 text-violet-600 hover:bg-violet-500/20 transition-colors flex-shrink-0">
                             <Phone size={12} /> Chiama
                           </a>
                         )}
@@ -309,7 +309,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                         <button onClick={() => startEdit(f)} className="p-1.5 rounded text-stone hover:text-gold transition-colors flex-shrink-0">
                           <Edit2 size={14} />
                         </button>
-                        <button onClick={() => deleteFornitore(f)} className="p-1.5 rounded text-stone hover:text-red-400 transition-colors flex-shrink-0">
+                        <button onClick={() => deleteFornitore(f)} className="p-1.5 rounded text-stone hover:text-red-700 transition-colors flex-shrink-0">
                           <Trash2 size={14} />
                         </button>
                       </>
@@ -383,7 +383,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                               )}
                               {c.telefono && (
                                 <a href={`tel:${c.telefono.replace(/\s/g, '')}`}
-                                  className="p-1.5 rounded text-violet-400/60 hover:text-violet-400 transition-colors">
+                                  className="p-1.5 rounded text-violet-600/60 hover:text-violet-600 transition-colors">
                                   <Phone size={13} />
                                 </a>
                               )}
@@ -392,7 +392,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                                   <button onClick={() => openEditContact(c)} className="p-1.5 rounded text-stone hover:text-gold transition-colors">
                                     <Edit2 size={12} />
                                   </button>
-                                  <button onClick={() => deleteContact(c)} className="p-1.5 rounded text-stone hover:text-red-400 transition-colors">
+                                  <button onClick={() => deleteContact(c)} className="p-1.5 rounded text-stone hover:text-red-700 transition-colors">
                                     <Trash2 size={12} />
                                   </button>
                                 </>
