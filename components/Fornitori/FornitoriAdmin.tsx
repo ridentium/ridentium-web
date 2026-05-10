@@ -233,7 +233,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                       <button onClick={() => saveEdit(f)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded bg-gold/20 border border-gold/40 text-gold hover:bg-gold/30 transition-colors">
                         <Check size={11} /> Salva
                       </button>
-                      <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-obsidian-light text-stone hover:text-cream transition-colors">
+                      <button onClick={() => setEditingId(null)} className="flex items-center gap-1 text-xs px-3 py-1.5 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors">
                         <X size={11} /> Annulla
                       </button>
                     </div>
@@ -242,14 +242,14 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                   <div className="flex items-center gap-3 px-5 py-4">
                     {/* Avatar */}
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-medium flex-shrink-0 border ${
-                      defaultContact ? CANALE_COLOR[defaultContact.metodo_predefinito ?? 'whatsapp'] : 'border-obsidian-light text-stone'
+                      defaultContact ? CANALE_COLOR[defaultContact.metodo_predefinito ?? 'whatsapp'] : 'border-stone/25 text-stone'
                     }`}>
                       {f.nome[0].toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-cream">{f.nome}</p>
+                      <p className="text-sm font-medium text-obsidian">{f.nome}</p>
                       {defaultContact ? (
                         <p className="text-xs text-stone truncate">
                           {defaultContact.nome}
@@ -294,13 +294,13 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                     {/* Espandi/comprimi */}
                     <button
                       onClick={() => setExpandedId(isExpanded ? null : f.id)}
-                      className="p-1.5 rounded text-stone hover:text-cream transition-colors flex-shrink-0 flex items-center gap-1"
+                      className="p-1.5 rounded text-stone hover:text-obsidian transition-colors flex-shrink-0 flex items-center gap-1"
                     >
                       <span className="text-xs text-stone/60">{contatti.length}</span>
                       {isExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
                     </button>
 
-                    <Link href={`/admin/fornitori/${f.id}`} className="p-1.5 rounded text-stone hover:text-cream transition-colors flex-shrink-0" title="Scheda fornitore">
+                    <Link href={`/admin/fornitori/${f.id}`} className="p-1.5 rounded text-stone hover:text-obsidian transition-colors flex-shrink-0" title="Scheda fornitore">
                       <ExternalLink size={13} />
                     </Link>
 
@@ -319,14 +319,14 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
 
                 {/* Sezione contatti espansa */}
                 {isExpanded && (
-                  <div className="border-t border-obsidian-light/40">
+                  <div className="border-t border-stone/25">
                     {/* Lista contatti */}
                     {contatti.length === 0 && showContactForm !== f.id && (
                       <p className="text-xs text-stone/60 text-center py-4 italic">Nessun contatto aggiunto</p>
                     )}
 
                     {contatti.map(c => (
-                      <div key={c.id} className="px-5 py-3 border-b border-obsidian-light/20 last:border-0">
+                      <div key={c.id} className="px-5 py-3 border-b border-stone/15 last:border-0">
                         {editContact?.id === c.id && showContactForm === f.id ? (
                           <ContactForm
                             form={contactForm}
@@ -352,7 +352,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-sm text-cream font-medium">{c.nome}</span>
+                                <span className="text-sm text-obsidian font-medium">{c.nome}</span>
                                 {c.ruolo && <span className="text-xs text-stone">{c.ruolo}</span>}
                                 <span className={`text-[10px] px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${CANALE_COLOR[c.metodo_predefinito ?? 'whatsapp']}`}>
                                   {CANALE_ICON[c.metodo_predefinito ?? 'whatsapp']}
@@ -405,7 +405,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
 
                     {/* Form nuovo contatto */}
                     {showContactForm === f.id && !editContact && (
-                      <div className="px-5 py-4 bg-obsidian-light/10">
+                      <div className="px-5 py-4 bg-stone/5">
                         <ContactForm
                           form={contactForm}
                           onChange={setContactForm}
@@ -421,7 +421,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                       <div className="px-5 py-3">
                         <button
                           onClick={() => openAddContact(f.id)}
-                          className="flex items-center gap-1.5 text-xs text-stone hover:text-cream transition-colors"
+                          className="flex items-center gap-1.5 text-xs text-stone hover:text-obsidian transition-colors"
                         >
                           <UserPlus size={13} /> Aggiungi contatto
                         </button>
@@ -491,7 +491,7 @@ function ContactForm({
               className={`flex items-center gap-1 text-xs px-2.5 py-1.5 rounded border transition-colors ${
                 form.metodo_predefinito === c
                   ? 'bg-gold/20 border-gold/50 text-gold'
-                  : 'border-obsidian-light text-stone hover:text-cream'
+                  : 'border-stone/30 text-stone hover:text-obsidian'
               }`}>
               {c === 'whatsapp' && <MessageCircle size={11} />}
               {c === 'email' && <Mail size={11} />}

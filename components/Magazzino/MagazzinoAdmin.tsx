@@ -268,9 +268,9 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
               const prodotto = item?.prodotto ?? r.magazzino?.prodotto ?? '—'
               return (
                 <div key={r.id} className="flex items-center justify-between py-2.5
-                                            border-b border-obsidian-light/30 last:border-0">
+                                            border-b border-stone/20 last:border-0">
                   <div>
-                    <p className="text-sm text-cream font-medium">{prodotto}</p>
+                    <p className="text-sm text-obsidian font-medium">{prodotto}</p>
                     <p className="text-xs text-stone mt-0.5">
                       da {r.profili?.nome} {r.profili?.cognome} · {formatDate(r.created_at)}
                     </p>
@@ -331,7 +331,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
           {cerca && (
             <button
               onClick={() => setCerca('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone hover:text-cream transition-colors"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-stone hover:text-obsidian transition-colors"
             >
               <X size={13} />
             </button>
@@ -353,7 +353,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                       className={`text-xs px-3 py-1.5 rounded border transition-colors whitespace-nowrap ${
                         categoria === cat
                           ? 'bg-gold text-obsidian border-gold'
-                          : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                          : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                       }`}>
                 {cat}
               </button>
@@ -365,7 +365,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                 className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
                   soloAlert
                     ? 'bg-red-400/10 text-red-400 border-red-400/30'
-                    : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                    : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
                 }`}>
           <AlertTriangle size={11} />
           <span className="hidden sm:inline">Sotto soglia</span>
@@ -378,7 +378,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         <p className="text-xs text-stone">
           {filtered.length} risultat{filtered.length === 1 ? 'o' : 'i'}
           {categoria !== 'Tutte' ? ` in ${categoria}` : ''}
-          {' '}per <span className="text-cream">&ldquo;{cerca}&rdquo;</span>
+          {' '}per <span className="text-obsidian">&ldquo;{cerca}&rdquo;</span>
         </p>
       )}
 
@@ -394,7 +394,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             <div key={item.id} className={`card p-4 ${isAlert ? 'border-red-400/20 bg-red-400/5' : ''}`}>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-cream leading-snug">{item.prodotto}</p>
+                  <p className="text-sm font-medium text-obsidian leading-snug">{item.prodotto}</p>
                   <p className="text-xs text-stone mt-0.5">
                     {item.azienda ?? ''}{item.azienda && item.categoria ? ' · ' : ''}{item.categoria}
                   </p>
@@ -450,40 +450,40 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             <thead>
               <tr>
                 <th>
-                  <button onClick={() => toggleSort('prodotto')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('prodotto')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     Prodotto <SortIcon field="prodotto" />
                   </button>
                 </th>
                 <th>
-                  <button onClick={() => toggleSort('categoria')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('categoria')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     Categoria <SortIcon field="categoria" />
                   </button>
                 </th>
                 <th>
-                  <button onClick={() => toggleSort('azienda')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('azienda')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     Azienda <SortIcon field="azienda" />
                   </button>
                 </th>
                 <th>Fornitore</th>
                 <th>
-                  <button onClick={() => toggleSort('diametro')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('diametro')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     Ø <SortIcon field="diametro" />
                   </button>
                 </th>
                 <th>
-                  <button onClick={() => toggleSort('lunghezza')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('lunghezza')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     L (mm) <SortIcon field="lunghezza" />
                   </button>
                 </th>
                 <th>
-                  <button onClick={() => toggleSort('quantita')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('quantita')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     Qtà <SortIcon field="quantita" />
                   </button>
                 </th>
                 <th>Min.</th>
                 <th>Stato</th>
                 <th>
-                  <button onClick={() => toggleSort('scadenza')} className="flex items-center gap-0.5 hover:text-cream transition-colors">
+                  <button onClick={() => toggleSort('scadenza')} className="flex items-center gap-0.5 hover:text-obsidian transition-colors">
                     Scadenza <SortIcon field="scadenza" />
                   </button>
                 </th>
@@ -501,7 +501,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                 const isAlert = item.quantita < item.soglia_minima
                 return (
                   <tr key={item.id} className={isAlert ? 'bg-red-400/5' : ''}>
-                    <td className="font-medium text-cream">{item.prodotto}</td>
+                    <td className="font-medium text-obsidian">{item.prodotto}</td>
                     <td>{item.categoria}</td>
                     <td>{item.azienda ?? '—'}</td>
                     <td>{fornitori.find(f => f.id === item.fornitore_id)?.nome ?? '—'}</td>
@@ -571,7 +571,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       )}
 
       {/* Storico movimenti */}
-      <div className="card border-obsidian-light/50">
+      <div className="card border-stone/30">
         <div className="flex items-center justify-between">
           <button
             onClick={() => setShowStorico(v => !v)}
@@ -604,9 +604,9 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
               <div className="mb-3">
                 <p className="text-[9px] uppercase tracking-widest text-stone/40 mb-1.5">Questa sessione</p>
                 {storico.map(s => (
-                  <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                  <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-stone/15 last:border-0">
                     <span className="text-[10px] text-stone/40 w-10 flex-shrink-0 pt-0.5">{s.ora}</span>
-                    <span className="text-xs text-cream/80 font-medium flex-shrink-0 max-w-[160px] truncate">{s.prodotto}</span>
+                    <span className="text-xs text-obsidian/80 font-medium flex-shrink-0 max-w-[160px] truncate">{s.prodotto}</span>
                     <span className="text-xs text-stone">{s.azione}</span>
                   </div>
                 ))}
@@ -620,14 +620,14 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                   <p className="text-xs text-stone/40 py-3 text-center italic">Nessun movimento registrato</p>
                 ) : (
                   storicoDb.map(s => (
-                    <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
+                    <div key={s.id} className="flex items-start gap-3 py-1.5 border-b border-stone/15 last:border-0">
                       <span className="text-[10px] text-stone/40 w-24 flex-shrink-0 pt-0.5">
                         {new Date(s.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
                         {' '}{new Date(s.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                       <span className="text-[10px] text-stone/50 flex-shrink-0 max-w-[100px] truncate">{s.user_nome}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-cream/80 truncate">{s.azione.replace(/^Quantità aggiornata: |^Merce ricevuta: /, '')}</p>
+                        <p className="text-xs text-obsidian/80 truncate">{s.azione.replace(/^Quantità aggiornata: |^Merce ricevuta: /, '')}</p>
                         {s.dettaglio && <p className="text-[10px] text-stone/60">{s.dettaglio}</p>}
                       </div>
                     </div>
@@ -678,9 +678,9 @@ function EvadisciModal({
         </div>
 
         <div className="mb-1">
-          <p className="text-sm text-cream font-medium">{prodotto}</p>
+          <p className="text-sm text-obsidian font-medium">{prodotto}</p>
           <p className="text-xs text-stone mt-1">
-            Giacenza attuale: <span className="text-cream">{quantitaAttuale} {unitaMisura}</span>
+            Giacenza attuale: <span className="text-obsidian">{quantitaAttuale} {unitaMisura}</span>
           </p>
         </div>
 
@@ -699,7 +699,7 @@ function EvadisciModal({
           />
           {qty && Number(qty) > 0 && (
             <p className="text-xs text-stone/60 mt-2 text-center">
-              Nuova giacenza: <span className="text-green-400 font-medium">{quantitaAttuale + Number(qty)} {unitaMisura}</span>
+              Nuova giacenza: <span className="text-green-700 font-medium">{quantitaAttuale + Number(qty)} {unitaMisura}</span>
             </p>
           )}
         </div>
@@ -726,7 +726,7 @@ function QuantitaEditor({ value, onChange }: { value: number; onChange: (v: numb
   if (!editing) {
     return (
       <button onClick={() => setEditing(true)}
-              className="text-cream hover:text-gold transition-colors font-medium">
+              className="text-obsidian hover:text-gold transition-colors font-medium">
         {value}
       </button>
     )

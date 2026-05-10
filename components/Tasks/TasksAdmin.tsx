@@ -173,7 +173,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
             className={`text-xs px-3 py-1.5 rounded border transition-colors ${
               filterStato === s
                 ? 'bg-gold text-obsidian border-gold'
-                : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
             }`}>
             {s === 'tutti' ? `Tutti (${tasks.length})` : `${statoLabel[s]} (${tasks.filter(t => t.stato === s).length})`}
           </button>
@@ -184,7 +184,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
             className={`text-xs px-3 py-1.5 rounded border transition-colors ${
               filterStato === 'miei'
                 ? 'bg-gold text-obsidian border-gold'
-                : 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
             }`}>
             I miei ({tasks.filter(t => t.assegnato_a === currentUserId).length})
           </button>
@@ -192,17 +192,17 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
 
         <div className="flex items-center gap-2 ml-auto">
           {/* Vista toggle */}
-          <div className="flex border border-obsidian-light rounded overflow-hidden">
+          <div className="flex border border-stone/30 rounded overflow-hidden">
             <button
               onClick={() => setViewMode('lista')}
-              className={`p-1.5 transition-colors ${viewMode === 'lista' ? 'bg-gold/20 text-gold' : 'text-stone hover:text-cream'}`}
+              className={`p-1.5 transition-colors ${viewMode === 'lista' ? 'bg-gold/20 text-gold' : 'text-stone hover:text-obsidian'}`}
               title="Vista lista"
             >
               <LayoutList size={14} />
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`p-1.5 transition-colors ${viewMode === 'kanban' ? 'bg-gold/20 text-gold' : 'text-stone hover:text-cream'}`}
+              className={`p-1.5 transition-colors ${viewMode === 'kanban' ? 'bg-gold/20 text-gold' : 'text-stone hover:text-obsidian'}`}
               title="Vista Kanban"
             >
               <Columns3 size={14} />
@@ -212,7 +212,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
           {/* Export */}
           <button
             onClick={exportCSV}
-            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-obsidian-light text-stone hover:border-stone hover:text-cream transition-colors"
+            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border border-stone/30 text-stone hover:border-stone hover:text-obsidian transition-colors"
             title="Esporta CSV"
           >
             <Download size={13} /> CSV
@@ -272,7 +272,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
           ))}
         </select>
         {hasFilters && (
-          <button onClick={resetFilters} className="flex items-center gap-1 text-xs text-stone hover:text-cream transition-colors">
+          <button onClick={resetFilters} className="flex items-center gap-1 text-xs text-stone hover:text-obsidian transition-colors">
             <X size={11} /> Reset
           </button>
         )}
@@ -290,7 +290,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-red-400/80">Confermi eliminazione?</span>
               <button onClick={bulkDelete} className="text-xs px-2 py-0.5 rounded bg-red-400/20 border border-red-400/30 text-red-400 hover:bg-red-400/30 transition-colors font-medium">Sì</button>
-              <button onClick={() => setConfirmBulkDelete(false)} className="text-xs text-stone hover:text-cream transition-colors">No</button>
+              <button onClick={() => setConfirmBulkDelete(false)} className="text-xs text-stone hover:text-obsidian transition-colors">No</button>
             </div>
           ) : (
             <button onClick={() => setConfirmBulkDelete(true)} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-red-400/30 bg-red-400/10 text-red-400 hover:bg-red-400/20 transition-colors">
@@ -380,7 +380,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
                         </button>
                       </td>
                       <td>
-                        <p className={`font-medium ${task.stato === 'completato' ? 'line-through text-stone' : 'text-cream'}`}>
+                        <p className={`font-medium ${task.stato === 'completato' ? 'line-through text-stone' : 'text-obsidian'}`}>
                           {task.titolo}
                         </p>
                         {task.descrizione && (
@@ -481,11 +481,12 @@ function KanbanCard({ task, onStatusChange, onDelete }: {
 
   return (
     <div
-      className={`rounded-lg border bg-obsidian p-3 space-y-2 transition-opacity ${
-        task.stato === 'completato' ? 'opacity-50' : 'border-obsidian-light/60 hover:border-obsidian-light'
+      className={`rounded-lg border p-3 space-y-2 transition-opacity ${
+        task.stato === 'completato' ? 'border-stone/20 opacity-50' : 'border-stone/25 hover:border-stone/50'
       }`}
+      style={{ backgroundColor: '#FDFCFA' }}
     >
-      <p className={`text-sm font-medium leading-snug ${task.stato === 'completato' ? 'line-through text-stone' : 'text-cream'}`}>
+      <p className={`text-sm font-medium leading-snug ${task.stato === 'completato' ? 'line-through text-stone' : 'text-obsidian'}`}>
         {task.titolo}
       </p>
 
