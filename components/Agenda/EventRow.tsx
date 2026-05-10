@@ -122,7 +122,7 @@ export function EventRow({
           onClick={quickComplete}
           disabled={completing}
           title="Segna come fatto"
-          className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-dashed border-stone/30 flex items-center justify-center text-stone/40 hover:border-green-400/60 hover:text-green-400 hover:bg-green-400/8 transition-all disabled:opacity-30 group"
+          className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-dashed border-stone/30 flex items-center justify-center text-stone/40 hover:border-green-700/50 hover:text-green-700 hover:bg-green-700/8 transition-all disabled:opacity-30 group"
         >
           {completing
             ? <Loader2 size={11} className="animate-spin" />
@@ -131,7 +131,7 @@ export function EventRow({
         </button>
       ) : isCompleted ? (
         <div className="mt-0.5 flex-shrink-0 w-6 h-6 rounded border border-green-500/40 bg-green-500/15 flex items-center justify-center">
-          <Check size={11} className="text-green-400" />
+          <Check size={11} className="text-green-700" />
         </div>
       ) : (
         <div className={`mt-0.5 flex-shrink-0 w-6 h-6 rounded flex items-center justify-center border ${cfg.bg}`}>
@@ -150,7 +150,7 @@ export function EventRow({
             {e.titolo}
           </p>
           {isCompleted && (
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-400/80 border border-green-500/20 flex-shrink-0">
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-green-500/10 text-green-700/80 border border-green-500/20 flex-shrink-0">
               {isRicorrenteCompletata ? '✓ Completata' : '✓ Fatto'}
             </span>
           )}

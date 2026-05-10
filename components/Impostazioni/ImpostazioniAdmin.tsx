@@ -83,7 +83,7 @@ export default function ImpostazioniAdmin({ kpi }: Props) {
                   className="btn-primary flex items-center gap-2">
             <Save size={14} /> Salva KPI
           </button>
-          {saved && <span className="text-xs text-green-400">✓ Salvato</span>}
+          {saved && <span className="text-xs text-green-700">✓ Salvato</span>}
         </div>
       </div>
 

@@ -18,7 +18,7 @@ const statoLabel: Record<string, string> = {
 }
 const statoIcon = { da_fare: Circle, in_corso: Clock, completato: CheckCircle2 }
 const statoColor: Record<string, string> = {
-  da_fare: 'text-stone', in_corso: 'text-gold', completato: 'text-green-400',
+  da_fare: 'text-stone', in_corso: 'text-gold', completato: 'text-green-700',
 }
 const statoColBg: Record<string, string> = {
   da_fare: 'border-stone/20 bg-stone/5',
@@ -283,7 +283,7 @@ export default function TasksAdmin({ tasks, staff, currentUserId = '' }: { tasks
       {hasSelected && (
         <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-gold/30 bg-gold/5">
           <span className="text-xs text-gold font-medium">{selected.size} selezionat{selected.size === 1 ? 'o' : 'i'}</span>
-          <button onClick={bulkComplete} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-green-400/30 bg-green-400/10 text-green-400 hover:bg-green-400/20 transition-colors">
+          <button onClick={bulkComplete} className="flex items-center gap-1.5 text-xs px-3 py-1 rounded border border-green-700/30 bg-green-700/10 text-green-700 hover:bg-green-700/20 transition-colors">
             <CheckCheck size={12} /> Segna completati
           </button>
           {confirmBulkDelete ? (

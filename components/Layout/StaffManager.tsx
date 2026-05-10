@@ -292,7 +292,7 @@ function InviteModal({ onClose, onSave }: { onClose: () => void; onSave: () => v
       <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="card w-full max-w-md text-center py-8 px-6">
           <div className="flex justify-center mb-4">
-            <CheckCircle2 size={40} className="text-green-400" />
+            <CheckCircle2 size={40} className="text-green-700" />
           </div>
           <p className="text-obsidian font-medium text-lg mb-1">Account creato</p>
           <p className="text-stone text-sm">

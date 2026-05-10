@@ -139,7 +139,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
                   <td className="font-medium">{item.quantita} {item.unita}</td>
                   <td className={
-                    expiryStatus === 'expired' ? 'text-red-400 font-medium' :
+                    expiryStatus === 'expired' ? 'text-red-700 font-medium' :
                     expiryStatus === 'expiring' ? 'text-amber-400 font-medium' : 'text-stone'
                   }>
                     {item.scadenza ? formatDate(item.scadenza) : '—'}

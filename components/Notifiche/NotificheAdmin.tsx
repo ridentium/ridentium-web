@@ -16,7 +16,7 @@ const TIPO_INFO: Record<string, { label: string; description: string; icon: Reac
     label: 'Task assegnata',
     description: 'Notifica quando viene assegnato un nuovo task',
     icon: CheckSquare,
-    color: 'text-blue-400',
+    color: 'text-blue-600',
   },
   ricorrente_scaduta: {
     label: 'Azione ricorrente in scadenza',
@@ -269,7 +269,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
                 </div>
                 <button
                   onClick={() => removeSubscription(sub.id)}
-                  className="btn-ghost p-1.5 text-stone/40 hover:text-red-400 flex-shrink-0"
+                  className="btn-ghost p-1.5 text-stone/40 hover:text-red-700 flex-shrink-0"
                   title="Rimuovi dispositivo"
                 >
                   <Trash2 size={13} />

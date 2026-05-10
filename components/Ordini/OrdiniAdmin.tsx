@@ -29,7 +29,7 @@ const STATO_COLOR: Record<string, string> = {
   inviato:              'text-gold border-gold/30 bg-gold/10',
   confermato_fornitore: 'text-amber-400 border-amber-400/30 bg-amber-400/10',
   in_consegna:          'text-blue-400 border-blue-400/30 bg-blue-400/10',
-  ricevuto:             'text-green-400 border-green-500/30 bg-green-500/10',
+  ricevuto:             'text-green-700 border-green-500/30 bg-green-500/10',
   parziale:             'text-teal-400 border-teal-500/30 bg-teal-500/10',
   annullato:            'text-stone border-stone/30 bg-stone/10',
 }
@@ -527,7 +527,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                             const phone = forn.telefono!.replace(/\D/g, '')
                             window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
                           }}
-                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-900/30 border border-green-600/30 text-green-400 hover:bg-green-900/50 transition-colors"
+                          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-700 hover:bg-green-500/20 transition-colors"
                         >
                           <MessageCircle size={11} /> Reinvia WA
                         </button>
@@ -588,7 +588,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                       <button
                         onClick={() => apriRicezione(ordine)}
                         disabled={isLoading}
-                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50"
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded bg-green-500/10 border border-green-500/30 text-green-700 hover:bg-green-500/20 transition-colors disabled:opacity-50"
                       >
                         <Check size={11} /> Ricevuto
                       </button>
@@ -648,11 +648,11 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                 <div className="grid grid-cols-2 gap-3 mb-4">
                   <button
                     onClick={() => selezionaTipo('totale')}
-                    className="flex flex-col items-center gap-2 p-4 rounded-lg border border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors"
+                    className="flex flex-col items-center gap-2 p-4 rounded-lg border border-green-500/30 bg-green-500/10 text-green-700 hover:bg-green-500/20 transition-colors"
                   >
                     <Check size={20} />
                     <span className="text-sm font-medium">Totalmente</span>
-                    <span className="text-xs text-green-400/70">Tutto ricevuto</span>
+                    <span className="text-xs text-green-700/80">Tutto ricevuto</span>
                   </button>
                   <button
                     onClick={() => selezionaTipo('parziale')}
@@ -701,7 +701,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                             className="w-16 text-center bg-cream border border-stone/30 rounded px-2 py-1 text-obsidian text-xs focus:outline-none focus:border-gold/50"
                           />
                         ) : (
-                          <span className="text-green-400 text-sm font-medium">{r.quantita_ordinata}</span>
+                          <span className="text-green-700 text-sm font-medium">{r.quantita_ordinata}</span>
                         )}
                         <span className="text-stone text-xs w-6">{r.unita ?? 'pz'}</span>
                         {ricezioneTipo === 'parziale' && (
@@ -738,7 +738,7 @@ export default function OrdiniAdmin({ ordini: initialOrdini, fornitori = [] }: P
                     disabled={ricezioneSaving}
                     className={`text-xs px-4 py-2 rounded border transition-colors disabled:opacity-50 ${
                       ricezioneTipo === 'totale'
-                        ? 'bg-green-500/20 border-green-500/40 text-green-400 hover:bg-green-500/30'
+                        ? 'bg-green-500/20 border-green-500/40 text-green-700 hover:bg-green-500/30'
                         : 'bg-blue-500/20 border-blue-500/40 text-blue-400 hover:bg-blue-500/30'
                     }`}
                   >

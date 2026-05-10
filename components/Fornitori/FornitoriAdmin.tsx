@@ -371,7 +371,7 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
                               {(c.whatsapp ?? c.telefono) && (
                                 <a href={`https://wa.me/${(c.whatsapp ?? c.telefono ?? '').replace(/[^0-9+]/g, '')}`}
                                   target="_blank" rel="noopener noreferrer"
-                                  className="p-1.5 rounded text-green-400/60 hover:text-green-400 transition-colors">
+                                  className="p-1.5 rounded text-green-700/70 hover:text-green-700 transition-colors">
                                   <MessageCircle size={13} />
                                 </a>
                               )}

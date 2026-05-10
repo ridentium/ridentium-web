@@ -69,7 +69,7 @@ export default function RicorrentiStaff({ ricorrenti, currentUserId, currentUser
             <p className="text-xs text-stone">Periodo corrente</p>
           </div>
         </div>
-        <div className={`text-2xl font-serif font-light ${pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-gold' : 'text-red-400'}`}>
+        <div className={`text-2xl font-serif font-light ${pct >= 80 ? 'text-green-700' : pct >= 50 ? 'text-gold' : 'text-red-700'}`}>
           {pct}%
         </div>
       </div>

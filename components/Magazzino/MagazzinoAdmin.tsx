@@ -16,9 +16,9 @@ function scadenzaColor(scadenza: string | null | undefined): string {
   const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
   const scad = new Date(scadenza); scad.setHours(0, 0, 0, 0)
   const giorni = Math.ceil((scad.getTime() - oggi.getTime()) / 86400000)
-  if (giorni < 0) return 'text-red-400'
-  if (giorni <= 30) return 'text-amber-400'
-  return 'text-emerald-400'
+  if (giorni < 0) return 'text-red-700'
+  if (giorni <= 30) return 'text-amber-600'
+  return 'text-emerald-700'
 }
 
 interface StoricoEntry {

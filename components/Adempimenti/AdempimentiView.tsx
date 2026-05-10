@@ -486,7 +486,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                             <button
                               onClick={() => onElimina(a.id)}
                               disabled={deletingId === a.id}
-                              className="text-[10px] font-medium text-red-400 hover:text-red-300 disabled:opacity-50"
+                              className="text-[10px] font-medium text-red-700 hover:text-red-800 disabled:opacity-50"
                             >
                               {deletingId === a.id ? '…' : 'Sì'}
                             </button>
@@ -543,7 +543,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                           )}
                           {a.riferimento_normativo && (
                             <div className="flex items-start gap-2 text-xs">
-                              <ShieldCheck size={12} className="text-blue-400/70 mt-0.5 flex-shrink-0" />
+                              <ShieldCheck size={12} className="text-blue-600/70 mt-0.5 flex-shrink-0" />
                               <div>
                                 <span className="text-stone/60">Riferimento:</span>{' '}
                                 <span className="text-obsidian/70 italic">{a.riferimento_normativo}</span>
@@ -572,7 +572,7 @@ export default function AdempimentiView({ canEdit }: Props) {
                                     href={a.evidenza_url}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-blue-400 hover:text-blue-300 underline text-[11px] break-all transition-colors"
+                                    className="text-blue-600 hover:text-blue-700 underline text-[11px] break-all transition-colors"
                                   >
                                     Apri file allegato →
                                   </a>

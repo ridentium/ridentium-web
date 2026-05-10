@@ -14,7 +14,7 @@ export interface OggiItem {
 
 const tipoIcon = { task: CheckSquare, adempimento: ShieldCheck, ricorrente: RefreshCw }
 const tipoColor = {
-  task: 'text-blue-400',
+  task: 'text-blue-600',
   adempimento: 'text-amber-400',
   ricorrente: 'text-gold',
 }
@@ -51,7 +51,7 @@ export default function OggiWidget({ items: initialItems }: { items: OggiItem[] 
     return (
       <div id="widget-oggi" className="card flex items-center gap-3">
         <div className="w-8 h-8 rounded-full bg-green-500/10 border border-green-500/20 flex items-center justify-center flex-shrink-0">
-          <Check size={14} className="text-green-400" />
+          <Check size={14} className="text-green-700" />
         </div>
         <div>
           <p className="text-sm text-obsidian/80">Tutto completato per oggi</p>

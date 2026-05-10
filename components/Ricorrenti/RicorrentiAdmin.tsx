@@ -153,7 +153,7 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
             const assigneeUser = staff.find(u => u.id === az.assegnato_a)
             const totalAssigned = az.assegnato_a ? 1 : staff.length
             const pct = totalAssigned > 0 ? Math.round((completatiPeriodo.length / totalAssigned) * 100) : 0
-            const pctColor = pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-gold' : 'text-red-400'
+            const pctColor = pct >= 80 ? 'text-green-700' : pct >= 50 ? 'text-gold' : 'text-red-700'
 
             return (
               <div key={az.id} className={`card flex items-start gap-4 ${!az.attiva ? 'opacity-40' : ''}`}>
@@ -196,12 +196,12 @@ export default function RicorrentiAdmin({ ricorrenti, staff, currentUserId, curr
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button onClick={() => toggleAttiva(az)}
-                          className={`p-1.5 rounded transition-colors ${az.attiva ? 'text-green-400 hover:text-stone' : 'text-stone hover:text-green-400'}`}
+                          className={`p-1.5 rounded transition-colors ${az.attiva ? 'text-green-700 hover:text-stone' : 'text-stone hover:text-green-700'}`}
                           title={az.attiva ? 'Disattiva' : 'Attiva'}>
                     <Power size={14} />
                   </button>
                   <button onClick={() => deleteAzione(az)}
-                          className="p-1.5 rounded text-stone hover:text-red-400 transition-colors"
+                          className="p-1.5 rounded text-stone hover:text-red-700 transition-colors"
                           title="Elimina">
                     <Trash2 size={14} />
                   </button>

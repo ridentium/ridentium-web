@@ -19,9 +19,9 @@ const SEZIONI: { key: Sezione; label: string }[] = [
 ]
 
 const RUOLI: { key: Ruolo; label: string; color: string }[] = [
-  { key: 'aso', label: 'ASO', color: 'text-blue-400' },
-  { key: 'segretaria', label: 'Segretaria', color: 'text-purple-400' },
-  { key: 'manager', label: 'Manager', color: 'text-green-400' },
+  { key: 'aso', label: 'ASO', color: 'text-blue-600' },
+  { key: 'segretaria', label: 'Segretaria', color: 'text-purple-700' },
+  { key: 'manager', label: 'Manager', color: 'text-green-700' },
   { key: 'clinico', label: 'Clinici', color: 'text-amber-400' },
 ]
 

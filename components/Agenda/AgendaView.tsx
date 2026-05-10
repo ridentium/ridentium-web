@@ -371,7 +371,7 @@ export default function AgendaView({ isAdmin, userId }: Props) {
             <div className="flex items-center gap-2 ml-auto flex-wrap">
               <button onClick={() => setSoloAperti(v => !v)}
                 className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
-                  soloAperti ? 'bg-green-500/10 border-green-500/30 text-green-400' : 'border-obsidian-light text-stone hover:border-stone hover:text-obsidian'}`}>
+                  soloAperti ? 'bg-green-500/10 border-green-500/30 text-green-700' : 'border-obsidian-light text-stone hover:border-stone hover:text-obsidian'}`}>
                 <Check size={11} />Da completare
               </button>
               {isAdmin && profili.length > 0 && (
@@ -436,8 +436,8 @@ export default function AgendaView({ isAdmin, userId }: Props) {
         <div className="space-y-5">
           {focusItems.length === 0 ? (
             <div className="card text-center py-14">
-              <Check size={32} className="text-green-400 mx-auto mb-3" />
-              <p className="text-sm font-medium text-green-400">Tutto in ordine</p>
+              <Check size={32} className="text-green-700 mx-auto mb-3" />
+              <p className="text-sm font-medium text-green-700">Tutto in ordine</p>
               <p className="text-xs text-stone mt-1">Nessun elemento in ritardo o da completare oggi</p>
             </div>
           ) : (
@@ -622,10 +622,10 @@ export default function AgendaView({ isAdmin, userId }: Props) {
                             const canFatto = !isCompleted && (e.tipo === 'task' || e.tipo === 'adempimento')
                             return (
                               <div key={e.id} className={`w-full flex items-center gap-0.5 text-[9px] rounded border transition-colors ${
-                                isCompleted ? 'bg-green-500/10 border-green-500/30 text-green-400/80' : `${cfg.bg} ${cfg.color}`}`}>
+                                isCompleted ? 'bg-green-500/10 border-green-500/30 text-green-700/80' : `${cfg.bg} ${cfg.color}`}`}>
                                 <button onClick={() => setEditTarget(e)}
                                   className="flex-1 flex items-center gap-1 px-1.5 py-1 min-w-0 hover:opacity-80 transition-opacity">
-                                  {isCompleted ? <Check size={8} className="flex-shrink-0 text-green-400" /> : <Icon size={8} className="flex-shrink-0" />}
+                                  {isCompleted ? <Check size={8} className="flex-shrink-0 text-green-700" /> : <Icon size={8} className="flex-shrink-0" />}
                                   <span className="truncate">{e.titolo}</span>
                                 </button>
                                 {canFatto && (

@@ -27,7 +27,7 @@ export default function DashboardRefreshButton() {
     >
       <RefreshCw
         size={11}
-        className={isPending ? 'animate-spin' : justRefreshed ? 'text-green-400' : ''}
+        className={isPending ? 'animate-spin' : justRefreshed ? 'text-green-700' : ''}
       />
       <span className="hidden sm:inline">
         {isPending ? 'Aggiorno…' : 'Aggiorna'}
