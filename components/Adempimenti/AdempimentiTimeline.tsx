@@ -104,7 +104,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
 
             {/* Adempimenti del mese */}
             {sorted.length === 0 ? (
-              <p className="pl-5 text-xs" style={{ color: 'rgba(160,144,126,0.4)' }}>
+              <p className="pl-5 text-xs text-obsidian/60">
                 Nessun adempimento in scadenza questo mese.
               </p>
             ) : (
@@ -141,7 +141,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                             <div className="text-[13px] font-semibold leading-none text-obsidian">
                               {String(scadDate.getDate()).padStart(2, '0')}
                             </div>
-                            <div className="text-[9px] uppercase tracking-wider mt-0.5" style={{ color: 'rgba(160,144,126,0.5)' }}>
+                            <div className="text-[9px] uppercase tracking-wider mt-0.5 text-obsidian/60">
                               {scadDate.toLocaleDateString('it-IT', { weekday: 'short' })}
                             </div>
                           </div>
@@ -168,7 +168,7 @@ export default function AdempimentiTimeline({ adempimenti, giorniApertura, onSeg
                               {CATEGORIA_LABEL[a.categoria]}
                             </span>
                             <span className="text-[10px]" style={{ color: 'rgba(160,144,126,0.35)' }}>·</span>
-                            <span className="text-[10px]" style={{ color: 'rgba(160,144,126,0.5)' }}>
+                            <span className="text-[10px] text-obsidian/60">
                               {FREQUENZA_LABEL[a.frequenza]}
                             </span>
                           </div>

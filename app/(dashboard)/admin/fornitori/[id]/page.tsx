@@ -59,7 +59,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
         <div className="flex-1">
           <h1 className="text-2xl font-light font-serif text-obsidian">{fornitore.nome}</h1>
           {fornitore.note && (
-            <p className="text-sm text-stone mt-1">{fornitore.note}</p>
+            <p className="text-sm text-obsidian/70 mt-1">{fornitore.note}</p>
           )}
         </div>
       </div>
@@ -70,7 +70,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
         <div className="card">
           <h2 className="text-xs font-medium text-obsidian uppercase tracking-widest mb-4">Contatti</h2>
           {contatti.length === 0 ? (
-            <p className="text-xs text-stone">Nessun contatto registrato</p>
+            <p className="text-xs text-obsidian/70">Nessun contatto registrato</p>
           ) : (
             <div className="space-y-4">
               {contatti.map((c: any) => (
@@ -81,15 +81,15 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
                       <span className="text-[9px] px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">★ predefinito</span>
                     )}
                   </div>
-                  {c.ruolo && <p className="text-xs text-stone mb-2">{c.ruolo}</p>}
+                  {c.ruolo && <p className="text-xs text-obsidian/70 mb-2">{c.ruolo}</p>}
                   <div className="space-y-1">
                     {c.telefono && (
-                      <p className="text-xs text-stone/70 flex items-center gap-1.5">
+                      <p className="text-xs text-obsidian/70 flex items-center gap-1.5">
                         <Phone size={11} /> {c.telefono}
                       </p>
                     )}
                     {c.email && (
-                      <p className="text-xs text-stone/70 flex items-center gap-1.5">
+                      <p className="text-xs text-obsidian/70 flex items-center gap-1.5">
                         <Mail size={11} /> {c.email}
                       </p>
                     )}
@@ -104,11 +104,11 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
         <div className="space-y-4">
           <div className="card text-center">
             <p className="text-3xl font-light font-serif text-obsidian mb-1">{totaleOrdini}</p>
-            <p className="text-[10px] text-stone uppercase tracking-widest">Ordini totali</p>
+            <p className="text-[10px] text-obsidian/70 uppercase tracking-widest">Ordini totali</p>
           </div>
           <div className="card text-center">
             <p className="text-3xl font-light font-serif text-obsidian mb-1">{magazzino?.length ?? 0}</p>
-            <p className="text-[10px] text-stone uppercase tracking-widest">Prodotti associati</p>
+            <p className="text-[10px] text-obsidian/70 uppercase tracking-widest">Prodotti associati</p>
           </div>
         </div>
 
@@ -119,7 +119,7 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
             <h2 className="text-xs font-medium text-obsidian uppercase tracking-widest">Prodotti in magazzino</h2>
           </div>
           {!magazzino?.length ? (
-            <p className="text-xs text-stone">Nessun prodotto associato</p>
+            <p className="text-xs text-obsidian/70">Nessun prodotto associato</p>
           ) : (
             <div className="space-y-2">
               {magazzino.map(item => {
@@ -144,11 +144,11 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
         <div className="flex items-center gap-2 mb-5">
           <ShoppingCart size={13} className="text-stone/60" />
           <h2 className="text-xs font-medium text-obsidian uppercase tracking-widest">Storico Ordini</h2>
-          <span className="text-[10px] text-stone/40">({totaleOrdini})</span>
+          <span className="text-[10px] text-obsidian/60">({totaleOrdini})</span>
         </div>
 
         {!ordini?.length ? (
-          <p className="text-sm text-stone text-center py-8">Nessun ordine registrato per questo fornitore</p>
+          <p className="text-sm text-obsidian/70 text-center py-8">Nessun ordine registrato per questo fornitore</p>
         ) : (
           <div className="space-y-3">
             {ordini.map((ordine: any) => {
@@ -160,13 +160,13 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
                       {CANALE_ICON[ordine.canale] && (
                         <span className="text-stone/60">{CANALE_ICON[ordine.canale]}</span>
                       )}
-                      <span className="text-xs text-stone capitalize">{ordine.canale}</span>
+                      <span className="text-xs text-obsidian/70 capitalize">{ordine.canale}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className={`text-[10px] px-2 py-0.5 rounded border capitalize ${STATO_COLOR[ordine.stato] ?? 'text-stone bg-stone/10 border-stone/20'}`}>
                         {ordine.stato}
                       </span>
-                      <span className="text-[10px] text-stone/40">
+                      <span className="text-[10px] text-obsidian/60">
                         {new Date(ordine.created_at).toLocaleDateString('it-IT')}
                       </span>
                     </div>
@@ -177,14 +177,14 @@ export default async function FornitoreDetailPage({ params }: { params: { id: st
                       {righe.map((r: any, i: number) => (
                         <div key={i} className="flex items-center justify-between text-xs">
                           <span className="text-obsidian/70">{r.prodotto}</span>
-                          <span className="text-stone">{r.quantita} {r.unita ?? 'pz'}</span>
+                          <span className="text-obsidian/70">{r.quantita} {r.unita ?? 'pz'}</span>
                         </div>
                       ))}
                     </div>
                   )}
 
                   {ordine.note && (
-                    <p className="text-xs text-stone/60 italic mt-2 border-t border-stone/15 pt-2">{ordine.note}</p>
+                    <p className="text-xs text-obsidian/60 italic mt-2 border-t border-stone/15 pt-2">{ordine.note}</p>
                   )}
                 </div>
               )

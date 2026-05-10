@@ -171,7 +171,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
           </button>
         )}
         <div className="flex items-center gap-3 ml-auto">
-          <span className="text-xs text-stone/50">
+          <span className="text-xs text-obsidian/60">
             {filtered.length} {filtered.length === 1 ? 'voce' : 'voci'}
           </span>
           <button
@@ -187,8 +187,8 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
       {/* Log entries */}
       {filtered.length === 0 ? (
         <div className="card text-center py-10">
-          <ClipboardList size={24} className="text-stone mx-auto mb-3" />
-          <p className="text-stone text-sm">Nessuna attività con questi filtri</p>
+          <ClipboardList size={24} className="text-obsidian/40 mx-auto mb-3" />
+          <p className="text-obsidian/70 text-sm">Nessuna attività con questi filtri</p>
           {hasFilters && (
             <button onClick={resetFilters} className="mt-3 text-xs text-gold hover:text-gold-light transition-colors">
               Rimuovi filtri
@@ -206,12 +206,12 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-obsidian font-medium">{entry.azione}</p>
-                  {entry.dettaglio && <p className="text-xs text-stone mt-0.5">{entry.dettaglio}</p>}
-                  <p className="text-xs text-stone/60 mt-1">{entry.user_nome}</p>
+                  {entry.dettaglio && <p className="text-xs text-obsidian/70 mt-0.5">{entry.dettaglio}</p>}
+                  <p className="text-xs text-obsidian/60 mt-1">{entry.user_nome}</p>
                 </div>
-                <div className="text-xs text-stone flex-shrink-0 text-right">
+                <div className="text-xs text-obsidian/70 flex-shrink-0 text-right">
                   <p>{new Date(entry.created_at).toLocaleDateString('it-IT')}</p>
-                  <p className="text-stone/60">
+                  <p className="text-obsidian/60">
                     {new Date(entry.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>

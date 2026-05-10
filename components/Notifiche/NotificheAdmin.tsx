@@ -122,7 +122,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="section-title text-2xl">Notifiche</h1>
-          <p className="text-stone text-sm mt-1">Configura le notifiche push per l&apos;app</p>
+          <p className="text-obsidian/70 text-sm mt-1">Configura le notifiche push per l&apos;app</p>
         </div>
         <NotificationBell />
       </div>
@@ -134,7 +134,7 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
         </div>
         <div className="flex-1">
           <h2 className="text-obsidian font-medium text-sm">Questo dispositivo</h2>
-          <p className="text-stone text-xs mt-0.5">
+          <p className="text-obsidian/70 text-xs mt-0.5">
             Usa il pulsante a destra per attivare o disattivare le notifiche push su questo dispositivo.
             Ogni utente può gestire il proprio dispositivo dal profilo.
           </p>
@@ -176,14 +176,14 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
                                           ${setting.abilitata ? 'translate-x-4' : 'translate-x-0.5'}`} />
                       </button>
                     </div>
-                    <p className="text-stone text-xs mt-0.5">{info.description}</p>
+                    <p className="text-obsidian/70 text-xs mt-0.5">{info.description}</p>
                   </div>
                 </div>
 
                 {/* Row 2: role selection (only when enabled) */}
                 {setting.abilitata && (
                   <div className="pl-13 ml-13">
-                    <p className="text-xs text-stone mb-2">Invia a:</p>
+                    <p className="text-xs text-obsidian/70 mb-2">Invia a:</p>
                     <div className="flex flex-wrap gap-2">
                       {RUOLI_OPTIONS.map(ruolo => {
                         const active = setting.ruoli_destinatari?.includes(ruolo)
@@ -250,8 +250,8 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
         {subscriptions.length === 0 ? (
           <div className="card text-center py-8">
             <BellOff size={24} className="text-stone/30 mx-auto mb-2" />
-            <p className="text-stone text-sm">Nessun dispositivo registrato</p>
-            <p className="text-stone/60 text-xs mt-1">
+            <p className="text-obsidian/70 text-sm">Nessun dispositivo registrato</p>
+            <p className="text-obsidian/60 text-xs mt-1">
               Attiva le notifiche sul tuo dispositivo tramite il pulsante qui sopra
             </p>
           </div>
@@ -262,8 +262,8 @@ export default function NotificheAdmin({ settings, subscriptions }: Props) {
                 <Smartphone size={14} className="text-stone flex-shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-obsidian text-sm font-medium capitalize">{sub.ruolo}</p>
-                  <p className="text-stone/50 text-xs truncate">{sub.endpoint.split('/').pop()?.slice(0, 40)}…</p>
-                  <p className="text-stone/40 text-xs">
+                  <p className="text-obsidian/60 text-xs truncate">{sub.endpoint.split('/').pop()?.slice(0, 40)}…</p>
+                  <p className="text-obsidian/60 text-xs">
                     Registrato il {new Date(sub.created_at).toLocaleDateString('it-IT')}
                   </p>
                 </div>

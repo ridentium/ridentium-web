@@ -89,9 +89,9 @@ export default function TaskCommenti({ taskId, userId, userNome, isAdmin }: Prop
         <div className="h-px flex-1 bg-obsidian-light/20" />
         <div className="flex items-center gap-1.5">
           <MessageSquare size={11} className="text-stone/40" />
-          <span className="text-[10px] uppercase tracking-widest text-stone/50">Commenti</span>
+          <span className="text-[10px] uppercase tracking-widest text-obsidian/60">Commenti</span>
           {commenti.length > 0 && (
-            <span className="text-[10px] text-stone/40">({commenti.length})</span>
+            <span className="text-[10px] text-obsidian/60">({commenti.length})</span>
           )}
         </div>
         <div className="h-px flex-1 bg-obsidian-light/20" />
@@ -104,7 +104,7 @@ export default function TaskCommenti({ taskId, userId, userNome, isAdmin }: Prop
             <Loader2 size={14} className="animate-spin text-stone/40" />
           </div>
         ) : commenti.length === 0 ? (
-          <p className="text-[11px] text-stone/40 text-center py-3 italic">
+          <p className="text-[11px] text-obsidian/60 text-center py-3 italic">
             Nessun commento ancora
           </p>
         ) : (
@@ -113,7 +113,7 @@ export default function TaskCommenti({ taskId, userId, userNome, isAdmin }: Prop
               <div className="flex-1 min-w-0 bg-white/5 rounded-lg px-3 py-2.5">
                 <div className="flex items-center justify-between gap-2 mb-1.5">
                   <span className="text-[10px] text-gold/70 font-medium truncate">{c.utente_nome}</span>
-                  <span className="text-[9px] text-stone/40 shrink-0">{formatData(c.created_at)}</span>
+                  <span className="text-[9px] text-obsidian/60 shrink-0">{formatData(c.created_at)}</span>
                 </div>
                 <p className="text-xs text-obsidian/80 leading-relaxed whitespace-pre-wrap break-words">{c.testo}</p>
               </div>

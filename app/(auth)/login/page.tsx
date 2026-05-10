@@ -43,7 +43,7 @@ export default function LoginPage() {
         <h1 className="font-serif text-4xl text-obsidian tracking-[0.25em] font-light mb-1">
           RIDENTIUM
         </h1>
-        <p className="text-stone text-xs tracking-[0.35em] uppercase">
+        <p className="text-obsidian/70 text-xs tracking-[0.35em] uppercase">
           Sistema Operativo Interno
         </p>
         <div className="mt-4 w-12 h-px bg-gold mx-auto opacity-60" />
@@ -51,7 +51,7 @@ export default function LoginPage() {
 
       <div className="w-full max-w-sm">
         <div className="card border-obsidian-light/60">
-          <p className="text-stone text-xs tracking-widest uppercase mb-6">Accesso</p>
+          <p className="text-obsidian/70 text-xs tracking-widest uppercase mb-6">Accesso</p>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
@@ -99,7 +99,7 @@ export default function LoginPage() {
                 )}
               </button>
               <span
-                className="text-stone/70 text-xs cursor-pointer select-none"
+                className="text-obsidian/70 text-xs cursor-pointer select-none"
                 onClick={() => setRememberMe(!rememberMe)}
               >
                 Ricorda la mia password
@@ -122,7 +122,7 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <p className="text-center text-stone/50 text-xs mt-6">
+        <p className="text-center text-obsidian/60 text-xs mt-6">
           Accesso riservato al personale RIDENTIUM
         </p>
       </div>

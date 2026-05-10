@@ -125,7 +125,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
   }
 
   if (pendingTasks.length === 0 && pendingRicorrenti.length === 0) {
-    return <p className="text-stone text-sm py-4 text-center">✓ Tutto completato</p>
+    return <p className="text-obsidian/70 text-sm py-4 text-center">✓ Tutto completato</p>
   }
 
   return (
@@ -145,7 +145,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
               <p className={`text-sm ${completedTaskIds.has(task.id) ? 'line-through text-stone' : 'text-obsidian/80'}`}>
                 {task.titolo}
               </p>
-              <p className="text-xs text-stone mt-0.5">
+              <p className="text-xs text-obsidian/70 mt-0.5">
                 Task
                 {task.priorita === 'alta' && <span className="text-red-400 ml-1">· Alta priorità</span>}
                 {task.scadenza && <span className="ml-1">· {new Date(task.scadenza).toLocaleDateString('it-IT')}</span>}
@@ -177,7 +177,7 @@ export default function TasksRicorrentiWidget({ tasks, ricorrenti, currentUserId
               <p className={`text-sm ${completedRicorrentiIds.has(r.id) ? 'line-through text-stone' : 'text-obsidian/80'}`}>
                 {r.titolo}
               </p>
-              <p className="text-xs text-stone mt-0.5 capitalize flex items-center gap-1">
+              <p className="text-xs text-obsidian/70 mt-0.5 capitalize flex items-center gap-1">
                 <RefreshCw size={10} className="text-stone/50" />
                 {r.frequenza}
               </p>

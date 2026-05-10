@@ -95,7 +95,7 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
 
       {espanso && (
         visibili.length === 0 ? (
-          <p className="text-stone text-sm py-4 text-center">✓ Tutti gestiti</p>
+          <p className="text-obsidian/70 text-sm py-4 text-center">✓ Tutti gestiti</p>
         ) : (
           <div className="space-y-2">
             {visibili.map(a => {
@@ -135,7 +135,7 @@ export default function ScadenzeUrgentiWidget({ adempimenti }: Props) {
                           : `Scade fra ${a._gg} giorni`}
                       </span>
                       {needsEvidenza && (
-                        <span className="text-[10px] flex items-center gap-0.5 text-stone/50">
+                        <span className="text-[10px] flex items-center gap-0.5 text-obsidian/60">
                           <FileText size={9} /> richiede evidenza
                         </span>
                       )}

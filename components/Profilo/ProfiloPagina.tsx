@@ -170,7 +170,7 @@ export default function ProfiloPagina({ profilo }: Props) {
           <span className={cn('text-xs font-medium uppercase tracking-widest mt-1 inline-block', roleColor(profilo.ruolo))}>
             {roleLabel(profilo.ruolo)}
           </span>
-          <p className="text-stone text-xs mt-1.5 flex items-center gap-1.5">
+          <p className="text-obsidian/70 text-xs mt-1.5 flex items-center gap-1.5">
             <Calendar size={11} />
             Membro dal {dataIscrizione}
           </p>
@@ -193,7 +193,7 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Dati modificabili */}
       <div className="card space-y-5">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-stone/20 pb-3">
+        <h3 className="text-xs uppercase tracking-widest text-obsidian/70 font-medium border-b border-stone/20 pb-3">
           Dati Anagrafici
         </h3>
         <div className="grid grid-cols-2 gap-4">
@@ -234,28 +234,28 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Dati read-only */}
       <div className="card space-y-4">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-stone/20 pb-3">
+        <h3 className="text-xs uppercase tracking-widest text-obsidian/70 font-medium border-b border-stone/20 pb-3">
           Account
         </h3>
         <div>
           <label className="label-field block mb-1.5">Email</label>
           <div className="relative">
             <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone pointer-events-none" />
-            <div className="input pl-9 text-stone/70 cursor-not-allowed select-none">
+            <div className="input pl-9 text-obsidian/60 cursor-not-allowed select-none">
               {profilo.email}
             </div>
           </div>
-          <p className="text-xs text-stone/50 mt-1">L&apos;email non può essere modificata da qui.</p>
+          <p className="text-xs text-obsidian/60 mt-1">L&apos;email non può essere modificata da qui.</p>
         </div>
         <div>
           <label className="label-field block mb-1.5">Ruolo</label>
           <div className="relative">
             <Shield size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone pointer-events-none" />
-            <div className="input pl-9 text-stone/70 cursor-not-allowed select-none">
+            <div className="input pl-9 text-obsidian/60 cursor-not-allowed select-none">
               {roleLabel(profilo.ruolo)}
             </div>
           </div>
-          <p className="text-xs text-stone/50 mt-1">Il ruolo viene assegnato dall&apos;amministratore.</p>
+          <p className="text-xs text-obsidian/60 mt-1">Il ruolo viene assegnato dall&apos;amministratore.</p>
         </div>
       </div>
 
@@ -286,7 +286,7 @@ export default function ProfiloPagina({ profilo }: Props) {
 
           {isSubscribed ? (
             <div className="space-y-3">
-              <p className="text-xs text-stone">
+              <p className="text-xs text-obsidian/70">
                 Scegli quali notifiche ricevere su questo dispositivo:
               </p>
               {prefsLoading ? (
@@ -301,7 +301,7 @@ export default function ProfiloPagina({ profilo }: Props) {
                     <div key={tipo} className="flex items-center justify-between py-2 border-b border-stone/30 last:border-0">
                       <div>
                         <p className="text-sm text-obsidian">{label}</p>
-                        <p className="text-xs text-stone mt-0.5">{desc}</p>
+                        <p className="text-xs text-obsidian/70 mt-0.5">{desc}</p>
                       </div>
                       <button
                         onClick={() => handleTogglePref(tipo, enabled)}
@@ -323,7 +323,7 @@ export default function ProfiloPagina({ profilo }: Props) {
               )}
             </div>
           ) : (
-            <p className="text-xs text-stone">
+            <p className="text-xs text-obsidian/70">
               Attiva le notifiche push per ricevere aggiornamenti in tempo reale su questo dispositivo.
             </p>
           )}
@@ -332,13 +332,13 @@ export default function ProfiloPagina({ profilo }: Props) {
 
       {/* Sicurezza */}
       <div className="card space-y-4">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium border-b border-stone/20 pb-3">
+        <h3 className="text-xs uppercase tracking-widest text-obsidian/70 font-medium border-b border-stone/20 pb-3">
           Sicurezza
         </h3>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-obsidian text-sm font-medium">Password</p>
-            <p className="text-stone text-xs mt-0.5">
+            <p className="text-obsidian/70 text-xs mt-0.5">
               Riceverai un&apos;email con il link per cambiare la password.
             </p>
           </div>

@@ -79,7 +79,7 @@ export default function ImpostazioniStudio() {
       <div className="card space-y-4">
         <div>
           <h3 className="text-sm font-medium text-obsidian">Giorni di apertura</h3>
-          <p className="text-xs text-stone mt-1">
+          <p className="text-xs text-obsidian/70 mt-1">
             Seleziona i giorni in cui lo studio è aperto. Il calendario mostrerà i giorni chiusi in grigio
             e segnalerà gli adempimenti che scadono in quei giorni.
           </p>
@@ -110,7 +110,7 @@ export default function ImpostazioniStudio() {
           })}
         </div>
 
-        <p className="text-[11px] text-stone/50">
+        <p className="text-[11px] text-obsidian/60">
           {imp.giorni_apertura.length === 0
             ? 'Nessun giorno selezionato'
             : `Aperto: ${imp.giorni_apertura.map(d => GIORNI_LABEL[d]).join(', ')}`
@@ -124,14 +124,14 @@ export default function ImpostazioniStudio() {
           <h3 className="text-sm font-medium text-obsidian flex items-center gap-2">
             <Clock size={15} className="text-gold/70" /> Orario di apertura
           </h3>
-          <p className="text-xs text-stone mt-1">
+          <p className="text-xs text-obsidian/70 mt-1">
             Mostrato nel riepilogo della pagina Adempimenti.
           </p>
         </div>
 
         <div className="flex items-center gap-4 flex-wrap">
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-widest text-stone/60">Apertura</label>
+            <label className="text-[10px] uppercase tracking-widest text-obsidian/60">Apertura</label>
             <input
               type="time"
               value={imp.orario_apertura}
@@ -142,7 +142,7 @@ export default function ImpostazioniStudio() {
           </div>
           <span className="text-stone/40 mt-4">—</span>
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] uppercase tracking-widest text-stone/60">Chiusura</label>
+            <label className="text-[10px] uppercase tracking-widest text-obsidian/60">Chiusura</label>
             <input
               type="time"
               value={imp.orario_chiusura}

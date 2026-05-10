@@ -148,11 +148,11 @@ export function AggiungiPanel({
 
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Titolo <span className="text-red-400">*</span></label>
+          <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Titolo <span className="text-red-400">*</span></label>
           <input className="input w-full" value={titolo} onChange={ev => setTitolo(ev.target.value)} required />
         </div>
         <div>
-          <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Descrizione</label>
+          <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Descrizione</label>
           <textarea className="input w-full resize-none" rows={2} value={descrizione} onChange={ev => setDescrizione(ev.target.value)} />
         </div>
 
@@ -160,13 +160,13 @@ export function AggiungiPanel({
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Priorità</label>
+                <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Priorità</label>
                 <select className="input w-full" value={priorita} onChange={ev => setPriorita(ev.target.value as typeof priorita)}>
                   <option value="bassa">Bassa</option><option value="media">Media</option><option value="alta">Alta</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Scadenza</label>
+                <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Scadenza</label>
                 <input type="date" className="input w-full" value={scadenza} onChange={ev => setScadenza(ev.target.value)} />
               </div>
             </div>
@@ -177,7 +177,7 @@ export function AggiungiPanel({
         {tipo === 'ricorrente' && (
           <>
             <div>
-              <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Frequenza <span className="text-red-400">*</span></label>
+              <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Frequenza <span className="text-red-400">*</span></label>
               <select className="input w-full" value={frequenzaRic} onChange={ev => setFrequenzaRic(ev.target.value as typeof frequenzaRic)}>
                 <option value="giornaliero">Ogni giorno</option>
                 <option value="settimanale">Ogni settimana</option>
@@ -192,13 +192,13 @@ export function AggiungiPanel({
           <>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Categoria <span className="text-red-400">*</span></label>
+                <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Categoria <span className="text-red-400">*</span></label>
                 <select className="input w-full" value={categoriaAd} onChange={ev => setCategoriaAd(ev.target.value as CategoriaAdempimento)}>
                   {Object.entries(CATEGORIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Frequenza <span className="text-red-400">*</span></label>
+                <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Frequenza <span className="text-red-400">*</span></label>
                 <select className="input w-full" value={frequenzaAd} onChange={ev => setFrequenzaAd(ev.target.value)}>
                   {Object.entries(FREQ_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
@@ -206,16 +206,16 @@ export function AggiungiPanel({
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Prossima scadenza</label>
+                <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Prossima scadenza</label>
                 <input type="date" className="input w-full" value={scadenzaAd} onChange={ev => setScadenzaAd(ev.target.value)} />
               </div>
               <div>
-                <label className="block text-xs text-stone uppercase tracking-wider mb-1.5">Preavviso (giorni)</label>
+                <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-1.5">Preavviso (giorni)</label>
                 <input type="number" min={1} max={365} className="input w-full" value={preavvisoGiorni} onChange={ev => setPreavvisoGiorni(Number(ev.target.value))} />
               </div>
             </div>
             <div>
-              <label className="block text-xs text-stone uppercase tracking-wider mb-2">Responsabile</label>
+              <label className="block text-xs text-obsidian/70 uppercase tracking-wider mb-2">Responsabile</label>
               <div className="flex gap-2 mb-3">
                 <button type="button" onClick={() => setRespMode('profilo')}
                   className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'profilo' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-obsidian'}`}>

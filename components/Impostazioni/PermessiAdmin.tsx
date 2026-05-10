@@ -70,8 +70,8 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
   return (
     <div className="card border-stone/35 mt-6">
       <div className="mb-6">
-        <p className="text-stone text-xs tracking-widest uppercase mb-1">Permessi Sezioni</p>
-        <p className="text-stone/50 text-xs">
+        <p className="text-obsidian/70 text-xs tracking-widest uppercase mb-1">Permessi Sezioni</p>
+        <p className="text-obsidian/60 text-xs">
           Controlla quali sezioni sono visibili per ogni ruolo. L&apos;admin ha sempre accesso completo.
         </p>
       </div>
@@ -81,7 +81,7 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
           <thead>
             <tr>
               <th className="text-left pb-4 pr-4 w-40">
-                <span className="text-stone/40 text-xs uppercase tracking-wider">Sezione</span>
+                <span className="text-obsidian/60 text-xs uppercase tracking-wider">Sezione</span>
               </th>
               {RUOLI.map(r => (
                 <th key={r.key} className="text-center pb-4 px-3">
@@ -127,7 +127,7 @@ export default function PermessiAdmin({ permessi: initialPermessi }: Props) {
         </table>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-stone/20 flex flex-wrap items-center gap-4 text-xs text-stone/40">
+      <div className="mt-4 pt-4 border-t border-stone/20 flex flex-wrap items-center gap-4 text-xs text-obsidian/60">
         <div className="flex items-center gap-1.5">
           <span className="inline-block w-3 h-3 rounded-full bg-gold/80" />
           <span>Visibile</span>
