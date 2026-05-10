@@ -166,7 +166,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
         </div>
         {hasFilters && (
           <button onClick={resetFilters}
-            className="flex items-center gap-1 text-xs text-stone hover:text-cream transition-colors">
+            className="flex items-center gap-1 text-xs text-stone hover:text-obsidian transition-colors">
             <X size={11} /> Reset
           </button>
         )}
@@ -177,7 +177,7 @@ export default function RegistroAdmin({ entries }: { entries: RegistroEntry[] })
           <button
             onClick={exportCSV}
             disabled={filtered.length === 0}
-            className="flex items-center gap-1 text-xs text-stone hover:text-cream transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="flex items-center gap-1 text-xs text-stone hover:text-obsidian transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <Download size={11} /> CSV
           </button>

@@ -59,7 +59,7 @@ export default function PushSetup() {
   return (
     <div className="flex items-center justify-between py-3">
       <div className="min-w-0">
-        <p className="text-sm text-cream font-medium">Notifiche push</p>
+        <p className="text-sm text-obsidian font-medium">Notifiche push</p>
         <p className="text-[11px] text-stone/60 mt-0.5">
           {denied
             ? 'Permesso negato — abilitale nelle impostazioni del browser'

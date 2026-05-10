@@ -51,17 +51,17 @@ export default function PushInit() {
   return (
     <div
       role="alert"
-      className="fixed bottom-4 left-4 right-4 z-50 flex items-start gap-3 rounded-xl border border-obsidian-600 bg-obsidian-800 p-4 shadow-2xl md:left-auto md:right-4 md:max-w-sm"
+      className="fixed bottom-4 left-4 right-4 z-50 flex items-start gap-3 rounded-xl border border-stone/30 bg-cream p-4 shadow-2xl md:left-auto md:right-4 md:max-w-sm"
     >
       <span className="shrink-0 text-2xl" aria-hidden="true">📲</span>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-cream-100">
+        <p className="text-sm font-semibold text-obsidian">
           Ricevi notifiche su iPhone
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-stone-400">
-          Tocca <strong className="text-cream-200">Condividi</strong>{' '}
+        <p className="mt-1 text-xs leading-relaxed text-stone">
+          Tocca <strong className="text-obsidian/80">Condividi</strong>{' '}
           <span aria-hidden="true">⬆︎</span> poi{' '}
-          <strong className="text-cream-200">Aggiungi a Home</strong>, quindi
+          <strong className="text-obsidian/80">Aggiungi a Home</strong>, quindi
           riapri l&apos;app dal tuo schermo.
         </p>
       </div>
@@ -70,7 +70,7 @@ export default function PushInit() {
           setShowIOSBanner(false)
           localStorage.setItem('ios-banner-dismissed', '1')
         }}
-        className="shrink-0 rounded p-1 text-stone-400 transition-colors hover:text-cream-100"
+        className="shrink-0 rounded p-1 text-stone/50 transition-colors hover:text-obsidian"
         aria-label="Chiudi"
       >
         <X size={16} />

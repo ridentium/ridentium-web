@@ -115,7 +115,7 @@ export default function TaskCommenti({ taskId, userId, userNome, isAdmin }: Prop
                   <span className="text-[10px] text-gold/70 font-medium truncate">{c.utente_nome}</span>
                   <span className="text-[9px] text-stone/40 shrink-0">{formatData(c.created_at)}</span>
                 </div>
-                <p className="text-xs text-cream/80 leading-relaxed whitespace-pre-wrap break-words">{c.testo}</p>
+                <p className="text-xs text-obsidian/80 leading-relaxed whitespace-pre-wrap break-words">{c.testo}</p>
               </div>
               {(c.utente_id === userId || isAdmin) && (
                 <button

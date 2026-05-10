@@ -131,7 +131,7 @@ export function AggiungiPanel({
               <button key={t} type="button" disabled={!canCreate} onClick={() => changeTipo(t)}
                 className={`flex flex-col items-center gap-2 p-3 rounded border transition-colors ${
                   tipo === t ? `${cfg.bg} ${cfg.color}`
-                  : canCreate ? 'border-obsidian-light text-stone hover:border-stone hover:text-cream'
+                  : canCreate ? 'border-obsidian-light text-stone hover:border-stone hover:text-obsidian'
                   : 'border-obsidian-light/40 text-stone/30 cursor-not-allowed'
                 }`}>
                 <Icon size={18} /><span className="text-xs font-medium">{cfg.label}</span>
@@ -218,11 +218,11 @@ export function AggiungiPanel({
               <label className="block text-xs text-stone uppercase tracking-wider mb-2">Responsabile</label>
               <div className="flex gap-2 mb-3">
                 <button type="button" onClick={() => setRespMode('profilo')}
-                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'profilo' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-cream'}`}>
+                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'profilo' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-obsidian'}`}>
                   Persona interna
                 </button>
                 <button type="button" onClick={() => setRespMode('etichetta')}
-                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'etichetta' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-cream'}`}>
+                  className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'etichetta' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-obsidian'}`}>
                   Etichetta libera
                 </button>
               </div>
@@ -259,7 +259,7 @@ export function AggiungiPanel({
             : successo ? <><CheckSquare size={14} />Salvato!</>
             : <><Plus size={14} />Aggiungi {tipo === 'task' ? 'task' : tipo === 'ricorrente' ? 'ricorrente' : 'adempimento'}</>}
           </button>
-          <button type="button" onClick={resetForm} className="text-sm text-stone hover:text-cream transition-colors">Reset</button>
+          <button type="button" onClick={resetForm} className="text-sm text-stone hover:text-obsidian transition-colors">Reset</button>
         </div>
       </form>
     </div>

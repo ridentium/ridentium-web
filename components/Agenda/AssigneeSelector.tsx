@@ -42,7 +42,7 @@ export function AssigneeSelector({
             }}
             className="w-4 h-4 accent-gold"
           />
-          <span className="text-sm text-cream">Tutti (nessuno in specifico)</span>
+          <span className="text-sm text-obsidian">Tutti (nessuno in specifico)</span>
         </label>
       )}
 
@@ -56,7 +56,7 @@ export function AssigneeSelector({
                 className={`text-xs px-3 py-1.5 rounded border transition-colors ${
                   assegnaMode === 'io'
                     ? 'bg-gold/10 border-gold/30 text-gold'
-                    : 'border-obsidian-light text-stone hover:text-cream'
+                    : 'border-obsidian-light text-stone hover:text-obsidian'
                 }`}
               >
                 <User size={10} className="inline mr-1" />A me
@@ -67,7 +67,7 @@ export function AssigneeSelector({
                 className={`text-xs px-3 py-1.5 rounded border transition-colors ${
                   assegnaMode === 'altro'
                     ? 'bg-gold/10 border-gold/30 text-gold'
-                    : 'border-obsidian-light text-stone hover:text-cream'
+                    : 'border-obsidian-light text-stone hover:text-obsidian'
                 }`}
               >
                 <Users size={10} className="inline mr-1" />Altra persona

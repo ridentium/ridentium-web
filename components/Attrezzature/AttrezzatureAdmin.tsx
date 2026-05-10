@@ -230,7 +230,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Cerca…"
-              className="pl-7 pr-3 py-1 text-xs bg-obsidian-light/20 border border-obsidian-light rounded text-cream placeholder:text-stone/40 focus:outline-none focus:border-gold/40 w-36"
+              className="pl-7 pr-3 py-1 text-xs bg-obsidian-light/20 border border-obsidian-light rounded text-obsidian placeholder:text-stone/40 focus:outline-none focus:border-gold/40 w-36"
             />
           </div>
           <select
@@ -287,22 +287,22 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
                 <div className="flex items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-cream text-sm">{item.nome}</h3>
+                      <h3 className="font-medium text-obsidian text-sm">{item.nome}</h3>
                       <span className="text-[10px] text-stone/60 uppercase tracking-widest">{item.categoria}</span>
                     </div>
                     <div className="flex items-center gap-3 mt-1.5 flex-wrap text-xs text-stone">
                       {item.numero_seriale && (
-                        <span>S/N: <span className="text-cream/70">{item.numero_seriale}</span></span>
+                        <span>S/N: <span className="text-obsidian/70">{item.numero_seriale}</span></span>
                       )}
                       {item.fornitore_nome && (
-                        <span>Fornitore: <span className="text-cream/70">{item.fornitore_nome}</span></span>
+                        <span>Fornitore: <span className="text-obsidian/70">{item.fornitore_nome}</span></span>
                       )}
                       <span className="flex items-center gap-1">
                         <CalendarDays size={11} />
                         Prossima: {' '}
                         <span className={cn(
                           scaduta ? 'text-red-400 font-medium' :
-                          vicina ? 'text-amber-400 font-medium' : 'text-cream/70'
+                          vicina ? 'text-amber-400 font-medium' : 'text-obsidian/70'
                         )}>
                           {formatDate(item.data_prossima_manutenzione)}
                         </span>
@@ -319,7 +319,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
                     </span>
                     <button
                       onClick={() => setEditTarget(item)}
-                      className="text-[11px] px-2 py-1 rounded border border-stone/20 text-stone/60 hover:text-cream hover:border-stone/40 transition-colors flex items-center gap-1"
+                      className="text-[11px] px-2 py-1 rounded border border-stone/20 text-stone/60 hover:text-obsidian hover:border-stone/40 transition-colors flex items-center gap-1"
                       title="Modifica dati"
                     >
                       <Pencil size={11} />
@@ -380,7 +380,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
                         <div className="space-y-2">
                           {item.manutenzioni.map((m: Manutenzione) => (
                             <div key={m.id} className="text-xs border-l-2 border-obsidian-light pl-3 py-0.5">
-                              <div className="flex items-center gap-2 text-cream/80">
+                              <div className="flex items-center gap-2 text-obsidian/80">
                                 <span className="font-medium">{formatDate(m.data)}</span>
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-obsidian-light text-stone">
                                   {TIPO_LABELS[m.tipo]}
@@ -410,7 +410,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
       {showAdd && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="font-serif text-lg text-cream font-light mb-5">Nuova Attrezzatura</h2>
+            <h2 className="font-serif text-lg text-obsidian font-light mb-5">Nuova Attrezzatura</h2>
             <form onSubmit={handleAdd} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
@@ -477,7 +477,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
       {editTarget && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <h2 className="font-serif text-lg text-cream font-light mb-1">Modifica Attrezzatura</h2>
+            <h2 className="font-serif text-lg text-obsidian font-light mb-1">Modifica Attrezzatura</h2>
             <p className="text-stone text-xs mb-5">{editTarget.nome}</p>
             <form onSubmit={handleEdit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
@@ -541,7 +541,7 @@ export default function AttrezzatureAdmin({ attrezzature: initialData }: Props) 
       {manutFor && (
         <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="card w-full max-w-md">
-            <h2 className="font-serif text-lg text-cream font-light mb-1">Registra Manutenzione</h2>
+            <h2 className="font-serif text-lg text-obsidian font-light mb-1">Registra Manutenzione</h2>
             <p className="text-stone text-xs mb-5">{manutFor.nome}</p>
             <form onSubmit={handleManutenzione} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">

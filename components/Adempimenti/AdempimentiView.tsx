@@ -701,7 +701,7 @@ function CompletaModal({
         {adempimento.evidenza_richiesta && (
           <div className="flex items-start gap-2 mb-4 p-2.5 rounded bg-gold/5 border border-gold/20">
             <FileText size={14} className="text-gold/80 flex-shrink-0 mt-0.5" />
-            <p className="text-xs text-cream/80">
+            <p className="text-xs text-obsidian/80">
               <span className="text-stone/60">Evidenza richiesta:</span>{' '}
               <span className="text-gold/90">{adempimento.evidenza_richiesta}</span>
             </p>
