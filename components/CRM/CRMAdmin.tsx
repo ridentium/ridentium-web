@@ -1,12 +1,30 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { CRMContatto, CRMStato } from '@/types'
 import {
   Phone, MessageCircle, Mail, Download, Plus, Search,
   UserCircle, X, ChevronDown, Trash2, AlertCircle, Globe,
   Clock, CheckCircle2, Star, UserX, ShieldCheck, ShieldOff, Megaphone, Send,
+  ChevronLeft, ChevronRight,
 } from 'lucide-react'
+
+const PER_PAGINA = 20
+
+// Sorgenti predefinite — possono essere estese senza migrazione DB (campo TEXT libero nel DB)
+const SORGENTI = [
+  { value: '',                label: '— Seleziona sorgente —' },
+  { value: 'manuale',         label: 'Manuale (staff)' },
+  { value: 'landing-implanti',label: 'Landing — Implanti' },
+  { value: 'landing-box',     label: 'Landing — Gift Box' },
+  { value: 'instagram',       label: 'Instagram' },
+  { value: 'facebook',        label: 'Facebook' },
+  { value: 'google',          label: 'Google Ads' },
+  { value: 'referral',        label: 'Passaparola' },
+  { value: 'whatsapp',        label: 'WhatsApp diretto' },
+  { value: 'telefono',        label: 'Telefonata diretta' },
+  { value: 'altro',           label: 'Altro' },
+] as const
 
 type EmailTemplate = 'box-conferma' | 'benvenuto' | 'personalizzata' | 'ricorda-appuntamento'
 
@@ -51,6 +69,12 @@ function formatGiorniAggiornato(iso: string): string {
   if (giorni === 0) return 'aggiornato oggi'
   if (giorni === 1) return 'aggiornato ieri'
   return `aggiornato ${giorni} gg fa`
+}
+
+/** Restituisce la label leggibile della sorgente, o il valore raw se sconosciuto. */
+function labelSorgente(value: string | null): string {
+  if (!value) return ''
+  return SORGENTI.find(s => s.value === value)?.label ?? value
 }
 
 function iniziali(c: CRMContatto) {
@@ -108,6 +132,54 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
     setEmailOk(false)
   }
 
+  // Modal task di follow-up
+  const [taskModal, setTaskModal]     = useState<CRMContatto | null>(null)
+  const [taskScadenza, setTaskScadenza] = useState('')
+  const [taskNota, setTaskNota]       = useState('')
+  const [taskSaving, setTaskSaving]   = useState(false)
+  const [taskOk, setTaskOk]           = useState(false)
+  const [taskError, setTaskError]     = useState<string | null>(null)
+
+  function apriTaskModal(c: CRMContatto) {
+    setTaskModal(c)
+    // Default: domani
+    const domani = new Date(); domani.setDate(domani.getDate() + 1)
+    setTaskScadenza(domani.toISOString().slice(0, 10))
+    setTaskNota('')
+    setTaskOk(false)
+    setTaskError(null)
+  }
+
+  async function creaTaskFollowUp() {
+    if (!taskModal || taskSaving) return
+    setTaskSaving(true)
+    setTaskError(null)
+    const nomeLead = nomeCompleto(taskModal)
+    const res = await fetch('/api/tasks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titolo: `Follow-up CRM: ${nomeLead}`,
+        descrizione: taskNota.trim() || `Contattare il lead ${nomeLead} (${taskModal.email ?? taskModal.telefono ?? ''}).`,
+        priorita: 'media',
+        scadenza: taskScadenza || null,
+        stato: 'aperto',
+      }),
+    })
+    if (res.ok) {
+      setTaskOk(true)
+      setTimeout(() => setTaskModal(null), 1800)
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setTaskError(data.error ?? 'Errore nella creazione del task')
+    }
+    setTaskSaving(false)
+  }
+
+  // Paginazione
+  const [pagina, setPagina] = useState(0)
+  useEffect(() => { setPagina(0) }, [filtro, filtroMarketing, cerca])
+
   // Filtro contatti
   const filtered = useMemo(() => {
     let list = contatti
@@ -126,6 +198,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
     }
     return list
   }, [contatti, filtro, filtroMarketing, cerca])
+
+  const totalePagine = Math.ceil(filtered.length / PER_PAGINA)
+  const paginati = useMemo(
+    () => filtered.slice(pagina * PER_PAGINA, (pagina + 1) * PER_PAGINA),
+    [filtered, pagina]
+  )
 
   // Conteggio contatti con consenso marketing
   const conMarketing = useMemo(
@@ -360,7 +438,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
         </div>
       ) : (
         <div className="space-y-2">
-          {filtered.map(c => {
+          {paginati.map(c => {
             const si = statoInfo(c.stato)
             const StatoIcon = si.icon
             const isExpanded = dettaglioId === c.id
@@ -388,7 +466,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       </span>
                       {c.sorgente && (
                         <span className="text-[10px] px-2 py-0.5 rounded border border-obsidian-light/30 text-stone flex items-center gap-1">
-                          <Globe size={9} /> {c.sorgente}
+                          <Globe size={9} /> {labelSorgente(c.sorgente)}
                         </span>
                       )}
                     </div>
@@ -528,6 +606,14 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       >
                         Note {c.note ? '✎' : '+'}
                       </button>
+                      <button
+                        onClick={() => apriTaskModal(c)}
+                        className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
+                                   bg-obsidian-light/40 border border-obsidian-light/60 text-stone
+                                   hover:text-cream transition-colors"
+                      >
+                        <CheckCircle2 size={11} /> Task
+                      </button>
                       {isAdmin && (
                         <button
                           onClick={() => eliminaContatto(c.id)}
@@ -544,6 +630,36 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* ── Paginazione ── */}
+      {totalePagine > 1 && (
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-obsidian-light/20">
+          <span className="text-xs text-stone/50">
+            {pagina * PER_PAGINA + 1}–{Math.min((pagina + 1) * PER_PAGINA, filtered.length)} di {filtered.length}
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPagina(p => Math.max(0, p - 1))}
+              disabled={pagina === 0}
+              className="p-1.5 rounded border border-obsidian-light/40 text-stone hover:text-cream
+                         disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft size={13} />
+            </button>
+            <span className="text-xs text-stone min-w-[60px] text-center">
+              {pagina + 1} / {totalePagine}
+            </span>
+            <button
+              onClick={() => setPagina(p => Math.min(totalePagine - 1, p + 1))}
+              disabled={pagina >= totalePagine - 1}
+              className="p-1.5 rounded border border-obsidian-light/40 text-stone hover:text-cream
+                         disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronRight size={13} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -605,13 +721,16 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               </div>
               <div>
                 <label className="block text-xs text-stone mb-1">Sorgente</label>
-                <input
+                <select
                   value={nuovoForm.sorgente}
                   onChange={e => setNuovoForm(p => ({ ...p, sorgente: e.target.value }))}
                   className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
                              px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
-                  placeholder="Es. landing-implanti, referral…"
-                />
+                >
+                  {SORGENTI.map(s => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-xs text-stone mb-1">Note</label>
@@ -782,6 +901,76 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                 className="text-xs px-4 py-2 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50"
               >
                 {editSaving ? 'Salvataggio…' : 'Salva note'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal task di follow-up ── */}
+      {taskModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-cream font-medium">Task di follow-up</h2>
+                <p className="text-stone text-xs mt-0.5">{nomeCompleto(taskModal)}</p>
+              </div>
+              <button onClick={() => setTaskModal(null)} className="text-stone hover:text-cream transition-colors">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-stone mb-1">Scadenza</label>
+                <input
+                  type="date"
+                  value={taskScadenza}
+                  onChange={e => setTaskScadenza(e.target.value)}
+                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
+                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-stone mb-1">Nota (opzionale)</label>
+                <textarea
+                  value={taskNota}
+                  onChange={e => setTaskNota(e.target.value)}
+                  rows={3}
+                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
+                             px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
+                  placeholder={`Contattare ${nomeCompleto(taskModal)} per…`}
+                />
+              </div>
+            </div>
+
+            {taskError && (
+              <div className="mt-3 p-2.5 bg-red-500/10 border border-red-500/30 rounded text-xs text-red-400">
+                {taskError}
+              </div>
+            )}
+            {taskOk && (
+              <div className="mt-3 p-2.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400">
+                ✓ Task creato — visibile nella sezione Task
+              </div>
+            )}
+
+            <div className="flex gap-3 justify-end mt-4">
+              <button
+                onClick={() => setTaskModal(null)}
+                disabled={taskSaving}
+                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
+              >
+                Annulla
+              </button>
+              <button
+                onClick={creaTaskFollowUp}
+                disabled={taskSaving || taskOk}
+                className="text-xs px-4 py-2 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-50 flex items-center gap-1.5"
+              >
+                <CheckCircle2 size={12} />
+                {taskSaving ? 'Creazione…' : 'Crea task'}
               </button>
             </div>
           </div>
