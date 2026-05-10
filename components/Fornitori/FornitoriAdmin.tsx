@@ -62,14 +62,16 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
   const [contactForm, setContactForm] = useState<Partial<FornitoreContatto>>(emptyContactForm())
   const [savingContact, setSavingContact] = useState(false)
   const [savingFornitore, setSavingFornitore] = useState(false)
+  const [fornitoreError, setFornitoreError] = useState<string | null>(null)
 
   function resetForm() {
-    setNome(''); setNote(''); setShowForm(false)
+    setNome(''); setNote(''); setFornitoreError(null); setShowForm(false)
   }
 
   async function addFornitore() {
     if (savingFornitore) return // guard doppio-click
     if (!nome.trim()) return
+    setFornitoreError(null)
     setSavingFornitore(true)
     try {
       const res = await fetch('/api/fornitori', {
@@ -78,9 +80,15 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
         body: JSON.stringify({ nome: nome.trim(), note: note.trim() || null }),
       })
       const json = await res.json()
+      if (!res.ok) {
+        setFornitoreError(json.error ?? 'Errore durante il salvataggio')
+        return
+      }
       resetForm()
       if (json.fornitore) setExpandedId(json.fornitore.id)
       startTransition(() => router.refresh())
+    } catch {
+      setFornitoreError('Errore di rete. Riprova.')
     } finally {
       setSavingFornitore(false)
     }
@@ -193,8 +201,19 @@ export default function FornitoriAdmin({ fornitori, magazzino, currentUserId, cu
           <input className="input" placeholder="Nome fornitore *" value={nome} onChange={e => setNome(e.target.value)} />
           <input className="input" placeholder="Note (opzionale)" value={note} onChange={e => setNote(e.target.value)} />
           <p className="text-xs text-stone">I contatti si aggiungono dopo aver creato il fornitore.</p>
+          {fornitoreError && (
+            <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-2">
+              {fornitoreError}
+            </p>
+          )}
           <div className="flex gap-3">
-            <button onClick={addFornitore} className="btn-primary text-xs" disabled={!nome.trim()}>Salva</button>
+            <button
+              onClick={addFornitore}
+              className="btn-primary text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+              disabled={!nome.trim() || savingFornitore}
+            >
+              {savingFornitore ? 'Salvataggio…' : 'Salva'}
+            </button>
             <button onClick={resetForm} className="btn-secondary text-xs">Annulla</button>
           </div>
         </div>
