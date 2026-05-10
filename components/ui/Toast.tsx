@@ -24,16 +24,23 @@ export default function Toast({ message, type = 'success', onDismiss }: Props) {
     <div
       className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl"
       style={{
-        backgroundColor: '#1A1009',
-        borderColor: isSuccess ? 'rgba(74,222,128,0.4)' : 'rgba(248,113,113,0.4)',
-        color: isSuccess ? '#4ADE80' : '#F87171',
+        backgroundColor: '#FDFCFA',
+        borderColor: isSuccess ? 'rgba(21,128,61,0.3)' : 'rgba(185,28,28,0.3)',
+        color: isSuccess ? '#15803D' : '#B91C1C',
+        boxShadow: '0 4px 20px rgba(61,43,31,0.12)',
         minWidth: 220,
         animation: 'slideUp 0.2s ease-out',
       }}
     >
       {isSuccess ? <CheckCircle2 size={15} className="flex-shrink-0" /> : <AlertCircle size={15} className="flex-shrink-0" />}
-      <span className="text-sm flex-1">{message}</span>
-      <button onClick={onDismiss} className="opacity-50 hover:opacity-100 transition-opacity flex-shrink-0">
+      <span className="text-sm flex-1" style={{ color: '#3D2B1F' }}>{message}</span>
+      <button
+        onClick={onDismiss}
+        className="flex-shrink-0 transition-opacity"
+        style={{ color: 'rgba(102,86,71,0.4)', opacity: 1 }}
+        onMouseEnter={e => (e.currentTarget.style.opacity = '0.8')}
+        onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+      >
         <X size={13} />
       </button>
       <style>{`

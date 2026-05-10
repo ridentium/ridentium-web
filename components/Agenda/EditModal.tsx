@@ -131,16 +131,18 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
     <div className="fixed inset-0 z-50 flex justify-end">
       <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div
-        className="relative w-full sm:w-[440px] h-full flex flex-col border-l border-obsidian-light/50 shadow-2xl overflow-hidden"
-        style={{ backgroundColor: '#1A1009', color: '#F2EDE4' }}
+        className="relative w-full sm:w-[440px] h-full flex flex-col border-l shadow-2xl overflow-hidden"
+        style={{ backgroundColor: '#FDFCFA', color: '#3D2B1F', borderColor: '#DDD5C8' }}
       >
         {/* Header */}
-        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4 border-b border-obsidian-light/30" style={{ backgroundColor: '#1A1009' }}>
+        <div className="flex-shrink-0 flex items-center justify-between px-5 py-4" style={{ borderBottom: '1px solid #DDD5C8', backgroundColor: '#FDFCFA' }}>
           <div>
-            <p className="text-[10px] uppercase tracking-widest text-stone/60">Modifica {cfg.label}</p>
-            <h3 className="text-sm font-medium text-cream mt-0.5 truncate max-w-xs">{e.titolo}</h3>
+            <p className="text-[10px] uppercase tracking-widest" style={{ color: 'rgba(102,86,71,0.55)', letterSpacing: '0.15em' }}>Modifica {cfg.label}</p>
+            <h3 className="text-sm font-medium mt-0.5 truncate max-w-xs" style={{ color: '#3D2B1F' }}>{e.titolo}</h3>
           </div>
-          <button onClick={onClose} className="p-2 rounded hover:bg-white/5 text-stone/50 hover:text-cream transition-colors">
+          <button onClick={onClose} className="p-2 rounded transition-colors" style={{ color: 'rgba(102,86,71,0.5)' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#3D2B1F')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'rgba(102,86,71,0.5)')}>
             <X size={16} />
           </button>
         </div>
@@ -149,11 +151,11 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
         <div className="flex-1 overflow-y-auto">
           <div className="px-5 py-4 space-y-4">
             <div>
-              <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Titolo *</label>
+              <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Titolo *</label>
               <input className="input w-full" value={titolo} onChange={ev => setTitolo(ev.target.value)} />
             </div>
             <div>
-              <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Descrizione</label>
+              <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Descrizione</label>
               <textarea className="input w-full resize-none" rows={2} value={descrizione} onChange={ev => setDescrizione(ev.target.value)} />
             </div>
 
@@ -162,7 +164,7 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Stato</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Stato</label>
                     <select className="input w-full" value={stato} onChange={ev => setStato(ev.target.value as typeof stato)}>
                       <option value="da_fare">Da fare</option>
                       <option value="in_corso">In corso</option>
@@ -170,7 +172,7 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Priorità</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Priorità</label>
                     <select className="input w-full" value={priorita} onChange={ev => setPriorita(ev.target.value as typeof priorita)}>
                       <option value="bassa">Bassa</option>
                       <option value="media">Media</option>
@@ -179,12 +181,12 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Scadenza</label>
+                  <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Scadenza</label>
                   <input type="date" className="input w-full" value={scadenza} onChange={ev => setScadenza(ev.target.value)} />
                 </div>
                 {isAdmin && (
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Assegnato a</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Assegnato a</label>
                     <select className="input w-full" value={assegnatoA} onChange={ev => setAssegnatoA(ev.target.value)}>
                       <option value="">— Nessuno —</option>
                       {profili.map(p => (
@@ -201,7 +203,7 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
             {e.tipo === 'ricorrente' && (
               <>
                 <div>
-                  <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Frequenza</label>
+                  <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Frequenza</label>
                   <select className="input w-full" value={frequenzaRic} onChange={ev => setFrequenzaRic(ev.target.value)}>
                     <option value="giornaliero">Ogni giorno</option>
                     <option value="settimanale">Ogni settimana</option>
@@ -209,7 +211,7 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Assegnato a</label>
+                  <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Assegnato a</label>
                   <select className="input w-full" value={assegnatoARic} onChange={ev => setAssegnatoARic(ev.target.value)}>
                     <option value="">Tutti (nessuno in specifico)</option>
                     {profili.map(p => (
@@ -219,7 +221,7 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
                 </div>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input type="checkbox" checked={attiva} onChange={ev => setAttiva(ev.target.checked)} className="w-4 h-4 accent-gold" />
-                  <span className="text-sm text-cream/80">Ricorrente attiva</span>
+                  <span className="text-sm" style={{ color: '#665647' }}>Ricorrente attiva</span>
                 </label>
               </>
             )}
@@ -229,13 +231,13 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
               <>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Categoria</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Categoria</label>
                     <select className="input w-full" value={categoria} onChange={ev => setCategoria(ev.target.value as CategoriaAdempimento)}>
                       {Object.entries(CATEGORIA_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Frequenza</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Frequenza</label>
                     <select className="input w-full" value={frequenzaAd} onChange={ev => setFrequenzaAd(ev.target.value)}>
                       {Object.entries(FREQ_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
@@ -243,11 +245,11 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Prossima scadenza</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Prossima scadenza</label>
                     <input type="date" className="input w-full" value={prossima} onChange={ev => setProssima(ev.target.value)} />
                   </div>
                   <div>
-                    <label className="block text-xs text-stone/70 uppercase tracking-wider mb-1.5">Preavviso (giorni)</label>
+                    <label className="block text-xs uppercase tracking-wider mb-1.5" style={{ color: 'rgba(102,86,71,0.6)' }}>Preavviso (giorni)</label>
                     <input type="number" min={1} max={365} className="input w-full" value={preavviso} onChange={ev => setPreavviso(Number(ev.target.value))} />
                   </div>
                 </div>
@@ -255,11 +257,11 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
                   <label className="block text-xs text-stone/70 uppercase tracking-wider mb-2">Responsabile</label>
                   <div className="flex gap-2 mb-2">
                     <button type="button" onClick={() => setRespMode('profilo')}
-                      className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'profilo' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-cream'}`}>
+                      className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'profilo' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-stone/40 text-stone hover:text-obsidian'}`}>
                       Persona interna
                     </button>
                     <button type="button" onClick={() => setRespMode('etichetta')}
-                      className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'etichetta' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-obsidian-light text-stone hover:text-cream'}`}>
+                      className={`text-xs px-3 py-1.5 rounded border transition-colors ${respMode === 'etichetta' ? 'bg-gold/10 border-gold/30 text-gold' : 'border-stone/40 text-stone hover:text-obsidian'}`}>
                       Etichetta libera
                     </button>
                   </div>
@@ -279,7 +281,7 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
             )}
 
             {errore && (
-              <div className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded px-3 py-2 flex items-center gap-2">
+              <div className="text-sm bg-red-50 border border-red-200 rounded px-3 py-2 flex items-center gap-2" style={{ color: '#B91C1C' }}>
                 <AlertTriangle size={13} /> {errore}
               </div>
             )}
@@ -287,17 +289,17 @@ export function EditModal({ event: e, profili, isAdmin, userId, onClose, onSaved
         </div>
 
         {/* Footer */}
-        <div className="flex-shrink-0 flex gap-3 justify-end px-5 py-4 flex-wrap border-t border-obsidian-light/30"
-          style={{ backgroundColor: '#1A1009', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
+        <div className="flex-shrink-0 flex gap-3 justify-end px-5 py-4 flex-wrap"
+          style={{ borderTop: '1px solid #DDD5C8', backgroundColor: '#FDFCFA', paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
           {canFatto && onQuickComplete && (
             <button onClick={handleFatto} disabled={completando}
-              className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 transition-colors disabled:opacity-50">
+              className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-green-700/25 bg-green-700/8 hover:bg-green-700/15 transition-colors disabled:opacity-50" style={{ color: '#15803D' }}>
               {completando ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} />}
               {completando ? 'Completamento…' : e.tipo === 'adempimento' ? 'Segna come completato' : 'Segna come fatto'}
             </button>
           )}
           {isTaskDone && (
-            <span className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-green-500/20 text-green-400/60">
+            <span className="flex items-center gap-1.5 text-xs px-4 py-2 rounded border border-green-700/20" style={{ color: 'rgba(21,128,61,0.55)' }}>
               <Check size={13} /> Già completato
             </span>
           )}
