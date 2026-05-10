@@ -47,9 +47,16 @@ export default function ImpostazioniAdmin({ kpi }: Props) {
   return (
     <div className="space-y-6">
       <div className="card">
-        <h3 className="text-xs uppercase tracking-widest text-stone font-medium mb-5">
-          KPI — Dati Clinici
-        </h3>
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 className="text-xs uppercase tracking-widest text-stone font-medium">
+              KPI — Dati Clinici
+            </h3>
+            <p className="text-[10px] text-stone/40 mt-1">
+              Questi valori non si aggiornano automaticamente — inseriscili ogni giorno per mantenere i KPI accurati in dashboard.
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {fields.map(f => (
             <div key={f.key}>

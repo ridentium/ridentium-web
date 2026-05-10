@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Link from 'next/link'
-import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck, CalendarClock, UserPlus } from 'lucide-react'
+import { Package, CheckSquare, Users, AlertTriangle, ShieldCheck, CalendarClock, UserPlus, PencilLine } from 'lucide-react'
 import LinaBriefingCard from '@/components/Dashboard/LinaBriefingCard'
 import TasksRicorrentiWidget from '@/components/Dashboard/TasksRicorrentiWidget'
 import ScadenzeUrgentiWidget from '@/components/Dashboard/ScadenzeUrgentiWidget'
@@ -88,6 +88,7 @@ export default async function AdminHome() {
     { data: profilo },
     { data: adempimentiAll },
     { data: crmNuovi },
+    { data: kpiDati },
   ] = await Promise.all([
     supabase.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria'),
     supabase.from('tasks').select('id, titolo, priorita, scadenza, assegnato_a, stato').neq('stato', 'completato').is('deleted_at', null),
@@ -97,6 +98,7 @@ export default async function AdminHome() {
     adminDb.from('profili').select('nome, cognome').eq('id', user!.id).single(),
     supabase.from('adempimenti').select('id, titolo, categoria, frequenza, prossima_scadenza, preavviso_giorni, evidenza_richiesta').eq('attivo', true),
     adminDb.from('crm_contatti').select('id, nome, cognome, created_at').eq('stato', 'nuovo').order('created_at', { ascending: false }).limit(5),
+    adminDb.from('kpi').select('*').order('updated_at', { ascending: false }).limit(1).maybeSingle(),
   ])
 
   const alertCount    = (magazzinoAll ?? []).filter((i: any) => i.quantita < i.soglia_minima).length
@@ -299,6 +301,44 @@ export default async function AdminHome() {
             note={crmLeadsCount > 0 ? 'Da contattare' : 'Nessun lead nuovo'}
           />
         </div>
+
+        {/* ── KPI Clinici (inseriti manualmente) ── */}
+        {kpiDati && (
+          <div id="widget-kpi-clinici" className="lg:col-span-2 card">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <PencilLine size={14} className="text-stone/50" />
+                <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Dati Clinici</h3>
+                <span className="text-[9px] text-stone/40 border border-stone/20 rounded px-1.5 py-0.5 uppercase tracking-wider">
+                  Inseriti manualmente
+                </span>
+              </div>
+              <Link href="/admin/impostazioni" className="text-xs text-stone/50 hover:text-gold transition-colors">
+                Aggiorna →
+              </Link>
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3 text-center">
+              {[
+                { label: 'Paz. oggi', value: kpiDati.pazienti_oggi },
+                { label: 'App. oggi', value: kpiDati.appuntamenti_oggi },
+                { label: 'Paz. settimana', value: kpiDati.pazienti_settimana },
+                { label: 'Paz. mese', value: kpiDati.pazienti_mese },
+                { label: 'Fatturato mese', value: `€${(kpiDati.fatturato_mese ?? 0).toLocaleString('it-IT')}` },
+                { label: 'Tasso presenze', value: `${kpiDati.tasso_presenze ?? 0}%` },
+              ].map(({ label, value }) => (
+                <div key={label} className="py-2">
+                  <p className="text-xl font-light font-serif text-cream/80">{value}</p>
+                  <p className="text-[9px] text-stone/50 uppercase tracking-wider mt-0.5">{label}</p>
+                </div>
+              ))}
+            </div>
+            {kpiDati.updated_at && (
+              <p className="text-[9px] text-stone/30 mt-3 text-right">
+                Aggiornato: {new Date(kpiDati.updated_at).toLocaleString('it-IT', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ── Lead CRM recenti ── */}
         {crmLeadsCount > 0 && (

@@ -5,13 +5,14 @@ import { Settings2, X, Eye, EyeOff } from 'lucide-react'
 import { useUserPref } from '@/lib/useUserPref'
 
 const WIDGETS = [
-  { id: 'lina',       label: 'Briefing Lina AI' },
-  { id: 'kpi',        label: 'KPI riepilogo' },
-  { id: 'oggi',       label: 'Agenda oggi' },
-  { id: 'prossimi',   label: 'Prossimi 3 giorni' },
-  { id: 'scadenze',   label: 'Adempimenti urgenti' },
-  { id: 'tasks',      label: 'Task & Ricorrenti' },
-  { id: 'crm',        label: 'Lead CRM recenti' },
+  { id: 'lina',         label: 'Briefing Lina AI' },
+  { id: 'kpi',          label: 'KPI riepilogo' },
+  { id: 'kpi-clinici',  label: 'Dati Clinici (manuali)' },
+  { id: 'oggi',         label: 'Agenda oggi' },
+  { id: 'prossimi',     label: 'Prossimi 3 giorni' },
+  { id: 'scadenze',     label: 'Adempimenti urgenti' },
+  { id: 'tasks',        label: 'Task & Ricorrenti' },
+  { id: 'crm',          label: 'Lead CRM recenti' },
 ] as const
 
 type WidgetId = typeof WIDGETS[number]['id']
