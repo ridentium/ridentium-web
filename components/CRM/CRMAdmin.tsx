@@ -46,7 +46,7 @@ const STATI: { id: CRMStato; label: string; color: string; bg: string; icon: Rea
   { id: 'nuovo',       label: 'Nuovo',        color: 'text-gold',       bg: 'bg-gold/10 border-gold/30',         icon: Clock },
   { id: 'contattato',  label: 'Contattato',   color: 'text-blue-400',   bg: 'bg-blue-500/10 border-blue-500/30', icon: Phone },
   { id: 'appuntamento',label: 'Appuntamento', color: 'text-violet-400', bg: 'bg-violet-500/10 border-violet-500/30', icon: CheckCircle2 },
-  { id: 'cliente',     label: 'Cliente',      color: 'text-green-400',  bg: 'bg-green-500/10 border-green-500/30',   icon: Star },
+  { id: 'cliente',     label: 'Cliente',      color: 'text-green-700',  bg: 'bg-green-500/10 border-green-500/30',   icon: Star },
   { id: 'perso',       label: 'Perso',        color: 'text-stone',      bg: 'bg-stone/10 border-stone/30',        icon: UserX },
 ]
 
@@ -359,8 +359,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             value={cerca}
             onChange={e => setCerca(e.target.value)}
             placeholder="Cerca per nome, email, telefono…"
-            className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                       pl-8 pr-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder:text-stone/40"
+            className="input pl-8 pr-3 py-2 placeholder:text-stone/40"
           />
         </div>
         {/* Azioni */}
@@ -368,7 +367,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
           <button
             onClick={exportCSV}
             className="flex items-center gap-1.5 text-xs px-3 py-2 rounded border
-                       border-obsidian-light/60 text-stone hover:text-cream transition-colors"
+                       border-stone/30 text-stone hover:text-obsidian transition-colors"
           >
             <Download size={13} /> Esporta CSV
           </button>
@@ -391,12 +390,12 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             className={`text-xs px-3 py-1.5 rounded border transition-colors ${
               filtro === t.id
                 ? 'bg-gold/20 border-gold/40 text-gold'
-                : 'border-obsidian-light/40 text-stone hover:text-cream'
+                : 'border-stone/25 text-stone hover:text-obsidian'
             }`}
           >
             {t.label}
             <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
-              filtro === t.id ? 'bg-gold/30' : 'bg-obsidian-light/40'
+              filtro === t.id ? 'bg-gold/30' : 'bg-stone/10'
             }`}>
               {counts[t.id] ?? 0}
             </span>
@@ -405,7 +404,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       </div>
 
       {/* ── Filtro consenso marketing ── */}
-      <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-obsidian-light/20">
+      <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-stone/15">
         <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Marketing</span>
         {([
           { id: 'tutti' as FiltroMarketing, label: 'Tutti' },
@@ -418,7 +417,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             className={`text-xs px-3 py-1 rounded border transition-colors flex items-center gap-1.5 ${
               filtroMarketing === f.id
                 ? 'bg-blue-500/20 border-blue-500/40 text-blue-400'
-                : 'border-obsidian-light/40 text-stone hover:text-cream'
+                : 'border-stone/25 text-stone hover:text-obsidian'
             }`}
           >
             {f.id === 'si'  && <Megaphone size={9} />}
@@ -447,7 +446,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               <div key={c.id} className="card">
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
-                  <div className="w-9 h-9 rounded-full bg-obsidian-light border border-obsidian-light/60
+                  <div className="w-9 h-9 rounded-full bg-stone/10 border border-stone/25
                                   flex items-center justify-center text-stone text-sm font-medium flex-shrink-0">
                     {iniziali(c)}
                   </div>
@@ -455,7 +454,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   {/* Info principali */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-cream">{nomeCompleto(c)}</span>
+                      <span className="text-sm font-medium text-obsidian">{nomeCompleto(c)}</span>
                       <span className={`text-[10px] px-2 py-0.5 rounded border flex items-center gap-1 ${si.bg} ${si.color}`}>
                         <StatoIcon size={9} />
                         {si.label}
@@ -465,7 +464,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                         {formatGiorniAggiornato(c.updated_at)}
                       </span>
                       {c.sorgente && (
-                        <span className="text-[10px] px-2 py-0.5 rounded border border-obsidian-light/30 text-stone flex items-center gap-1">
+                        <span className="text-[10px] px-2 py-0.5 rounded border border-stone/25 text-stone flex items-center gap-1">
                           <Globe size={9} /> {labelSorgente(c.sorgente)}
                         </span>
                       )}
@@ -481,8 +480,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       {/* Privacy */}
                       <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
                         c.consenso_privacy
-                          ? 'bg-green-900/20 text-green-500/80'
-                          : 'bg-red-900/10 text-red-400/70'
+                          ? 'bg-green-500/10 text-green-700'
+                          : 'bg-red-500/10 text-red-600/70'
                       }`}>
                         <ShieldCheck size={8} />
                         Privacy {c.consenso_privacy ? '✓' : '✗'}
@@ -490,8 +489,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       {/* Marketing */}
                       <span className={`flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded ${
                         c.consenso_marketing
-                          ? 'bg-blue-900/20 text-blue-400/80'
-                          : 'bg-obsidian-light/20 text-stone/40'
+                          ? 'bg-blue-500/10 text-blue-600/80'
+                          : 'bg-stone/10 text-stone/40'
                       }`}>
                         <Megaphone size={8} />
                         Marketing {c.consenso_marketing ? '✓' : '✗'}
@@ -506,7 +505,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   {/* Toggle dettaglio */}
                   <button
                     onClick={() => setDettaglioId(isExpanded ? null : c.id)}
-                    className="text-stone hover:text-cream transition-colors p-1 flex-shrink-0"
+                    className="text-stone hover:text-obsidian transition-colors p-1 flex-shrink-0"
                   >
                     <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
                   </button>
@@ -514,7 +513,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
 
                 {/* Azioni espanse */}
                 {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-obsidian-light/30">
+                  <div className="mt-3 pt-3 border-t border-stone/20">
                     {/* Cambio stato */}
                     <div className="flex gap-1.5 flex-wrap mb-3">
                       {STATI.map(s => (
@@ -525,7 +524,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                           className={`text-[10px] px-2.5 py-1 rounded border transition-colors flex items-center gap-1 ${
                             c.stato === s.id
                               ? `${s.bg} ${s.color} font-semibold`
-                              : 'border-obsidian-light/40 text-stone hover:text-cream disabled:opacity-40'
+                              : 'border-stone/25 text-stone hover:text-obsidian disabled:opacity-40'
                           }`}
                         >
                           <s.icon size={9} />
@@ -535,11 +534,11 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                     </div>
 
                     {/* Badge consensi GDPR */}
-                    <div className="flex gap-2 flex-wrap mb-3 pb-3 border-b border-obsidian-light/20">
+                    <div className="flex gap-2 flex-wrap mb-3 pb-3 border-b border-stone/15">
                       <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
                         c.consenso_privacy
-                          ? 'bg-green-900/20 border-green-600/30 text-green-400'
-                          : 'bg-red-900/20 border-red-600/30 text-red-400'
+                          ? 'bg-green-500/10 border-green-500/30 text-green-700'
+                          : 'bg-red-500/10 border-red-500/30 text-red-600'
                       }`}>
                         {c.consenso_privacy
                           ? <ShieldCheck size={9} />
@@ -549,8 +548,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       </span>
                       <span className={`flex items-center gap-1 text-[10px] px-2 py-1 rounded border ${
                         c.consenso_marketing
-                          ? 'bg-blue-900/20 border-blue-500/30 text-blue-400'
-                          : 'bg-obsidian-light/30 border-obsidian-light/40 text-stone/50'
+                          ? 'bg-blue-500/10 border-blue-500/30 text-blue-600'
+                          : 'bg-stone/10 border-stone/25 text-stone/50'
                       }`}>
                         <Megaphone size={9} />
                         Marketing {c.consenso_marketing ? 'sì' : 'no'}
@@ -582,8 +581,8 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                             window.open(`https://wa.me/${phone}`, '_blank')
                           }}
                           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
-                                     bg-green-900/30 border border-green-600/30 text-green-400
-                                     hover:bg-green-900/50 transition-colors"
+                                     bg-green-500/10 border border-green-500/30 text-green-700
+                                     hover:bg-green-500/20 transition-colors"
                         >
                           <MessageCircle size={11} /> WhatsApp
                         </button>
@@ -601,16 +600,16 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                       <button
                         onClick={() => { setEditModal(c); setEditNote(c.note ?? '') }}
                         className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
-                                   bg-obsidian-light/40 border border-obsidian-light/60 text-stone
-                                   hover:text-cream transition-colors"
+                                   bg-stone/5 border border-stone/30 text-stone
+                                   hover:text-obsidian transition-colors"
                       >
                         Note {c.note ? '✎' : '+'}
                       </button>
                       <button
                         onClick={() => apriTaskModal(c)}
                         className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded
-                                   bg-obsidian-light/40 border border-obsidian-light/60 text-stone
-                                   hover:text-cream transition-colors"
+                                   bg-stone/5 border border-stone/30 text-stone
+                                   hover:text-obsidian transition-colors"
                       >
                         <CheckCircle2 size={11} /> Task
                       </button>
@@ -635,7 +634,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
 
       {/* ── Paginazione ── */}
       {totalePagine > 1 && (
-        <div className="flex items-center justify-between mt-4 pt-3 border-t border-obsidian-light/20">
+        <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone/15">
           <span className="text-xs text-stone/50">
             {pagina * PER_PAGINA + 1}–{Math.min((pagina + 1) * PER_PAGINA, filtered.length)} di {filtered.length}
           </span>
@@ -643,7 +642,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             <button
               onClick={() => setPagina(p => Math.max(0, p - 1))}
               disabled={pagina === 0}
-              className="p-1.5 rounded border border-obsidian-light/40 text-stone hover:text-cream
+              className="p-1.5 rounded border border-stone/30 text-stone hover:text-obsidian
                          disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft size={13} />
@@ -654,7 +653,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             <button
               onClick={() => setPagina(p => Math.min(totalePagine - 1, p + 1))}
               disabled={pagina >= totalePagine - 1}
-              className="p-1.5 rounded border border-obsidian-light/40 text-stone hover:text-cream
+              className="p-1.5 rounded border border-stone/30 text-stone hover:text-obsidian
                          disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronRight size={13} />
@@ -666,10 +665,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       {/* ── Modal aggiunta manuale ── */}
       {nuovoModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl">
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-md mx-4 shadow-2xl" style={{ backgroundColor: '#FDFCFA' }}>
             <div className="flex items-center justify-between mb-5">
-              <h2 className="text-cream font-medium">Nuovo contatto</h2>
-              <button onClick={() => setNuovoModal(false)} className="text-stone hover:text-cream transition-colors">
+              <h2 className="text-obsidian font-medium">Nuovo contatto</h2>
+              <button onClick={() => setNuovoModal(false)} className="text-stone hover:text-obsidian transition-colors">
                 <X size={16} />
               </button>
             </div>
@@ -681,8 +680,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   <input
                     value={nuovoForm.nome}
                     onChange={e => setNuovoForm(p => ({ ...p, nome: e.target.value }))}
-                    className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                               px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                    className="input"
                     placeholder="Mario"
                   />
                 </div>
@@ -691,8 +689,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   <input
                     value={nuovoForm.cognome}
                     onChange={e => setNuovoForm(p => ({ ...p, cognome: e.target.value }))}
-                    className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                               px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                    className="input"
                     placeholder="Rossi"
                   />
                 </div>
@@ -703,8 +700,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   type="email"
                   value={nuovoForm.email}
                   onChange={e => setNuovoForm(p => ({ ...p, email: e.target.value }))}
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                  className="input"
                   placeholder="mario@esempio.com"
                 />
               </div>
@@ -714,8 +710,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   type="tel"
                   value={nuovoForm.telefono}
                   onChange={e => setNuovoForm(p => ({ ...p, telefono: e.target.value }))}
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                  className="input"
                   placeholder="+39 340 000 0000"
                 />
               </div>
@@ -724,8 +719,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                 <select
                   value={nuovoForm.sorgente}
                   onChange={e => setNuovoForm(p => ({ ...p, sorgente: e.target.value }))}
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                  className="input"
                 >
                   {SORGENTI.map(s => (
                     <option key={s.value} value={s.value}>{s.label}</option>
@@ -738,8 +732,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   value={nuovoForm.note}
                   onChange={e => setNuovoForm(p => ({ ...p, note: e.target.value }))}
                   rows={2}
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
+                  className="input resize-none"
                   placeholder="Informazioni aggiuntive…"
                 />
               </div>
@@ -755,7 +748,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               <button
                 onClick={() => setNuovoModal(false)}
                 disabled={nuovoSaving}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
+                className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -774,19 +767,19 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       {/* ── Modal email ── */}
       {emailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl">
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-lg mx-4 shadow-2xl" style={{ backgroundColor: '#FDFCFA' }}>
 
             <div className="flex items-center justify-between mb-1">
-              <h2 className="text-cream font-medium flex items-center gap-2">
+              <h2 className="text-obsidian font-medium flex items-center gap-2">
                 <Send size={14} className="text-gold" />
                 Invia email
               </h2>
-              <button onClick={() => setEmailModal(null)} className="text-stone hover:text-cream transition-colors">
+              <button onClick={() => setEmailModal(null)} className="text-stone hover:text-obsidian transition-colors">
                 <X size={16} />
               </button>
             </div>
             <p className="text-stone text-xs mb-5">
-              A: <span className="text-cream">{emailModal.email}</span>
+              A: <span className="text-obsidian">{emailModal.email}</span>
               {emailModal.nome && <> · {nomeCompleto(emailModal)}</>}
             </p>
 
@@ -800,10 +793,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   className={`w-full text-left px-3 py-2.5 rounded border transition-colors ${
                     emailTemplate === t.id
                       ? 'border-gold/50 bg-gold/10'
-                      : 'border-obsidian-light/40 hover:border-obsidian-light'
+                      : 'border-stone/25 hover:border-stone/50'
                   }`}
                 >
-                  <p className={`text-xs font-medium ${emailTemplate === t.id ? 'text-gold' : 'text-cream'}`}>{t.label}</p>
+                  <p className={`text-xs font-medium ${emailTemplate === t.id ? 'text-gold' : 'text-obsidian/80'}`}>{t.label}</p>
                   <p className="text-[11px] text-stone/60 mt-0.5">{t.desc}</p>
                 </button>
               ))}
@@ -817,8 +810,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   value={emailCustomSubject}
                   onChange={e => setEmailCustomSubject(e.target.value)}
                   placeholder="Lascia vuoto per usare l'oggetto predefinito"
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50 placeholder:text-stone/30"
+                  className="input placeholder:text-stone/30"
                 />
               </div>
             )}
@@ -832,8 +824,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   onChange={e => setEmailCustomBody(e.target.value)}
                   rows={5}
                   placeholder="Scrivi il messaggio da inviare al paziente…"
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 placeholder:text-stone/30"
+                  className="input resize-none placeholder:text-stone/30"
                 />
               </div>
             )}
@@ -844,7 +835,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               </p>
             )}
             {emailOk && (
-              <p className="text-green-400 text-xs mb-3 flex items-center gap-1.5">
+              <p className="text-xs mb-3 flex items-center gap-1.5" style={{ color: '#15803D' }}>
                 <CheckCircle2 size={12} /> Email inviata con successo
               </p>
             )}
@@ -853,7 +844,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               <button
                 onClick={() => setEmailModal(null)}
                 disabled={emailSending}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
+                className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -875,23 +866,22 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       {/* ── Modal note ── */}
       {editModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
-            <h2 className="text-cream font-medium mb-1">Note — {nomeCompleto(editModal)}</h2>
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl" style={{ backgroundColor: '#FDFCFA' }}>
+            <h2 className="text-obsidian font-medium mb-1">Note — {nomeCompleto(editModal)}</h2>
             <p className="text-stone text-xs mb-4">Aggiungi o modifica le note per questo contatto</p>
             <textarea
               value={editNote}
               onChange={e => setEditNote(e.target.value)}
               rows={4}
               autoFocus
-              className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                         px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50 mb-4"
+              className="input resize-none mb-4"
               placeholder="Inserisci note…"
             />
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setEditModal(null)}
                 disabled={editSaving}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
+                className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
@@ -910,13 +900,13 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       {/* ── Modal task di follow-up ── */}
       {taskModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-obsidian border border-obsidian-light rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl">
+          <div className="border border-stone/25 rounded-xl p-6 w-full max-w-sm mx-4 shadow-2xl" style={{ backgroundColor: '#FDFCFA' }}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-cream font-medium">Task di follow-up</h2>
+                <h2 className="text-obsidian font-medium">Task di follow-up</h2>
                 <p className="text-stone text-xs mt-0.5">{nomeCompleto(taskModal)}</p>
               </div>
-              <button onClick={() => setTaskModal(null)} className="text-stone hover:text-cream transition-colors">
+              <button onClick={() => setTaskModal(null)} className="text-stone hover:text-obsidian transition-colors">
                 <X size={16} />
               </button>
             </div>
@@ -928,8 +918,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   type="date"
                   value={taskScadenza}
                   onChange={e => setTaskScadenza(e.target.value)}
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm focus:outline-none focus:border-gold/50"
+                  className="input"
                 />
               </div>
               <div>
@@ -938,8 +927,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                   value={taskNota}
                   onChange={e => setTaskNota(e.target.value)}
                   rows={3}
-                  className="w-full bg-obsidian-light border border-obsidian-light/60 rounded-lg
-                             px-3 py-2 text-cream text-sm resize-none focus:outline-none focus:border-gold/50"
+                  className="input resize-none"
                   placeholder={`Contattare ${nomeCompleto(taskModal)} per…`}
                 />
               </div>
@@ -951,7 +939,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               </div>
             )}
             {taskOk && (
-              <div className="mt-3 p-2.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-400">
+              <div className="mt-3 p-2.5 bg-green-500/10 border border-green-500/30 rounded text-xs text-green-700">
                 ✓ Task creato — visibile nella sezione Task
               </div>
             )}
@@ -960,7 +948,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
               <button
                 onClick={() => setTaskModal(null)}
                 disabled={taskSaving}
-                className="text-xs px-4 py-2 rounded border border-obsidian-light text-stone hover:text-cream transition-colors disabled:opacity-50"
+                className="text-xs px-4 py-2 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors disabled:opacity-50"
               >
                 Annulla
               </button>
