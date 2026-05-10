@@ -53,7 +53,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
 
   return (
     <NotificheProvider>
-      <div className="flex overflow-hidden h-screen-safe" style={{ background: '#2C2018' }}>
+      <div className="flex overflow-hidden h-screen-safe" style={{ background: '#F7F4EF' }}>
         {sidebarOpen && (
           <div
             className="fixed inset-0 bg-black/60 z-40 md:hidden"
@@ -80,8 +80,8 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
           <div
             className="md:hidden flex items-center gap-2 flex-shrink-0 pt-safe"
             style={{
-              background: '#221A12',
-              borderBottom: '1px solid #4A3B2C',
+              background: '#EDE9E2',
+              borderBottom: '1px solid #DDD5C8',
               height: 'calc(3.5rem + env(safe-area-inset-top))',
               paddingLeft: 'max(1rem, env(safe-area-inset-left))',
               paddingRight: 'max(1rem, env(safe-area-inset-right))',
@@ -90,14 +90,14 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
             <button
               onClick={() => setSidebarOpen(true)}
               className="p-2 -ml-1 transition-colors rounded"
-              style={{ color: '#A0907E', minWidth: 44, minHeight: 44 }}
+              style={{ color: '#9E8E7E', minWidth: 44, minHeight: 44 }}
               aria-label="Apri menu"
             >
               <Menu size={22} />
             </button>
             <span
               className="flex-1 text-sm tracking-[0.3em] font-light"
-              style={{ fontFamily: '"Cormorant Garamond",Georgia,serif', color: '#F2EDE4' }}
+              style={{ fontFamily: '"Cormorant Garamond",Georgia,serif', color: '#3D2B1F' }}
             >
               RIDENTIUM
             </span>
@@ -105,7 +105,7 @@ export default function AdminShell({ children, profilo, alertCount, tasksCount, 
             <button
               onClick={() => setSearchOpen(true)}
               className="p-2 transition-colors rounded"
-              style={{ color: '#A0907E', minWidth: 44, minHeight: 44 }}
+              style={{ color: '#9E8E7E', minWidth: 44, minHeight: 44 }}
               aria-label="Cerca"
             >
               <Search size={18} />

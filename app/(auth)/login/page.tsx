@@ -37,10 +37,10 @@ export default function LoginPage() {
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center px-4"
-      style={{ background: 'linear-gradient(160deg, #1A1714 60%, #242018 100%)' }}
+      style={{ background: 'linear-gradient(160deg, #F7F4EF 60%, #EDE9E2 100%)' }}
     >
       <div className="mb-10 text-center">
-        <h1 className="font-serif text-4xl text-cream tracking-[0.25em] font-light mb-1">
+        <h1 className="font-serif text-4xl text-obsidian tracking-[0.25em] font-light mb-1">
           RIDENTIUM
         </h1>
         <p className="text-stone text-xs tracking-[0.35em] uppercase">
@@ -94,7 +94,7 @@ export default function LoginPage() {
               >
                 {rememberMe && (
                   <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-                    <path d="M1 4L3.5 6.5L9 1" stroke="#1A1714" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M1 4L3.5 6.5L9 1" stroke="#F7F4EF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
                 )}
               </button>

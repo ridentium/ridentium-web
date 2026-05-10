@@ -59,7 +59,7 @@ function NavGroup({ label, items, pathname, onClose, badges }: {
     <div>
       {label && (
         <p className="px-3 mb-1 text-[9px] uppercase tracking-[0.2em] font-medium select-none"
-          style={{ color:'rgba(160,144,126,0.5)' }}>{label}</p>
+          style={{ color:'#9E8E7E' }}>{label}</p>
       )}
       {items.map(({ href, label:itemLabel, icon:Icon, highlight }) => {
         const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
@@ -71,7 +71,7 @@ function NavGroup({ label, items, pathname, onClose, badges }: {
             <span>{itemLabel}</span>
             {badge && badge > 0 && !active && (
               <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-full font-semibold"
-                style={{ background:'rgba(224,85,69,0.85)', color:'#FFF', minWidth:18, textAlign:'center' }}>
+                style={{ background:'rgba(185,28,28,0.85)', color:'#FFF', minWidth:18, textAlign:'center' }}>
                 {badge > 99 ? '99+' : badge}
               </span>
             )}
@@ -92,8 +92,6 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
   const isAdmin  = profilo.ruolo === 'admin'
 
   async function handleLogout() {
-    // Remove push subscription for this device BEFORE signing out
-    // to prevent notifications going to the next user on a shared device.
     try { await unsubscribeUser() } catch {}
     await supabase.auth.signOut()
     router.push('/login')
@@ -104,39 +102,39 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
     <aside
       className="w-64 md:w-56 h-full flex flex-col"
       style={{
-        background: '#1A1009',
-        borderRight: '1px solid rgba(74,59,44,0.6)',
+        background: '#EDE9E2',
+        borderRight: '1px solid #DDD5C8',
         paddingTop: 'env(safe-area-inset-top)',
         paddingLeft: 'env(safe-area-inset-left)',
       }}
     >
       {/* Header */}
       <div className="px-6 py-6 flex items-start justify-between"
-        style={{ borderBottom:'1px solid rgba(74,59,44,0.5)' }}>
+        style={{ borderBottom:'1px solid #DDD5C8' }}>
         <div>
-          <h1 className="font-serif text-xl tracking-[0.2em] font-light" style={{ color:'#F2EDE4' }}>RIDENTIUM</h1>
+          <h1 className="font-serif text-xl tracking-[0.2em] font-light" style={{ color:'#3D2B1F' }}>RIDENTIUM</h1>
           <p className="text-[10px] tracking-[0.3em] uppercase mt-0.5"
-            style={{ color:'rgba(210,198,182,0.5)' }}>{isAdmin ? 'Admin' : 'Staff'}</p>
+            style={{ color:'rgba(102,86,71,0.5)' }}>{isAdmin ? 'Admin' : 'Staff'}</p>
         </div>
         <div className="flex items-center gap-1 -mr-1">
           {/* Ricerca globale (desktop) */}
           <button
             onClick={onSearchOpen}
-            className="hidden md:flex items-center justify-center w-7 h-7 rounded transition-colors hover:bg-obsidian-light/50"
-            style={{ color: 'rgba(160,144,126,0.6)' }}
+            className="hidden md:flex items-center justify-center w-7 h-7 rounded transition-colors hover:bg-ivory/60"
+            style={{ color: 'rgba(102,86,71,0.5)' }}
             title="Ricerca globale (⌘K)"
             aria-label="Cerca"
           >
             <Search size={13} />
           </button>
-          {/* Desktop-only: su mobile la campanella è nel header AdminShell per evitare doppione */}
+          {/* Desktop-only: su mobile la campanella è nel header AdminShell */}
           <div className="hidden md:block">
             <NotificheBell isAdmin={isAdmin} />
           </div>
           <button
             onClick={onClose}
             className="md:hidden transition-colors flex items-center justify-center"
-            style={{ color:'rgba(160,144,126,0.5)', minWidth: 44, minHeight: 44 }}
+            style={{ color:'rgba(102,86,71,0.5)', minWidth: 44, minHeight: 44 }}
             aria-label="Chiudi menu"
           >
             <X size={18} />
@@ -148,7 +146,7 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
       {alertCount > 0 && (
         <Link href={(isAdmin ? '/admin/magazzino' : '/staff/magazzino') + '?filter=alert'} onClick={onClose}
           className="mx-3 mt-3 flex items-center gap-2 px-3 py-2 rounded text-xs transition-colors"
-          style={{ background:'rgba(224,85,69,0.15)', border:'1px solid rgba(224,85,69,0.35)', color:'#F87171' }}>
+          style={{ background:'rgba(185,28,28,0.08)', border:'1px solid rgba(185,28,28,0.2)', color:'#B91C1C' }}>
           <AlertTriangle size={12} />
           <span>{alertCount} prodott{alertCount===1?'o':'i'} sotto soglia</span>
           <ChevronRight size={10} className="ml-auto" />
@@ -164,7 +162,7 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
           <NavGroup label="Team" items={adminTeam} pathname={pathname} onClose={onClose}
             badges={{ '/admin/tasks': tasksCount }} />
           <NavGroup label="Sistema" items={adminSistema} pathname={pathname} onClose={onClose} />
-          <div style={{ borderTop:'1px solid rgba(74,59,44,0.4)' }} className="pt-3">
+          <div style={{ borderTop:'1px solid #DDD5C8' }} className="pt-3">
             <NavGroup items={adminAI} pathname={pathname} onClose={onClose} />
           </div>
         </nav>
@@ -179,7 +177,7 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
       <div
         className="px-4 py-4 flex-shrink-0"
         style={{
-          borderTop: '1px solid rgba(74,59,44,0.4)',
+          borderTop: '1px solid #DDD5C8',
           paddingBottom: 'max(1rem, env(safe-area-inset-bottom))',
         }}
       >
@@ -189,21 +187,21 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
           className="flex items-center gap-3 mb-3 group hover:opacity-80 transition-opacity"
         >
           <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium flex-shrink-0"
-            style={{ background:'rgba(201,168,76,0.2)', border:'1px solid rgba(201,168,76,0.4)', color:'#C9A84C' }}>
+            style={{ background:'rgba(102,86,71,0.12)', border:'1px solid rgba(102,86,71,0.3)', color:'#665647' }}>
             {profilo.nome[0]}{profilo.cognome[0]}
           </div>
           <div className="min-w-0">
-            <p className="text-sm font-medium truncate group-hover:text-gold transition-colors" style={{ color:'#F2EDE4' }}>
+            <p className="text-sm font-medium truncate transition-colors" style={{ color:'#3D2B1F' }}>
               {profilo.nome} {profilo.cognome}
             </p>
-            <p className="text-xs" style={{ color:'rgba(210,198,182,0.5)' }}>{roleLabel(profilo.ruolo)}</p>
+            <p className="text-xs" style={{ color:'rgba(102,86,71,0.5)' }}>{roleLabel(profilo.ruolo)}</p>
           </div>
         </Link>
         <button onClick={handleLogout}
           className="w-full flex items-center gap-2 text-xs px-2 py-1.5 rounded transition-colors"
-          style={{ color:'rgba(160,144,126,0.6)' }}
-          onMouseEnter={e=>(e.currentTarget.style.color='#ef4444')}
-          onMouseLeave={e=>(e.currentTarget.style.color='rgba(160,144,126,0.6)')}>
+          style={{ color:'rgba(102,86,71,0.5)' }}
+          onMouseEnter={e=>(e.currentTarget.style.color='#B91C1C')}
+          onMouseLeave={e=>(e.currentTarget.style.color='rgba(102,86,71,0.5)')}>
           <LogOut size={13} />Esci
         </button>
       </div>

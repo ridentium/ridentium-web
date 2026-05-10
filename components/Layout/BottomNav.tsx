@@ -31,8 +31,8 @@ export default function BottomNav({ isAdmin, onSearchOpen, alertCount = 0, tasks
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center"
       style={{
-        background: '#1A1208',
-        borderTop: '1px solid rgba(74,59,44,0.6)',
+        background: '#EDE9E2',
+        borderTop: '1px solid #DDD5C8',
         paddingBottom: 'env(safe-area-inset-bottom)',
       }}
     >
@@ -43,7 +43,7 @@ export default function BottomNav({ isAdmin, onSearchOpen, alertCount = 0, tasks
             key={href}
             href={href}
             className="flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-colors relative"
-            style={{ color: active ? '#C9A96E' : 'rgba(160,144,126,0.6)', minHeight: 56 }}
+            style={{ color: active ? '#665647' : 'rgba(102,86,71,0.45)', minHeight: 56 }}
           >
             <div className="relative">
               <Icon size={20} strokeWidth={active ? 2 : 1.5} />
@@ -51,8 +51,8 @@ export default function BottomNav({ isAdmin, onSearchOpen, alertCount = 0, tasks
                 <span
                   className="absolute -top-1 -right-1.5 flex items-center justify-center rounded-full text-[9px] font-bold leading-none"
                   style={{
-                    background: label === 'Magazzino' ? '#F87171' : '#C9A96E',
-                    color: '#1A1208',
+                    background: label === 'Magazzino' ? '#B91C1C' : '#665647',
+                    color: '#F7F4EF',
                     minWidth: 14,
                     height: 14,
                     padding: '0 3px',
@@ -72,7 +72,7 @@ export default function BottomNav({ isAdmin, onSearchOpen, alertCount = 0, tasks
       <button
         onClick={onSearchOpen}
         className="flex flex-col items-center justify-center gap-1 flex-1 py-2.5 transition-colors"
-        style={{ color: 'rgba(160,144,126,0.6)', minHeight: 56 }}
+        style={{ color: 'rgba(102,86,71,0.45)', minHeight: 56 }}
         aria-label="Cerca"
       >
         <Search size={20} strokeWidth={1.5} />
