@@ -1,8 +1,8 @@
-const BG = '#221A12'
-const BORDER = 'rgba(74,59,44,0.5)'
-const S1 = 'rgba(74,59,44,0.35)'
-const S2 = 'rgba(74,59,44,0.2)'
-const S3 = 'rgba(74,59,44,0.12)'
+const BG = '#FDFCFA'
+const BORDER = '#DDD5C8'
+const S1 = 'rgba(61,43,31,0.09)'
+const S2 = 'rgba(61,43,31,0.05)'
+const S3 = 'rgba(61,43,31,0.03)'
 
 function Block({ className }: { className?: string }) {
   return <div className={`rounded animate-pulse ${className}`} style={{ background: S1 }} />

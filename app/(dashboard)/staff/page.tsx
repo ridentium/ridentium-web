@@ -90,7 +90,7 @@ export default async function StaffHome() {
                 <div key={task.id} className="flex items-start justify-between py-2
                                                border-b border-obsidian-light/40 last:border-0">
                   <div>
-                    <p className="text-sm text-cream">{task.titolo}</p>
+                    <p className="text-sm text-obsidian">{task.titolo}</p>
                     <span className={`text-xs ${task.priorita === 'alta' ? 'text-red-400' : task.priorita === 'media' ? 'text-gold/70' : 'text-stone'}`}>
                       {task.priorita}
                     </span>
@@ -127,7 +127,7 @@ export default async function StaffHome() {
               {alertItems.slice(0, 4).map((item: any) => (
                 <div key={item.id} className="flex items-center justify-between py-1.5
                                                border-b border-obsidian-light/40 last:border-0">
-                  <span className="text-sm text-cream/80">{item.prodotto}</span>
+                  <span className="text-sm text-obsidian/80">{item.prodotto}</span>
                   <span className="badge-alert text-xs">
                     {item.quantita}/{item.soglia_minima}
                   </span>
@@ -149,13 +149,13 @@ export default async function StaffHome() {
               </Link>
             </div>
             {ricorrentiPendenti.length === 0 ? (
-              <p className="text-green-400 text-sm text-center py-3">✓ Tutte completate!</p>
+              <p className="text-sm text-center py-3" style={{ color: '#15803D' }}>✓ Tutte completate!</p>
             ) : (
               <div className="space-y-1">
                 {ricorrentiPendenti.slice(0, 4).map((az: any) => (
                   <div key={az.id} className="flex items-center gap-3 py-2 border-b border-obsidian-light/40 last:border-0">
                     <span className="text-stone text-sm">○</span>
-                    <span className="text-sm text-cream/80 flex-1">{az.titolo}</span>
+                    <span className="text-sm text-obsidian/80 flex-1">{az.titolo}</span>
                     <span className="text-xs text-stone capitalize">{az.frequenza}</span>
                   </div>
                 ))}
@@ -172,15 +172,15 @@ export default async function StaffHome() {
           <div className="grid grid-cols-3 gap-3">
             <Link href="/staff/magazzino" className="card hover:border-gold/30 transition-colors text-center py-4">
               <Package size={18} className="text-stone mx-auto mb-2" />
-              <p className="text-xs text-cream">Magazzino</p>
+              <p className="text-xs text-obsidian/70">Magazzino</p>
             </Link>
             <Link href="/staff/tasks" className="card hover:border-gold/30 transition-colors text-center py-4">
               <CheckSquare size={18} className="text-stone mx-auto mb-2" />
-              <p className="text-xs text-cream">I miei task</p>
+              <p className="text-xs text-obsidian/70">I miei task</p>
             </Link>
             <Link href="/staff/ricorrenti" className="card hover:border-gold/30 transition-colors text-center py-4">
               <RefreshCw size={18} className="text-stone mx-auto mb-2" />
-              <p className="text-xs text-cream">Ricorrenti</p>
+              <p className="text-xs text-obsidian/70">Ricorrenti</p>
             </Link>
           </div>
         </div>

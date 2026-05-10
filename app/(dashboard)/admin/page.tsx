@@ -222,7 +222,7 @@ export default async function AdminHome() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <CalendarClock size={14} className="text-gold/70" />
-                <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Prossimi 3 giorni</h3>
+                <h3 className="text-xs font-medium text-obsidian/70 uppercase tracking-widest">Prossimi 3 giorni</h3>
               </div>
               <span className="text-[10px] text-stone/40">{prossimiItems.length} element{prossimiItems.length === 1 ? 'o' : 'i'}</span>
             </div>
@@ -230,7 +230,7 @@ export default async function AdminHome() {
               {prossimiItems.map(item => (
                 <a key={item.id} href={item.href} className="flex items-center gap-3 py-1.5 px-2 rounded-lg hover:bg-obsidian-light/20 transition-colors group">
                   <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${item.tipo === 'adempimento' ? 'bg-amber-400' : 'bg-blue-400'}`} />
-                  <span className={`flex-1 text-sm truncate ${item.urgente ? 'text-red-400' : 'text-cream/70'} group-hover:text-cream transition-colors`}>
+                  <span className={`flex-1 text-sm truncate ${item.urgente ? 'text-red-400' : 'text-obsidian/70'} group-hover:text-obsidian transition-colors`}>
                     {item.titolo}
                   </span>
                   <span className="text-[10px] text-stone/40 capitalize">{item.tipo}</span>
@@ -308,7 +308,7 @@ export default async function AdminHome() {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <PencilLine size={14} className="text-stone/50" />
-                <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Dati Clinici</h3>
+                <h3 className="text-xs font-medium text-obsidian/70 uppercase tracking-widest">Dati Clinici</h3>
                 <span className="text-[9px] text-stone/40 border border-stone/20 rounded px-1.5 py-0.5 uppercase tracking-wider">
                   Inseriti manualmente
                 </span>
@@ -327,7 +327,7 @@ export default async function AdminHome() {
                 { label: 'Tasso presenze', value: `${kpiDati.tasso_presenze ?? 0}%` },
               ].map(({ label, value }) => (
                 <div key={label} className="py-2">
-                  <p className="text-xl font-light font-serif text-cream/80">{value}</p>
+                  <p className="text-xl font-light font-serif text-obsidian/80">{value}</p>
                   <p className="text-[9px] text-stone/50 uppercase tracking-wider mt-0.5">{label}</p>
                 </div>
               ))}
@@ -346,7 +346,7 @@ export default async function AdminHome() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <UserPlus size={14} className="text-gold/70" />
-                <h3 className="text-xs font-medium text-cream uppercase tracking-widest">Nuovi Lead CRM</h3>
+                <h3 className="text-xs font-medium text-obsidian/70 uppercase tracking-widest">Nuovi Lead CRM</h3>
               </div>
               <Link href="/admin/crm" className="text-xs text-gold hover:text-gold-light transition-colors">
                 Gestisci →
@@ -356,7 +356,7 @@ export default async function AdminHome() {
               {(crmNuovi ?? []).map((c: any) => (
                 <div key={c.id} className="flex items-center gap-3 py-1.5 border-b border-obsidian-light/20 last:border-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-gold flex-shrink-0" />
-                  <span className="flex-1 text-sm text-cream/80">
+                  <span className="flex-1 text-sm text-obsidian/80">
                     {c.nome} {c.cognome}
                   </span>
                   <span className="text-[10px] text-stone/40">
@@ -378,7 +378,7 @@ export default async function AdminHome() {
         {/* ── Task & Azioni Ricorrenti spuntabili ── */}
         <div id="widget-tasks" className="card lg:col-span-2">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xs font-medium text-cream uppercase tracking-widest">
+            <h3 className="text-xs font-medium text-obsidian/70 uppercase tracking-widest">
               Task & Azioni Ricorrenti
             </h3>
             <div className="flex items-center gap-3">
@@ -401,7 +401,7 @@ export default async function AdminHome() {
         {riordiniCount > 0 && (
           <div id="widget-riordini" className="card lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-medium text-cream uppercase tracking-widest">
+              <h3 className="text-xs font-medium text-obsidian/70 uppercase tracking-widest">
                 Richieste Riordino
               </h3>
               <Link href="/admin/magazzino" className="text-xs text-gold hover:text-gold-light transition-colors">
@@ -411,7 +411,7 @@ export default async function AdminHome() {
             <div className="space-y-2">
               {(riordiniAperti ?? []).slice(0, 5).map((r: any) => (
                 <div key={r.id} className="flex items-center justify-between py-2 border-b border-obsidian-light/30 last:border-0">
-                  <span className="text-sm text-cream/80">{(r.magazzino as any)?.prodotto ?? '—'}</span>
+                  <span className="text-sm text-obsidian/80">{(r.magazzino as any)?.prodotto ?? '—'}</span>
                   <span className="badge-alert text-xs">Aperta</span>
                 </div>
               ))}
@@ -447,7 +447,7 @@ function StatCard({
         <Icon size={15} className={alert && value > 0 ? 'text-red-400' : 'text-stone/50'} />
         <span className="text-[10px] text-stone/30 group-hover:text-gold/60 transition-colors">→</span>
       </div>
-      <p className={`text-3xl font-light font-serif mb-0.5 ${alert && value > 0 ? 'text-red-400' : 'text-cream'}`}>
+      <p className={`text-3xl font-light font-serif mb-0.5 ${alert && value > 0 ? 'text-red-400' : 'text-obsidian'}`}>
         {value}
       </p>
       <p className="text-[10px] text-stone uppercase tracking-wider">{label}</p>
