@@ -26,22 +26,43 @@ export async function OPTIONS() {
 
 // ─── POST /api/crm/contatti ──────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
-  // ── Rate limiting (prima dell'auth) ──────────────────────────────────────────
-  const ip = getClientIp(req.headers)
-  const rl = checkRateLimit(`crm:${ip}`, CRM_RATE_LIMIT, CRM_WINDOW_MS)
-  if (!rl.allowed) {
-    return NextResponse.json(
-      { error: 'Troppe richieste. Riprova tra qualche minuto.' },
-      { status: 429, headers: { ...corsHeaders(), 'Retry-After': String(rl.retryAfterSeconds) } }
-    )
-  }
-
   const adminDb = createAdminClient()
 
-  const envKey = process.env.CRM_API_KEY
+  // ── 1. Sessione interna (admin/manager/segretaria) ────────────────────────
+  // Verificata PRIMA del rate limit: le chiamate interne dal gestionale
+  // non devono consumare il budget IP riservato al form landing pubblico.
+  const supabase = createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let isInternalAuthorized = false
+  if (user) {
+    const { data: profilo } = await adminDb
+      .from('profili').select('ruolo').eq('id', user.id).single()
+    isInternalAuthorized = ['admin', 'manager', 'segretaria'].includes(profilo?.ruolo ?? '')
+  }
+
+  // ── 2. Rate limiting — solo per chiamate esterne (form landing/pubblico) ──
+  if (!isInternalAuthorized) {
+    const ip = getClientIp(req.headers)
+    const rl = checkRateLimit(`crm:${ip}`, CRM_RATE_LIMIT, CRM_WINDOW_MS)
+    if (!rl.allowed) {
+      return NextResponse.json(
+        { error: 'Troppe richieste. Riprova tra qualche minuto.' },
+        { status: 429, headers: { ...corsHeaders(), 'Retry-After': String(rl.retryAfterSeconds) } }
+      )
+    }
+  }
+
+  // ── 3. Auth — API key (form esterno) OPPURE sessione interna ──────────────
+  // - Form esterno (landing Gift Box): deve inviare x-api-key valida
+  // - Gestionale interno (admin/manager/segretaria): accettato via sessione
+  // - Nessuno dei due → 401
+  const envKey  = process.env.CRM_API_KEY
   const sentKey = req.headers.get('x-api-key')
-  if (!envKey || sentKey !== envKey) {
-    return NextResponse.json({ error: 'API key non valida' }, { status: 401, headers: corsHeaders() })
+  const isValidApiKey = Boolean(envKey && sentKey === envKey)
+
+  if (!isValidApiKey && !isInternalAuthorized) {
+    return NextResponse.json({ error: 'Non autorizzato' }, { status: 401, headers: corsHeaders() })
   }
 
   let body: Record<string, unknown>
