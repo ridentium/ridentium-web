@@ -14,10 +14,10 @@ export default function EmptyState({ icon: Icon, title, subtitle, action }: Prop
   return (
     <div className="card flex flex-col items-center justify-center py-14 text-center">
       <div className="w-12 h-12 rounded-full bg-stone/20 flex items-center justify-center mb-4">
-        <Icon size={22} className="text-stone/50" />
+        <Icon size={22} className="text-obsidian/50" />
       </div>
       <p className="text-sm text-obsidian/70 font-medium">{title}</p>
-      {subtitle && <p className="text-xs text-stone mt-1.5 max-w-xs leading-relaxed">{subtitle}</p>}
+      {subtitle && <p className="text-xs text-obsidian/60 mt-1.5 max-w-xs leading-relaxed">{subtitle}</p>}
       {action && (
         <button
           onClick={action.onClick}

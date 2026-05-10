@@ -95,20 +95,24 @@
 
   .btn-ghost {
     @apply text-sm px-3 py-2 rounded transition-colors duration-150;
-    color: #9E8E7E;
+    color: #75675D;
     background-color: transparent;
   }
-  .btn-ghost:hover { color: #3D2B1F; background-color: rgba(61, 43, 31, 0.05); }
+  .btn-ghost:hover { color: #3D2B1F; background-color: rgba(61, 43, 31, 0.07); }
 
   /* ── Input ── */
   .input {
     @apply text-sm w-full rounded px-4 py-2.5 focus:outline-none transition-colors duration-150;
     background-color: #FDFCFA;
-    border: 1px solid #DDD5C8;
+    border: 1px solid #C4B8A8;
     color: #3D2B1F;
+    box-shadow: 0 1px 2px rgba(61, 43, 31, 0.04);
   }
-  .input::placeholder { color: #C4B8A8; }
-  .input:focus { border-color: #665647; }
+  .input::placeholder { color: rgba(61, 43, 31, 0.35); }
+  .input:focus {
+    border-color: #665647;
+    box-shadow: 0 0 0 3px rgba(102, 86, 71, 0.12), 0 1px 2px rgba(61, 43, 31, 0.04);
+  }
 
   /* ── Badges ── */
   .badge-alert {
@@ -141,9 +145,9 @@
   /* ── Nav items (sidebar) ── */
   .nav-item {
     @apply flex items-center gap-3 px-4 py-2.5 rounded text-sm transition-colors duration-150 cursor-pointer;
-    color: rgba(61, 43, 31, 0.45);
+    color: rgba(61, 43, 31, 0.65);
   }
-  .nav-item:hover { color: #3D2B1F; background-color: rgba(61, 43, 31, 0.05); }
+  .nav-item:hover { color: #3D2B1F; background-color: rgba(61, 43, 31, 0.07); }
   .nav-item.active {
     color: #665647;
     background-color: rgba(102, 86, 71, 0.1);

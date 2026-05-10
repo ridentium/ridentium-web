@@ -59,7 +59,7 @@ function NavGroup({ label, items, pathname, onClose, badges }: {
     <div>
       {label && (
         <p className="px-3 mb-1 text-[9px] uppercase tracking-[0.2em] font-medium select-none"
-          style={{ color:'#9E8E7E' }}>{label}</p>
+          style={{ color:'#75675D' }}>{label}</p>
       )}
       {items.map(({ href, label:itemLabel, icon:Icon, highlight }) => {
         const active = pathname === href || (href !== '/admin' && href !== '/staff' && pathname.startsWith(href))
@@ -76,7 +76,7 @@ function NavGroup({ label, items, pathname, onClose, badges }: {
               </span>
             )}
             {highlight && !active && !badge && (
-              <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-sm bg-gold/10 text-gold/70 border border-gold/20">AI</span>
+              <span className="ml-auto text-[9px] px-1.5 py-0.5 rounded-sm bg-gold/10 text-gold border border-gold/30">AI</span>
             )}
           </Link>
         )
@@ -114,14 +114,14 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
         <div>
           <h1 className="font-serif text-xl tracking-[0.2em] font-light" style={{ color:'#3D2B1F' }}>RIDENTIUM</h1>
           <p className="text-[10px] tracking-[0.3em] uppercase mt-0.5"
-            style={{ color:'rgba(102,86,71,0.5)' }}>{isAdmin ? 'Admin' : 'Staff'}</p>
+            style={{ color:'rgba(102,86,71,0.75)' }}>{isAdmin ? 'Admin' : 'Staff'}</p>
         </div>
         <div className="flex items-center gap-1 -mr-1">
           {/* Ricerca globale (desktop) */}
           <button
             onClick={onSearchOpen}
             className="hidden md:flex items-center justify-center w-7 h-7 rounded transition-colors hover:bg-ivory/60"
-            style={{ color: 'rgba(102,86,71,0.5)' }}
+            style={{ color: 'rgba(102,86,71,0.75)' }}
             title="Ricerca globale (⌘K)"
             aria-label="Cerca"
           >
@@ -134,7 +134,7 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
           <button
             onClick={onClose}
             className="md:hidden transition-colors flex items-center justify-center"
-            style={{ color:'rgba(102,86,71,0.5)', minWidth: 44, minHeight: 44 }}
+            style={{ color:'rgba(102,86,71,0.75)', minWidth: 44, minHeight: 44 }}
             aria-label="Chiudi menu"
           >
             <X size={18} />
@@ -194,14 +194,14 @@ export default function Sidebar({ profilo, alertCount=0, tasksCount=0, ricorrent
             <p className="text-sm font-medium truncate transition-colors" style={{ color:'#3D2B1F' }}>
               {profilo.nome} {profilo.cognome}
             </p>
-            <p className="text-xs" style={{ color:'rgba(102,86,71,0.5)' }}>{roleLabel(profilo.ruolo)}</p>
+            <p className="text-xs" style={{ color:'rgba(102,86,71,0.75)' }}>{roleLabel(profilo.ruolo)}</p>
           </div>
         </Link>
         <button onClick={handleLogout}
           className="w-full flex items-center gap-2 text-xs px-2 py-1.5 rounded transition-colors"
-          style={{ color:'rgba(102,86,71,0.5)' }}
+          style={{ color:'rgba(102,86,71,0.75)' }}
           onMouseEnter={e=>(e.currentTarget.style.color='#B91C1C')}
-          onMouseLeave={e=>(e.currentTarget.style.color='rgba(102,86,71,0.5)')}>
+          onMouseLeave={e=>(e.currentTarget.style.color='rgba(102,86,71,0.75)')}>
           <LogOut size={13} />Esci
         </button>
       </div>

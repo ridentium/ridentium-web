@@ -16,9 +16,9 @@ interface SearchResult {
 
 const TIPO_CONFIG = {
   magazzino: { label: 'Magazzino', icon: Package, color: 'text-gold' },
-  task: { label: 'Task', icon: CheckSquare, color: 'text-blue-400' },
-  sop: { label: 'Protocolli', icon: BookOpen, color: 'text-purple-400' },
-  staff: { label: 'Staff', icon: Users, color: 'text-green-400' },
+  task: { label: 'Task', icon: CheckSquare, color: 'text-blue-600' },
+  sop: { label: 'Protocolli', icon: BookOpen, color: 'text-purple-700' },
+  staff: { label: 'Staff', icon: Users, color: 'text-green-700' },
 } as const
 
 interface Props {
@@ -180,7 +180,7 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
               <X size={14} />
             </button>
           )}
-          <kbd className="hidden sm:inline-flex items-center text-[10px] text-stone/40 border border-stone/30 rounded px-1.5 py-0.5 font-mono">
+          <kbd className="hidden sm:inline-flex items-center text-[10px] text-obsidian/50 border border-stone/30 rounded px-1.5 py-0.5 font-mono">
             ESC
           </kbd>
         </div>
@@ -189,7 +189,7 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
         {query.trim().length >= 2 && (
           <div className="max-h-[60vh] overflow-y-auto py-2">
             {results.length === 0 && !loading && (
-              <p className="text-center text-stone text-sm py-8">Nessun risultato per &ldquo;{query}&rdquo;</p>
+              <p className="text-center text-obsidian/70 text-sm py-8">Nessun risultato per &ldquo;{query}&rdquo;</p>
             )}
 
             {(Object.keys(TIPO_CONFIG) as (keyof typeof TIPO_CONFIG)[])
@@ -201,7 +201,7 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
                   <div key={tipo} className="mb-1">
                     <div className="flex items-center gap-2 px-4 py-1.5">
                       <Icon size={11} className={cfg.color} />
-                      <span className="text-[10px] uppercase tracking-widest text-stone/60 font-medium">{cfg.label}</span>
+                      <span className="text-[10px] uppercase tracking-widest text-obsidian/60 font-medium">{cfg.label}</span>
                     </div>
                     {grouped[tipo].map(r => {
                       const isSelected = flatIdx === selectedIdx
@@ -218,11 +218,11 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
                           <div className="min-w-0">
                             <p className="text-sm text-obsidian truncate">{r.titolo}</p>
                             {r.sottotitolo && (
-                              <p className="text-xs text-stone mt-0.5 capitalize">{r.sottotitolo}</p>
+                              <p className="text-xs text-obsidian/70 mt-0.5 capitalize">{r.sottotitolo}</p>
                             )}
                           </div>
                           {r.alert && (
-                            <AlertTriangle size={12} className="text-red-400 flex-shrink-0 ml-2" />
+                            <AlertTriangle size={12} className="text-red-700 flex-shrink-0 ml-2" />
                           )}
                         </button>
                       )
@@ -237,10 +237,10 @@ export default function SearchModal({ isAdmin, open, onClose }: Props) {
         {/* Empty state hint */}
         {query.trim().length < 2 && (
           <div className="px-4 py-6 text-center">
-            <p className="text-stone text-xs">
+            <p className="text-obsidian/70 text-xs">
               Digita almeno 2 caratteri per cercare
             </p>
-            <div className="flex items-center justify-center gap-4 mt-4 text-stone/40 text-xs">
+            <div className="flex items-center justify-center gap-4 mt-4 text-obsidian/50 text-xs">
               <span className="flex items-center gap-1"><kbd className="font-mono border border-stone/30 rounded px-1">↑↓</kbd> naviga</span>
               <span className="flex items-center gap-1"><kbd className="font-mono border border-stone/30 rounded px-1">↵</kbd> apri</span>
             </div>
