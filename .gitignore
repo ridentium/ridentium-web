@@ -29,6 +29,7 @@ supabase/.temp/
 # ── Sicurezza — file da non committare mai ───────────────────────────────────
 # File di setup/documentazione che contengono o contenevano credenziali reali
 VAPID_SETUP.md
+LEGGIMI-AL-RISVEGLIO.md
 # File credenziali locali
 credenziali*.txt
 # Qualsiasi file segreto locale
