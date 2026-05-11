@@ -1,12 +1,12 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
-import { CRMContatto, CRMStato } from '@/types'
+import { useState, useMemo, useEffect, useRef } from 'react'
+import { CRMContatto, CRMStato, CrmInterazione, CrmInterazioneTipo } from '@/types'
 import {
   Phone, MessageCircle, Mail, Download, Plus, Search,
   UserCircle, X, ChevronDown, Trash2, AlertCircle, Globe,
   Clock, CheckCircle2, Star, UserX, ShieldCheck, ShieldOff, Megaphone, Send,
-  ChevronLeft, ChevronRight,
+  ChevronLeft, ChevronRight, FileText, CalendarCheck, History, ArrowRight,
 } from 'lucide-react'
 
 const PER_PAGINA = 20
@@ -83,6 +83,37 @@ function iniziali(c: CRMContatto) {
   return (n + cg).toUpperCase() || (c.email?.[0]?.toUpperCase() ?? '?')
 }
 
+// ─── Interazioni — config ────────────────────────────────────────────────────
+
+const TIPI_INTERAZIONE: CrmInterazioneTipo[] = ['chiamata', 'email', 'whatsapp', 'nota', 'appuntamento']
+
+const TIPO_ICON: Record<CrmInterazioneTipo, React.ElementType> = {
+  chiamata:     Phone,
+  email:        Mail,
+  whatsapp:     MessageCircle,
+  nota:         FileText,
+  appuntamento: CalendarCheck,
+}
+
+const TIPO_LABEL: Record<CrmInterazioneTipo, string> = {
+  chiamata:     'Chiamata',
+  email:        'Email',
+  whatsapp:     'WhatsApp',
+  nota:         'Nota',
+  appuntamento: 'Appuntamento',
+}
+
+function TipoIcon({ tipo, size = 12, className = '' }: { tipo: CrmInterazioneTipo; size?: number; className?: string }) {
+  const Icon = TIPO_ICON[tipo]
+  return <Icon size={size} className={className} />
+}
+
+function formatDataBreve(iso: string) {
+  // Accetta sia "YYYY-MM-DD" che ISO full
+  const d = iso.length === 10 ? new Date(iso + 'T00:00:00') : new Date(iso)
+  return d.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+}
+
 // ─── Componente principale ───────────────────────────────────────────────────
 
 interface Props {
@@ -92,6 +123,7 @@ interface Props {
 
 type FiltroStato    = CRMStato | 'tutti'
 type FiltroMarketing = 'tutti' | 'si' | 'no'
+type FiltroFollowUp = 'nessuno' | 'oggi' | 'settimana' | 'scaduti'
 
 export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) {
   const [contatti, setContatti]           = useState(initialContatti)
@@ -176,16 +208,127 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
     setTaskSaving(false)
   }
 
+  // ── Interazioni per contatto ───────────────────────────────────────────────
+  const [interazioni, setInterazioni]         = useState<Record<string, CrmInterazione[]>>({})
+  const [interazioniLoading, setInterazioniLoading] = useState<string | null>(null)
+  const fetchedIdsRef = useRef<Set<string>>(new Set())
+
+  // Form aggiunta interazione (uno solo, associato al contatto espanso)
+  const [interazioneFormOpen, setInterazioneFormOpen] = useState<string | null>(null)
+  const [interazioneTipo, setInterazioneTipo]         = useState<CrmInterazioneTipo>('chiamata')
+  const [interazioneContenuto, setInterazioneContenuto] = useState('')
+  const [interazioneProssimaAzione, setInterazioneProssimaAzione] = useState('')
+  const [interazioneProssimaData, setInterazioneProssimaData]     = useState('')
+  const [interazioneSaving, setInterazioneSaving] = useState(false)
+  const [interazioneError, setInterazioneError]   = useState<string | null>(null)
+
+  // Fetch interazioni quando si apre un contatto (lazy, con cache)
+  useEffect(() => {
+    if (!dettaglioId) return
+    if (fetchedIdsRef.current.has(dettaglioId)) return
+    fetchedIdsRef.current.add(dettaglioId)
+
+    let cancelled = false
+    setInterazioniLoading(dettaglioId)
+
+    fetch(`/api/crm/contatti/${dettaglioId}/interazioni`)
+      .then(r => r.json())
+      .then(data => { if (!cancelled) setInterazioni(prev => ({ ...prev, [dettaglioId]: data.interazioni ?? [] })) })
+      .catch(() => { if (!cancelled) setInterazioni(prev => ({ ...prev, [dettaglioId]: [] })) })
+      .finally(() => { if (!cancelled) setInterazioniLoading(null) })
+
+    return () => { cancelled = true }
+  }, [dettaglioId])
+
+  // Aggiunta interazione
+  async function addInterazione(contattoId: string) {
+    if (interazioneSaving) return
+    if (!interazioneContenuto.trim()) { setInterazioneError('Inserisci il contenuto dell\'interazione'); return }
+    setInterazioneSaving(true)
+    setInterazioneError(null)
+
+    const res = await fetch(`/api/crm/contatti/${contattoId}/interazioni`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tipo: interazioneTipo,
+        contenuto: interazioneContenuto.trim(),
+        prossima_azione: interazioneProssimaAzione.trim() || null,
+        prossima_data:   interazioneProssimaData || null,
+      }),
+    })
+
+    if (res.ok) {
+      const { interazione } = await res.json()
+      setInterazioni(prev => ({ ...prev, [contattoId]: [interazione, ...(prev[contattoId] ?? [])] }))
+      setInterazioneContenuto('')
+      setInterazioneProssimaAzione('')
+      setInterazioneProssimaData('')
+      setInterazioneFormOpen(null)
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setInterazioneError(data.error ?? 'Errore nel salvataggio')
+    }
+    setInterazioneSaving(false)
+  }
+
+  function apriFormInterazione(contattoId: string) {
+    setInterazioneFormOpen(contattoId)
+    setInterazioneTipo('chiamata')
+    setInterazioneContenuto('')
+    setInterazioneProssimaAzione('')
+    setInterazioneProssimaData('')
+    setInterazioneError(null)
+  }
+
+  // ── Follow-up filters ──────────────────────────────────────────────────────
+  const [filtroFollowUp, setFiltroFollowUp] = useState<FiltroFollowUp>('nessuno')
+  const [followUpIds, setFollowUpIds]       = useState<string[] | null>(null)
+  const [followUpLoading, setFollowUpLoading] = useState(false)
+
+  async function caricaFollowUp(filtro: FiltroFollowUp) {
+    if (filtro === 'nessuno') {
+      setFiltroFollowUp('nessuno')
+      setFollowUpIds(null)
+      return
+    }
+    if (filtroFollowUp === filtro) {
+      // Toggle off
+      setFiltroFollowUp('nessuno')
+      setFollowUpIds(null)
+      return
+    }
+    setFiltroFollowUp(filtro)
+    setFollowUpLoading(true)
+    try {
+      const res = await fetch(`/api/crm/follow-up?filtro=${filtro}`)
+      const data = await res.json()
+      setFollowUpIds((data.ids ?? []) as string[])
+    } catch {
+      setFollowUpIds([])
+    } finally {
+      setFollowUpLoading(false)
+    }
+  }
+
   // Paginazione
   const [pagina, setPagina] = useState(0)
-  useEffect(() => { setPagina(0) }, [filtro, filtroMarketing, cerca])
+  useEffect(() => { setPagina(0) }, [filtro, filtroMarketing, cerca, filtroFollowUp, followUpIds])
 
   // Filtro contatti
   const filtered = useMemo(() => {
     let list = contatti
-    if (filtro !== 'tutti') list = list.filter(c => c.stato === filtro)
-    if (filtroMarketing === 'si')  list = list.filter(c => c.consenso_marketing === true)
-    if (filtroMarketing === 'no')  list = list.filter(c => !c.consenso_marketing)
+
+    // Follow-up filter ha priorità sugli altri filtri (stato, marketing)
+    if (filtroFollowUp !== 'nessuno' && followUpIds !== null) {
+      const idSet = new Set(followUpIds)
+      list = list.filter(c => idSet.has(c.id))
+    } else {
+      if (filtro !== 'tutti') list = list.filter(c => c.stato === filtro)
+      if (filtroMarketing === 'si')  list = list.filter(c => c.consenso_marketing === true)
+      if (filtroMarketing === 'no')  list = list.filter(c => !c.consenso_marketing)
+    }
+
     if (cerca.trim()) {
       const q = cerca.toLowerCase()
       list = list.filter(c =>
@@ -197,7 +340,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       )
     }
     return list
-  }, [contatti, filtro, filtroMarketing, cerca])
+  }, [contatti, filtro, filtroMarketing, cerca, filtroFollowUp, followUpIds])
 
   const totalePagine = Math.ceil(filtered.length / PER_PAGINA)
   const paginati = useMemo(
@@ -404,7 +547,7 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
       </div>
 
       {/* ── Filtro consenso marketing ── */}
-      <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-stone/15">
+      <div className="flex items-center gap-2 flex-wrap mb-2">
         <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1">Marketing</span>
         {([
           { id: 'tutti' as FiltroMarketing, label: 'Tutti' },
@@ -425,6 +568,50 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
             {f.label}
           </button>
         ))}
+      </div>
+
+      {/* ── Filtro follow-up ── */}
+      <div className="flex items-center gap-2 flex-wrap mb-5 pb-4 border-b border-stone/15">
+        <span className="text-[10px] text-stone/50 uppercase tracking-widest mr-1 flex items-center gap-1">
+          <Clock size={9} /> Follow-up
+        </span>
+        {([
+          { id: 'oggi' as FiltroFollowUp,      label: 'Da richiamare oggi' },
+          { id: 'settimana' as FiltroFollowUp, label: 'Questa settimana' },
+          { id: 'scaduti' as FiltroFollowUp,   label: 'Scaduti' },
+        ] as { id: FiltroFollowUp; label: string }[]).map(f => (
+          <button
+            key={f.id}
+            onClick={() => caricaFollowUp(f.id)}
+            disabled={followUpLoading}
+            className={`text-xs px-3 py-1 rounded border transition-colors flex items-center gap-1.5 disabled:opacity-50 ${
+              filtroFollowUp === f.id
+                ? f.id === 'scaduti'
+                  ? 'bg-red-500/20 border-red-500/40 text-red-700'
+                  : 'bg-amber-500/20 border-amber-500/40 text-amber-700'
+                : 'border-stone/25 text-stone hover:text-obsidian'
+            }`}
+          >
+            {f.id === 'scaduti' && <AlertCircle size={9} />}
+            {f.id !== 'scaduti' && <Clock size={9} />}
+            {f.label}
+            {filtroFollowUp === f.id && followUpIds !== null && (
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
+                f.id === 'scaduti' ? 'bg-red-500/20' : 'bg-amber-500/20'
+              }`}>
+                {followUpIds.length}
+              </span>
+            )}
+          </button>
+        ))}
+        {filtroFollowUp !== 'nessuno' && (
+          <button
+            onClick={() => caricaFollowUp('nessuno')}
+            className="text-[10px] text-stone/50 hover:text-stone transition-colors px-2 py-1 flex items-center gap-1"
+          >
+            <X size={9} /> Rimuovi filtro
+          </button>
+        )}
       </div>
 
       {/* ── Lista contatti ── */}
@@ -622,6 +809,156 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
                         >
                           <Trash2 size={11} /> Elimina
                         </button>
+                      )}
+                    </div>
+
+                    {/* ── Storico interazioni ── */}
+                    <div className="mt-4 pt-3 border-t border-stone/15">
+                      <div className="flex items-center justify-between mb-2.5">
+                        <span className="flex items-center gap-1.5 text-[11px] font-medium text-stone/70">
+                          <History size={11} /> Storico interazioni
+                        </span>
+                        <button
+                          onClick={() =>
+                            interazioneFormOpen === c.id
+                              ? setInterazioneFormOpen(null)
+                              : apriFormInterazione(c.id)
+                          }
+                          className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded border
+                                     border-gold/35 text-gold hover:bg-gold/10 transition-colors"
+                        >
+                          <Plus size={9} /> Aggiungi
+                        </button>
+                      </div>
+
+                      {/* Form aggiunta */}
+                      {interazioneFormOpen === c.id && (
+                        <div className="mb-3 p-3 rounded-lg border border-stone/20" style={{ backgroundColor: '#F7F4EF' }}>
+                          <div className="space-y-2.5">
+                            {/* Tipo */}
+                            <div>
+                              <label className="block text-[10px] text-stone/60 mb-1.5">Tipo interazione</label>
+                              <div className="flex gap-1.5 flex-wrap">
+                                {TIPI_INTERAZIONE.map(t => (
+                                  <button
+                                    key={t}
+                                    onClick={() => setInterazioneTipo(t)}
+                                    className={`flex items-center gap-1 text-[10px] px-2.5 py-1 rounded border transition-colors ${
+                                      interazioneTipo === t
+                                        ? 'bg-gold/20 border-gold/40 text-gold font-medium'
+                                        : 'border-stone/25 text-stone hover:text-obsidian'
+                                    }`}
+                                  >
+                                    <TipoIcon tipo={t} size={9} />
+                                    {TIPO_LABEL[t]}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                            {/* Contenuto */}
+                            <div>
+                              <label className="block text-[10px] text-stone/60 mb-1">
+                                Contenuto <span className="text-red-600">*</span>
+                              </label>
+                              <textarea
+                                value={interazioneContenuto}
+                                onChange={e => setInterazioneContenuto(e.target.value)}
+                                rows={2}
+                                className="input resize-none text-xs"
+                                placeholder="Es. Chiamato, non risponde. Riproverò domani."
+                              />
+                            </div>
+                            {/* Prossima azione + data */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-[10px] text-stone/60 mb-1">
+                                  Prossima azione <span className="text-stone/35">(opz.)</span>
+                                </label>
+                                <input
+                                  value={interazioneProssimaAzione}
+                                  onChange={e => setInterazioneProssimaAzione(e.target.value)}
+                                  className="input text-xs"
+                                  placeholder="Es. Richiama lunedì"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] text-stone/60 mb-1">
+                                  Data follow-up <span className="text-stone/35">(opz.)</span>
+                                </label>
+                                <input
+                                  type="date"
+                                  value={interazioneProssimaData}
+                                  onChange={e => setInterazioneProssimaData(e.target.value)}
+                                  className="input text-xs"
+                                />
+                              </div>
+                            </div>
+                            {interazioneError && (
+                              <p className="text-[11px] text-red-700 flex items-center gap-1">
+                                <AlertCircle size={10} /> {interazioneError}
+                              </p>
+                            )}
+                            <div className="flex gap-2 justify-end pt-0.5">
+                              <button
+                                onClick={() => setInterazioneFormOpen(null)}
+                                disabled={interazioneSaving}
+                                className="text-[10px] px-3 py-1.5 rounded border border-stone/30 text-stone hover:text-obsidian transition-colors disabled:opacity-50"
+                              >
+                                Annulla
+                              </button>
+                              <button
+                                onClick={() => addInterazione(c.id)}
+                                disabled={interazioneSaving || !interazioneContenuto.trim()}
+                                className="text-[10px] px-3 py-1.5 rounded border border-gold/40 bg-gold/10 text-gold hover:bg-gold/20 transition-colors disabled:opacity-40"
+                              >
+                                {interazioneSaving ? 'Salvataggio…' : 'Salva interazione'}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Lista interazioni */}
+                      {interazioniLoading === c.id ? (
+                        <p className="text-[11px] text-stone/45 py-1">Caricamento…</p>
+                      ) : (interazioni[c.id] ?? []).length === 0 ? (
+                        <p className="text-[11px] text-stone/40 py-1 italic">Nessuna interazione registrata</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {(interazioni[c.id] ?? []).map(int => (
+                            <div key={int.id} className="flex gap-2.5">
+                              {/* Icona tipo */}
+                              <div className="flex-shrink-0 mt-0.5">
+                                <div className="w-6 h-6 rounded-full bg-stone/10 border border-stone/20 flex items-center justify-center">
+                                  <TipoIcon tipo={int.tipo} size={10} className="text-stone/60" />
+                                </div>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[10px] font-medium text-obsidian/80">{TIPO_LABEL[int.tipo]}</span>
+                                  <span className="text-[10px] text-stone/45">{formatDataBreve(int.created_at)}</span>
+                                  {int.creato_da_nome && (
+                                    <span className="text-[9px] text-stone/35">— {int.creato_da_nome}</span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-stone/75 mt-0.5 leading-relaxed">{int.contenuto}</p>
+                                {(int.prossima_azione || int.prossima_data) && (
+                                  <div className="flex items-start gap-1 mt-1.5">
+                                    <ArrowRight size={9} className="text-gold mt-0.5 flex-shrink-0" />
+                                    <span className="text-[10px] text-gold/90 leading-relaxed">
+                                      {int.prossima_azione}
+                                      {int.prossima_data && (
+                                        <span className="text-stone/45 ml-1">
+                                          · {formatDataBreve(int.prossima_data)}
+                                        </span>
+                                      )}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
