@@ -9,6 +9,7 @@ import QuickActionsBar from '@/components/Dashboard/QuickActionsBar'
 import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
 import DashboardRefreshButton from '@/components/Dashboard/DashboardRefreshButton'
 import OggiWidget, { type OggiItem } from '@/components/Dashboard/OggiWidget'
+import StudioStatusWidget from '@/components/Dashboard/StudioStatusWidget'
 import { calcolaStato } from '@/types/adempimenti'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 import { getPeriodoKey } from '@/lib/periodo'
@@ -208,6 +209,11 @@ export default async function AdminHome() {
       <QuickActionsBar />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+        {/* ── Stato Studio (morning briefing) ── */}
+        <div id="widget-stato-studio" className="lg:col-span-2">
+          <StudioStatusWidget />
+        </div>
 
         {/* ── Widget Oggi ── */}
         {oggiItems.length > 0 && (
