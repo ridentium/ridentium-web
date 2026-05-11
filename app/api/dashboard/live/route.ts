@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getPeriodoKey } from '@/lib/periodo'
 
 // ─── Tipi risposta ────────────────────────────────────────────────────────────
 
@@ -69,8 +70,11 @@ export interface DashboardLiveData {
     items: AdempimentoUrgente[]
   }
   tasks: {
-    urgentiAperti: number // priorità alta, non completato
-    scadutiAperti: number // scadenza < oggi, non completato
+    urgentiAperti: number  // priorità alta, non completato
+    scadutiAperti: number  // scadenza < oggi, non completato
+    completatiSettimana: number  // KPI: completati da lunedì
+    apertiTotale: number         // KPI: non completati (denominatore %)
+    percentualeSettimana: number // KPI: 0–100
     items: TaskUrgente[]
   }
   attrezzature: {
@@ -82,6 +86,11 @@ export interface DashboardLiveData {
     oggi: number
     settimana: number
     items: CrmFollowUpItem[]
+  }
+  ricorrenti: {
+    completate: number    // KPI: con completamento nel periodo corrente
+    totale: number        // KPI: totale attive
+    percentualeMese: number // KPI: 0–100
   }
 }
 
@@ -135,6 +144,14 @@ export async function GET() {
   const minus30 = new Date(oggi); minus30.setDate(oggi.getDate() - 30)
   const minus30daysStr    = toDateStr(minus30)
 
+  // Lunedì di questa settimana (per KPI task%)
+  const dowOggi = oggi.getDay()                    // 0 = domenica
+  const daysToMon = dowOggi === 0 ? 6 : dowOggi - 1
+  const lunedi = new Date(oggi)
+  lunedi.setDate(oggi.getDate() - daysToMon)
+  lunedi.setHours(0, 0, 0, 0)
+  const lunediISO = lunedi.toISOString()
+
   // Tutte le query in parallelo — solo lettura, nessuna modifica
   const [
     { data: magazzinoAll },
@@ -143,6 +160,8 @@ export async function GET() {
     { data: tasksOpen },
     { data: attrezzatureRaw },
     { data: crmInterazioniRaw },
+    { count: tasksCompletatiSettimana },
+    { data: ricorrentiAll },
   ] = await Promise.all([
     // 1. Magazzino — tutti gli item (colonne minimali)
     adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria'),
@@ -187,6 +206,20 @@ export async function GET() {
       .gte('prossima_data', minus30daysStr)
       .lte('prossima_data', in7daysStr)
       .order('prossima_data', { ascending: true }),
+
+    // 7. KPI: task completati da lunedì di questa settimana (solo count)
+    adminDb
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('stato', 'completato')
+      .is('deleted_at', null)
+      .gte('updated_at', lunediISO),
+
+    // 8. KPI: ricorrenti attive (con completamenti per calcolo %)
+    adminDb
+      .from('ricorrenti')
+      .select('frequenza, completamenti')
+      .eq('attiva', true),
   ])
 
   // ── 1. Magazzino sotto soglia ──────────────────────────────────────────────
@@ -309,6 +342,27 @@ export async function GET() {
   // Ordinati: scaduti prima, poi oggi, poi settimana
   crmItems.sort((a, b) => a.prossima_data.localeCompare(b.prossima_data))
 
+  // ── 7. KPI: % task completati questa settimana ────────────────────────────
+  const completatiSettimana = tasksCompletatiSettimana ?? 0
+  const apertiTotale        = tasksOpen?.length ?? 0
+  const denominatoreTask    = completatiSettimana + apertiTotale
+  const percentualeSettimana = denominatoreTask > 0
+    ? Math.round((completatiSettimana / denominatoreTask) * 100)
+    : 0
+
+  // ── 8. KPI: % ricorrenti completate nel periodo corrente ──────────────────
+  const ricorrentiTotale = ricorrentiAll?.length ?? 0
+  const ricorrentiCompletate = (ricorrentiAll ?? []).filter((r: {
+    frequenza: string
+    completamenti: { periodoKey: string }[] | null
+  }) => {
+    const key = getPeriodoKey(r.frequenza)
+    return ((r.completamenti ?? []) as { periodoKey: string }[]).some(c => c.periodoKey === key)
+  }).length
+  const percentualeMese = ricorrentiTotale > 0
+    ? Math.round((ricorrentiCompletate / ricorrentiTotale) * 100)
+    : 0
+
   // ── Risposta ──────────────────────────────────────────────────────────────
   const payload: DashboardLiveData = {
     ts: new Date().toISOString(),
@@ -327,8 +381,11 @@ export async function GET() {
       items: adempimentiProcessed.slice(0, MAX_ITEMS),
     },
     tasks: {
-      urgentiAperti: tasksUrgenti.length,
-      scadutiAperti: tasksScaduti.length,
+      urgentiAperti:       tasksUrgenti.length,
+      scadutiAperti:       tasksScaduti.length,
+      completatiSettimana,
+      apertiTotale,
+      percentualeSettimana,
       items: tasksPreview,
     },
     attrezzature: {
@@ -340,6 +397,11 @@ export async function GET() {
       oggi:     crmOggi,
       settimana: crmSettimana,
       items: crmItems.slice(0, MAX_ITEMS),
+    },
+    ricorrenti: {
+      completate:      ricorrentiCompletate,
+      totale:          ricorrentiTotale,
+      percentualeMese,
     },
   }
 

@@ -10,6 +10,7 @@ import DashboardPersonalizza from '@/components/Dashboard/DashboardPersonalizza'
 import DashboardRefreshButton from '@/components/Dashboard/DashboardRefreshButton'
 import OggiWidget, { type OggiItem } from '@/components/Dashboard/OggiWidget'
 import StudioStatusWidget from '@/components/Dashboard/StudioStatusWidget'
+import KPIRealiWidget from '@/components/Dashboard/KPIRealiWidget'
 import { calcolaStato } from '@/types/adempimenti'
 import type { CategoriaAdempimento, StatoAdempimento } from '@/types/adempimenti'
 import { getPeriodoKey } from '@/lib/periodo'
@@ -213,6 +214,11 @@ export default async function AdminHome() {
         {/* ── Stato Studio (morning briefing) ── */}
         <div id="widget-stato-studio" className="lg:col-span-2">
           <StudioStatusWidget />
+        </div>
+
+        {/* ── KPI Operativi calcolati in tempo reale ── */}
+        <div id="widget-kpi-reali" className="lg:col-span-2">
+          <KPIRealiWidget />
         </div>
 
         {/* ── Widget Oggi ── */}
