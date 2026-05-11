@@ -229,6 +229,17 @@ export const upsertPermessoSchema = z.object({
   visibile: z.boolean(),
 })
 
+// ── CRM Interazioni ───────────────────────────────────────────────────────────
+
+const TIPI_INTERAZIONE = ['chiamata', 'email', 'whatsapp', 'nota', 'appuntamento'] as const
+
+export const createInterazioneSchema = z.object({
+  tipo:             z.enum(TIPI_INTERAZIONE),
+  contenuto:        z.string().trim().min(1).max(2000),
+  prossima_azione:  z.string().trim().max(500).optional().nullable(),
+  prossima_data:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+})
+
 // ── Adempimenti update ────────────────────────────────────────────────────────
 
 export const updateAdempimentoSchema = z.object({

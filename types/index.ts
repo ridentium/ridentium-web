@@ -254,6 +254,20 @@ export interface Attrezzatura {
 
 export type CRMStato = 'nuovo' | 'contattato' | 'appuntamento' | 'cliente' | 'perso'
 
+export type CrmInterazioneTipo = 'chiamata' | 'email' | 'whatsapp' | 'nota' | 'appuntamento'
+
+export interface CrmInterazione {
+  id: string
+  crm_contatto_id: string
+  tipo: CrmInterazioneTipo
+  contenuto: string
+  prossima_azione: string | null
+  prossima_data: string | null  // ISO date string "YYYY-MM-DD"
+  creato_da: string | null
+  creato_da_nome: string | null
+  created_at: string
+}
+
 export interface CRMContatto {
   id: string
   nome: string | null
