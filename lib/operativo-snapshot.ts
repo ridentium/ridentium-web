@@ -1,9 +1,10 @@
 import type { createAdminClient } from '@/lib/supabase/admin'
 import { getPeriodoKey } from '@/lib/periodo'
+import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
 
-// ─── Costanti ─────────────────────────────────────────────────────────────────
-
-const MAX = 5  // max item per sezione nel testo snapshot
+// Alias defaults per leggibilità
+const D = SETTING_DEFAULTS.dashboard
+const S = SETTING_DEFAULTS.studio
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -31,10 +32,20 @@ export async function buildOperativoSnapshot(
   db: ReturnType<typeof createAdminClient>,
 ): Promise<string> {
 
+  // Carica settings operativi in parallelo con le query (fallback garantito)
+  const [giorniStantio, giorniAdempimenti, giorniManutenzione, maxItems, nomeStudio] =
+    await Promise.all([
+      getSetting<number>('dashboard', 'giorni_stantio',            D.giorni_stantio            as number),
+      getSetting<number>('dashboard', 'giorni_adempimenti_alert',  D.giorni_adempimenti_alert  as number),
+      getSetting<number>('dashboard', 'giorni_manutenzione_alert', D.giorni_manutenzione_alert as number),
+      getSetting<number>('dashboard', 'max_items_preview',         D.max_items_preview         as number),
+      getSetting<string>('studio',    'nome',                      S.nome                      as string),
+    ])
+
   const oggi     = new Date()
   const todayStr = oggi.toISOString().slice(0, 10)
-  const in7Str   = new Date(oggi.getTime() +  7 * 86_400_000).toISOString().slice(0, 10)
-  const in30Str  = new Date(oggi.getTime() + 30 * 86_400_000).toISOString().slice(0, 10)
+  const in7Str   = new Date(oggi.getTime() + giorniAdempimenti  * 86_400_000).toISOString().slice(0, 10)
+  const in30Str  = new Date(oggi.getTime() + giorniManutenzione * 86_400_000).toISOString().slice(0, 10)
   const m30Str   = new Date(oggi.getTime() - 30 * 86_400_000).toISOString().slice(0, 10)
 
   // Lunedì di questa settimana — per KPI task%
@@ -98,7 +109,8 @@ export async function buildOperativoSnapshot(
     day: '2-digit', month: '2-digit', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })
-  lines.push(`SNAPSHOT OPERATIVO STUDIO — ${ora}`)
+  const studioLabel = nomeStudio ? nomeStudio : 'STUDIO'
+  lines.push(`SNAPSHOT OPERATIVO ${studioLabel.toUpperCase()} — ${ora}`)
   lines.push('')
 
   // 1. Magazzino
@@ -110,11 +122,11 @@ export async function buildOperativoSnapshot(
     } else {
       const sotto = mag.filter(i => i.quantita < i.soglia_minima)
       lines.push(`MAGAZZINO: ${sotto.length} prodott${sotto.length === 1 ? 'o' : 'i'} sotto soglia`)
-      sotto.slice(0, MAX).forEach(i => {
+      sotto.slice(0, maxItems).forEach(i => {
         const note = i.quantita === 0 ? ' ⚠ ESAURITO' : ''
         lines.push(`  • ${i.prodotto}: ${i.quantita} (min ${i.soglia_minima})${note}`)
       })
-      if (sotto.length > MAX) lines.push(`  [+ ${sotto.length - MAX} altri]`)
+      if (sotto.length > maxItems) lines.push(`  [+ ${sotto.length - maxItems} altri]`)
       if (sotto.length === 0) lines.push('  • Tutto in ordine ✓')
     }
   }
@@ -131,15 +143,15 @@ export async function buildOperativoSnapshot(
       const stantii = ord.filter(o => {
         if (o.stato !== 'inviato') return false
         const gg = Math.floor((oggi.getTime() - new Date(o.data_invio + 'T00:00:00').getTime()) / 86_400_000)
-        return gg > 3
+        return gg > giorniStantio
       })
       lines.push(`ORDINI: ${ord.length} apert${ord.length === 1 ? 'o' : 'i'}, ${stantii.length} stant${stantii.length === 1 ? 'io' : 'i'} (+3gg)`)
-      ord.slice(0, MAX).forEach(o => {
+      ord.slice(0, maxItems).forEach(o => {
         const gg   = Math.floor((oggi.getTime() - new Date(o.data_invio + 'T00:00:00').getTime()) / 86_400_000)
         const flag = stantii.some(s => s.fornitore_nome === o.fornitore_nome && s.data_invio === o.data_invio) ? ' ⚠' : ''
         lines.push(`  • ${o.fornitore_nome} — ${o.stato.replace(/_/g, ' ')} (${gg} gg fa)${flag}`)
       })
-      if (ord.length > MAX) lines.push(`  [+ ${ord.length - MAX} altri]`)
+      if (ord.length > maxItems) lines.push(`  [+ ${ord.length - maxItems} altri]`)
       if (ord.length === 0) lines.push('  • Nessun ordine in attesa ✓')
     }
   }
@@ -156,13 +168,13 @@ export async function buildOperativoSnapshot(
       const scaduti = ad.filter(a => a.prossima_scadenza < todayStr)
       const inScad  = ad.filter(a => a.prossima_scadenza >= todayStr)
       lines.push(`ADEMPIMENTI: ${scaduti.length} scadut${scaduti.length === 1 ? 'o' : 'i'}, ${inScad.length} entro 7gg`)
-      ad.slice(0, MAX).forEach(a => {
+      ad.slice(0, maxItems).forEach(a => {
         const d  = new Date(a.prossima_scadenza + 'T00:00:00')
         const t0 = new Date(todayStr + 'T00:00:00')
         const gg = Math.round((d.getTime() - t0.getTime()) / 86_400_000)
         lines.push(`  • ${a.titolo}: ${ggLabel(gg)}`)
       })
-      if (ad.length > MAX) lines.push(`  [+ ${ad.length - MAX} altri]`)
+      if (ad.length > maxItems) lines.push(`  [+ ${ad.length - maxItems} altri]`)
       if (ad.length === 0) lines.push('  • Tutto in regola ✓')
     }
   }
@@ -184,7 +196,7 @@ export async function buildOperativoSnapshot(
       const seen    = new Set<string>()
       const preview: TskRow[] = []
       for (const t of [...scaduti, ...urgenti]) {
-        if (!seen.has(t.titolo) && preview.length < MAX) {
+        if (!seen.has(t.titolo) && preview.length < maxItems) {
           seen.add(t.titolo)
           preview.push(t)
         }
@@ -210,13 +222,13 @@ export async function buildOperativoSnapshot(
     } else {
       const scadute = attr.filter(a => a.data_prossima_manutenzione < todayStr)
       lines.push(`ATTREZZATURE: ${attr.length} manutenzioni entro 30gg, ${scadute.length} scadute`)
-      attr.slice(0, MAX).forEach(a => {
+      attr.slice(0, maxItems).forEach(a => {
         const d  = new Date(a.data_prossima_manutenzione + 'T00:00:00')
         const t0 = new Date(todayStr + 'T00:00:00')
         const gg = Math.round((d.getTime() - t0.getTime()) / 86_400_000)
         lines.push(`  • ${a.nome}: ${ggLabel(gg)}`)
       })
-      if (attr.length > MAX) lines.push(`  [+ ${attr.length - MAX} altri]`)
+      if (attr.length > maxItems) lines.push(`  [+ ${attr.length - maxItems} altri]`)
       if (attr.length === 0) lines.push('  • Nessuna manutenzione imminente ✓')
     }
   }

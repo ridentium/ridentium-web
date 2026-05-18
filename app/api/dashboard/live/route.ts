@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPeriodoKey } from '@/lib/periodo'
+import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
 
 // ─── Tipi risposta ────────────────────────────────────────────────────────────
 
@@ -94,12 +95,9 @@ export interface DashboardLiveData {
   }
 }
 
-// ─── Costanti ─────────────────────────────────────────────────────────────────
+// ─── Defaults hardcoded (usati come fallback se il DB settings non risponde) ──
 
-const GIORNI_STANTIO   = 3  // ordine "stantio" se inviato da più di X giorni
-const GIORNI_ADEMPIMENTI = 7  // adempimenti urgenti se scadono entro X giorni
-const GIORNI_MANUTENZIONE = 30 // attrezzature se manutenzione entro X giorni
-const MAX_ITEMS = 5 // preview max per sezione nel widget
+const D = SETTING_DEFAULTS.dashboard
 
 // ─── Helper date ──────────────────────────────────────────────────────────────
 
@@ -134,12 +132,20 @@ export async function GET() {
     return NextResponse.json({ error: 'Accesso non autorizzato' }, { status: 403 })
   }
 
+  // Carica settings operativi (con fallback hardcoded se DB non risponde)
+  const [giorniStantio, giorniAdempienti, giorniManutenzione, maxItems] = await Promise.all([
+    getSetting<number>('dashboard', 'giorni_stantio',            D.giorni_stantio            as number),
+    getSetting<number>('dashboard', 'giorni_adempimenti_alert',  D.giorni_adempimenti_alert  as number),
+    getSetting<number>('dashboard', 'giorni_manutenzione_alert', D.giorni_manutenzione_alert as number),
+    getSetting<number>('dashboard', 'max_items_preview',         D.max_items_preview         as number),
+  ])
+
   // Date di riferimento
   const oggi = new Date()
   const todayStr          = toDateStr(oggi)
-  const in7 = new Date(oggi); in7.setDate(oggi.getDate() + 7)
+  const in7 = new Date(oggi); in7.setDate(oggi.getDate() + giorniAdempienti)
   const in7daysStr        = toDateStr(in7)
-  const in30 = new Date(oggi); in30.setDate(oggi.getDate() + GIORNI_MANUTENZIONE)
+  const in30 = new Date(oggi); in30.setDate(oggi.getDate() + giorniManutenzione)
   const in30daysStr       = toDateStr(in30)
   const minus30 = new Date(oggi); minus30.setDate(oggi.getDate() - 30)
   const minus30daysStr    = toDateStr(minus30)
@@ -237,7 +243,7 @@ export async function GET() {
     data_invio: o.data_invio,
     giorni: daysDiff(o.data_invio, oggi),
   }))
-  const stantii = ordiniProcessed.filter(o => o.stato === 'inviato' && o.giorni > GIORNI_STANTIO)
+  const stantii = ordiniProcessed.filter(o => o.stato === 'inviato' && o.giorni > giorniStantio)
 
   // ── 3. Adempimenti urgenti (entro 7gg + scaduti) ──────────────────────────
   const adempimentiProcessed: AdempimentoUrgente[] = (adempimentiRaw ?? []).map((a: {
@@ -274,7 +280,7 @@ export async function GET() {
   const tasksPreview = [
     ...tasksScaduti,
     ...tasksUrgenti.filter(t => !t.scaduto),
-  ].slice(0, MAX_ITEMS) as TaskUrgente[]
+  ].slice(0, maxItems) as TaskUrgente[]
 
   // ── 5. Attrezzature con manutenzione entro 30gg ───────────────────────────
   const attrezzatureProcessed: AttrezzaturaAlert[] = (attrezzatureRaw ?? []).map((a: {
@@ -368,17 +374,17 @@ export async function GET() {
     ts: new Date().toISOString(),
     magazzino: {
       sottoSoglia: sottoSoglia.length,
-      items: sottoSoglia.slice(0, MAX_ITEMS),
+      items: sottoSoglia.slice(0, maxItems),
     },
     ordini: {
       aperti: ordiniProcessed.length,
       stantii: stantii.length,
-      items: ordiniProcessed.slice(0, MAX_ITEMS),
+      items: ordiniProcessed.slice(0, maxItems),
     },
     adempimenti: {
       scaduti:    adScaduti.length,
       inScadenza: adInScadenza.length,
-      items: adempimentiProcessed.slice(0, MAX_ITEMS),
+      items: adempimentiProcessed.slice(0, maxItems),
     },
     tasks: {
       urgentiAperti:       tasksUrgenti.length,
@@ -390,13 +396,13 @@ export async function GET() {
     },
     attrezzature: {
       entro30gg: attrezzatureProcessed.length,
-      items: attrezzatureProcessed.slice(0, MAX_ITEMS),
+      items: attrezzatureProcessed.slice(0, maxItems),
     },
     crmFollowUp: {
       scaduti:  crmScaduti,
       oggi:     crmOggi,
       settimana: crmSettimana,
-      items: crmItems.slice(0, MAX_ITEMS),
+      items: crmItems.slice(0, maxItems),
     },
     ricorrenti: {
       completate:      ricorrentiCompletate,

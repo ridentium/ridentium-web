@@ -119,13 +119,14 @@ function formatDataBreve(iso: string) {
 interface Props {
   contatti: CRMContatto[]
   isAdmin: boolean
+  followupGiorni?: number   // giorni default follow-up (da operational_settings, default 1)
 }
 
 type FiltroStato    = CRMStato | 'tutti'
 type FiltroMarketing = 'tutti' | 'si' | 'no'
 type FiltroFollowUp = 'nessuno' | 'oggi' | 'settimana' | 'scaduti'
 
-export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) {
+export default function CRMAdmin({ contatti: initialContatti, isAdmin, followupGiorni = 1 }: Props) {
   const [contatti, setContatti]           = useState(initialContatti)
   const [filtro, setFiltro]               = useState<FiltroStato>('tutti')
   const [filtroMarketing, setFiltroMarketing] = useState<FiltroMarketing>('tutti')
@@ -277,7 +278,10 @@ export default function CRMAdmin({ contatti: initialContatti, isAdmin }: Props) 
     setInterazioneTipo('chiamata')
     setInterazioneContenuto('')
     setInterazioneProssimaAzione('')
-    setInterazioneProssimaData('')
+    // Data follow-up default: oggi + followupGiorni (da operational_settings)
+    const dataDefault = new Date()
+    dataDefault.setDate(dataDefault.getDate() + followupGiorni)
+    setInterazioneProssimaData(dataDefault.toISOString().slice(0, 10))
     setInterazioneError(null)
   }
 
