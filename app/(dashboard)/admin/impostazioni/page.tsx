@@ -6,6 +6,8 @@ import PageHeader from '@/components/Layout/PageHeader'
 import ImpostazioniAdmin from '@/components/Impostazioni/ImpostazioniAdmin'
 import PermessiAdmin from '@/components/Impostazioni/PermessiAdmin'
 import ImpostazioniStudio from '@/components/Impostazioni/ImpostazioniStudio'
+import SettingsOperativi from '@/components/Impostazioni/SettingsOperativi'
+import { getAllSettings, SETTING_DEFAULTS } from '@/lib/settings'
 
 export default async function ImpostazioniAdminPage() {
   const supabase = createClient()
@@ -14,15 +16,38 @@ export default async function ImpostazioniAdminPage() {
 
   const adminDb = createAdminClient()
 
-  const { data: kpi } = await supabase
-    .from('kpi')
-    .select('*')
-    .single()
+  const [
+    { data: kpi },
+    { data: permessi },
+    { data: profilo },
+    allSettings,
+  ] = await Promise.all([
+    supabase.from('kpi').select('*').single(),
+    adminDb.from('sezione_permessi').select('sezione, ruolo, visibile').order('sezione'),
+    adminDb.from('profili').select('ruolo').eq('id', user.id).single(),
+    getAllSettings(),
+  ])
 
-  const { data: permessi } = await adminDb
-    .from('sezione_permessi')
-    .select('sezione, ruolo, visibile')
-    .order('sezione')
+  const ruolo = profilo?.ruolo ?? 'aso'
+  const isReadOnly = !['admin', 'manager'].includes(ruolo)
+
+  // Merge con defaults — garantisce tutti i campi anche se il DB manca qualche chiave
+  const settingsInitial = {
+    dashboard: {
+      giorni_stantio:            Number(allSettings.dashboard.giorni_stantio            ?? SETTING_DEFAULTS.dashboard.giorni_stantio),
+      giorni_adempimenti_alert:  Number(allSettings.dashboard.giorni_adempimenti_alert  ?? SETTING_DEFAULTS.dashboard.giorni_adempimenti_alert),
+      giorni_manutenzione_alert: Number(allSettings.dashboard.giorni_manutenzione_alert ?? SETTING_DEFAULTS.dashboard.giorni_manutenzione_alert),
+      max_items_preview:         Number(allSettings.dashboard.max_items_preview         ?? SETTING_DEFAULTS.dashboard.max_items_preview),
+    },
+    crm: {
+      giorni_followup_default: Number(allSettings.crm.giorni_followup_default ?? SETTING_DEFAULTS.crm.giorni_followup_default),
+    },
+    studio: {
+      nome:     String(allSettings.studio.nome     ?? ''),
+      email:    String(allSettings.studio.email    ?? ''),
+      telefono: String(allSettings.studio.telefono ?? ''),
+    },
+  }
 
   return (
     <div className="space-y-8">
@@ -58,6 +83,14 @@ export default async function ImpostazioniAdminPage() {
           Permessi team
         </h2>
         <PermessiAdmin permessi={permessi ?? []} />
+      </div>
+
+      {/* ── Settings Operativi v1 ── */}
+      <div className="space-y-3">
+        <h2 className="text-xs uppercase tracking-widest font-medium" style={{ color: 'rgba(160,144,126,0.6)' }}>
+          Settings Operativi
+        </h2>
+        <SettingsOperativi initialSettings={settingsInitial} isReadOnly={isReadOnly} />
       </div>
     </div>
   )
