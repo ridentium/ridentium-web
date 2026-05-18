@@ -29,6 +29,11 @@ export interface MagazzinoItem {
   ultimo_riordino?: string | null
   note?: string | null
   fornitore_id?: string | null
+  // Alert silenziato
+  alert_silenziato: boolean
+  alert_silenziato_motivo?: string | null
+  alert_silenziato_at?: string | null
+  alert_silenziato_by?: string | null
   created_at: string
   updated_at?: string
 }

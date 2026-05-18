@@ -18,7 +18,7 @@ export default async function FornitoriAdminPage() {
       .from('fornitori')
       .select('*, fornitore_contatti(*)')
       .order('nome', { ascending: true }),
-    supabase.from('magazzino').select('id, prodotto, categoria, azienda, quantita, soglia_minima, unita, created_at'),
+    supabase.from('magazzino').select('id, prodotto, categoria, azienda, quantita, soglia_minima, unita, alert_silenziato, created_at'),
     adminDb.from('profili').select('nome, cognome, ruolo').eq('id', user!.id).single(),
   ])
 

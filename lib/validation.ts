@@ -190,6 +190,12 @@ export const updateMagazzinoItemSchema = z.object({
   fornitore_id:    uuid.optional().nullable(),
 })
 
+/** Schema specifico per silenziare/riattivare l'alert di un prodotto magazzino */
+export const silenziaMagazzinoSchema = z.object({
+  silenziato: z.boolean(),
+  motivo:     z.string().trim().max(500).optional().nullable(),
+})
+
 export const createRiordineSchema = z.object({
   magazzino_id: uuid,
   note:         z.string().trim().max(500).optional().nullable(),
