@@ -5,7 +5,8 @@ import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
 import {
   AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
-  ChevronsUpDown, Plus, Pencil, Search, X, Zap, History
+  ChevronsUpDown, Plus, Pencil, Search, X, Zap, History,
+  BellOff, Bell,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
@@ -20,6 +21,103 @@ function scadenzaColor(scadenza: string | null | undefined): string {
   if (giorni <= 30) return 'text-amber-600'
   return 'text-emerald-700'
 }
+
+// ── Barra copertura scorte ────────────────────────────────────────────────────
+
+function CoperturaBarra({
+  quantita, soglia_minima, silenziato,
+}: { quantita: number; soglia_minima: number; silenziato: boolean }) {
+  if (soglia_minima === 0) return null
+  const perc = Math.min(100, Math.round((quantita / soglia_minima) * 100))
+
+  let barClass: string
+  if (silenziato) {
+    barClass = 'bg-stone/50'
+  } else if (perc <= 25) {
+    barClass = 'bg-red-700'
+  } else if (perc <= 60) {
+    barClass = 'bg-amber-600'
+  } else if (perc < 100) {
+    barClass = 'bg-gold'
+  } else {
+    barClass = 'bg-emerald-600'
+  }
+
+  return (
+    <div className="flex items-center gap-1.5 mt-1">
+      <div className="w-14 h-1 bg-stone/20 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${barClass}`}
+          style={{ width: `${silenziato ? 100 : perc}%` }}
+        />
+      </div>
+      <span className="text-[9px] text-stone/40">{silenziato ? '—' : `${perc}%`}</span>
+    </div>
+  )
+}
+
+// ── Modal silenziamento ───────────────────────────────────────────────────────
+
+interface SilenziaModalProps {
+  item: MagazzinoItem
+  onClose: () => void
+  onConferma: (item: MagazzinoItem, motivo: string) => Promise<void>
+}
+
+function SilenziaModal({ item, onClose, onConferma }: SilenziaModalProps) {
+  const [motivo, setMotivo] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  async function handleConferma() {
+    setSaving(true)
+    await onConferma(item, motivo.trim())
+    setSaving(false)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-obsidian/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="card w-full max-w-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="section-title text-base flex items-center gap-2">
+            <BellOff size={15} className="text-stone" />
+            Silenzia alert
+          </h3>
+          <button onClick={onClose} className="btn-ghost p-1"><X size={16} /></button>
+        </div>
+        <p className="text-sm text-obsidian/80 mb-1">
+          <span className="font-medium">{item.prodotto}</span> non genererà più alert sotto soglia.
+        </p>
+        <p className="text-xs text-stone mb-4">
+          Puoi riattivare l&apos;alert in qualsiasi momento.
+        </p>
+        <div>
+          <label className="label-field block mb-1.5">Motivo (facoltativo)</label>
+          <textarea
+            className="input resize-none text-sm"
+            rows={2}
+            placeholder="es. prodotto in via di esaurimento programmata"
+            value={motivo}
+            onChange={e => setMotivo(e.target.value)}
+            maxLength={500}
+          />
+        </div>
+        <div className="flex gap-3 mt-5">
+          <button onClick={onClose} className="btn-secondary flex-1">Annulla</button>
+          <button
+            onClick={handleConferma}
+            disabled={saving}
+            className="btn-primary flex-1 disabled:opacity-50 flex items-center justify-center gap-1.5"
+          >
+            <BellOff size={13} />
+            {saving ? 'Silenziando…' : 'Silenzia alert'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 interface StoricoEntry {
   id: string
@@ -72,6 +170,8 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
   // la pagina apre già filtrata sui prodotti sotto soglia.
   // Usato useEffect per evitare hydration mismatch (window non disponibile lato server).
   const [soloAlert, setSoloAlert] = useState(false)
+  const [mostraSilenziati, setMostraSilenziati] = useState(false)
+  const [silenziandoItem, setSilenziandoItem] = useState<MagazzinoItem | null>(null)
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('filter') === 'alert') {
       setSoloAlert(true)
@@ -108,10 +208,20 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       : <ChevronDown size={11} className="text-gold inline ml-1" />
   }
 
+  // ── Filtri calcolati ──────────────────────────────────────────────────────
+  // alertItems: solo prodotti veramente critici (sotto soglia E non silenziati)
+  const alertItems = items.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato)
+  const alertCount = alertItems.length
+  const silenziatiItems = items.filter(i => i.alert_silenziato)
+  const silenziatiCount = silenziatiItems.length
+
   const filtered = items
     .filter(item => {
       if (categoria !== 'Tutte' && item.categoria !== categoria) return false
-      if (soloAlert && item.quantita >= item.soglia_minima) return false
+      // soloAlert: solo prodotti realmente in alert (escludi silenziati)
+      if (soloAlert && (item.quantita >= item.soglia_minima || item.alert_silenziato)) return false
+      // mostraSilenziati: solo prodotti silenziati
+      if (mostraSilenziati && !item.alert_silenziato) return false
       if (cerca.trim()) {
         const q = cerca.toLowerCase()
         const match =
@@ -145,9 +255,6 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
       if (av > bv) return sortDir === 'asc' ? 1 : -1
       return 0
     })
-
-  const alertItems = items.filter(i => i.quantita < i.soglia_minima)
-  const alertCount = alertItems.length
 
   async function caricaStoricoDb() {
     setLoadingStorico(true)
@@ -186,6 +293,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     const item = items.find(i => i.id === id)
     const eraOk = item ? item.quantita >= item.soglia_minima : true
     const saraAlert = item ? nuovaQuantita < item.soglia_minima : false
+    const isSilenziato = item?.alert_silenziato ?? false
 
     // Aggiornamento ottimistico
     setItems(prev => prev.map(i => i.id === id ? { ...i, quantita: nuovaQuantita } : i))
@@ -198,7 +306,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     if (!res.ok) {
       showToast('Errore aggiornamento quantità', 'error')
     } else {
-      showToast(saraAlert ? `Sotto soglia — verifica il riordino` : `Quantità aggiornata: ${nuovaQuantita}`)
+      showToast(saraAlert && !isSilenziato ? `Sotto soglia — verifica il riordino` : `Quantità aggiornata: ${nuovaQuantita}`)
       if (item) {
         const azione = `${item.quantita} → ${nuovaQuantita} ${item.unita ?? 'pz'}`
         addStorico(item.prodotto, azione)
@@ -206,13 +314,31 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
     }
 
     // Notifica soglia solo quando si PASSA da ok → alert (non ad ogni modifica sotto soglia)
-    if (eraOk && saraAlert && item) {
+    // e solo se l'alert NON è silenziato
+    if (eraOk && saraAlert && item && !isSilenziato) {
       fetch('/api/magazzino/check-soglia', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, prodotto: item.prodotto, quantita: nuovaQuantita, soglia_minima: item.soglia_minima }),
       }).catch(() => {})
     }
+  }
+
+  async function toggleSilenzia(item: MagazzinoItem, motivo?: string) {
+    const nuovoStato = !item.alert_silenziato
+    const res = await fetch(`/api/magazzino/${item.id}/silenzia`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ silenziato: nuovoStato, motivo: motivo ?? null }),
+    })
+    if (!res.ok) {
+      showToast('Errore aggiornamento alert', 'error')
+      return
+    }
+    const { item: updated } = await res.json()
+    setItems(prev => prev.map(i => i.id === updated.id ? updated : i))
+    showToast(nuovoStato ? 'Alert silenziato' : 'Alert riattivato')
+    setSilenziandoItem(null)
   }
 
   function apriEvadisci(riordine: any) {
@@ -274,7 +400,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                     <p className="text-xs text-stone mt-0.5">
                       da {r.profili?.nome} {r.profili?.cognome} · {formatDate(r.created_at)}
                     </p>
-                    {r.note && <p className="text-xs text-stone/70 italic mt-0.5">"{r.note}"</p>}
+                    {r.note && <p className="text-xs text-stone/70 italic mt-0.5">&ldquo;{r.note}&rdquo;</p>}
                   </div>
                   <button onClick={() => apriEvadisci(r)}
                           className="btn-primary text-xs py-1.5 px-3 whitespace-nowrap">
@@ -287,7 +413,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         </div>
       )}
 
-      {/* Ordine Rapido (collassabile) — mostra tutti i prodotti sotto soglia */}
+      {/* Ordine Rapido (collassabile) — mostra solo i prodotti in alert reale */}
       {alertItems.length > 0 && (
         <div className="card border-gold/20">
           <button
@@ -342,7 +468,7 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
         </button>
       </div>
 
-      {/* Filtri categoria — scroll orizzontale su mobile (monofila) */}
+      {/* Filtri categoria + alert + silenziati */}
       <div className="flex items-center gap-2">
         {/* Pillole in scroll orizzontale — non wrappano mai */}
         <div className="flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
@@ -361,16 +487,31 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
           </div>
         </div>
         {/* Bottone alert — fisso a destra */}
-        <button onClick={() => setSoloAlert(!soloAlert)}
-                className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
-                  soloAlert
-                    ? 'bg-red-400/10 text-red-400 border-red-400/30'
-                    : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
-                }`}>
+        <button
+          onClick={() => { setSoloAlert(!soloAlert); if (mostraSilenziati) setMostraSilenziati(false) }}
+          className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+            soloAlert
+              ? 'bg-red-400/10 text-red-400 border-red-400/30'
+              : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
+          }`}>
           <AlertTriangle size={11} />
           <span className="hidden sm:inline">Sotto soglia</span>
           <span className="text-xs">({alertCount})</span>
         </button>
+        {/* Bottone silenziati — visibile solo se ce ne sono */}
+        {silenziatiCount > 0 && (
+          <button
+            onClick={() => { setMostraSilenziati(!mostraSilenziati); if (soloAlert) setSoloAlert(false) }}
+            className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+              mostraSilenziati
+                ? 'bg-stone/20 text-stone border-stone/40'
+                : 'border-stone/30 text-stone/60 hover:border-stone hover:text-obsidian'
+            }`}>
+            <BellOff size={11} />
+            <span className="hidden sm:inline">Silenziati</span>
+            <span className="text-xs">({silenziatiCount})</span>
+          </button>
+        )}
       </div>
 
       {/* Risultati */}
@@ -389,9 +530,10 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
             {cerca ? `Nessun prodotto trovato per "${cerca}"` : 'Nessun prodotto trovato'}
           </div>
         ) : filtered.map(item => {
-          const isAlert = item.quantita < item.soglia_minima
+          const isAlert = item.quantita < item.soglia_minima && !item.alert_silenziato
+          const isSilenziato = item.alert_silenziato
           return (
-            <div key={item.id} className={`card p-4 ${isAlert ? 'border-red-400/20 bg-red-400/5' : ''}`}>
+            <div key={item.id} className={`card p-4 ${isAlert ? 'border-red-400/20 bg-red-400/5' : isSilenziato ? 'border-stone/20 bg-stone/5' : ''}`}>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-obsidian leading-snug">{item.prodotto}</p>
@@ -410,15 +552,39 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                     </p>
                   )}
                 </div>
-                <button onClick={() => setEditItem(item)} className="p-1.5 text-stone/50 hover:text-gold transition-colors flex-shrink-0">
-                  <Pencil size={14} />
-                </button>
+                <div className="flex items-center gap-1">
+                  {isSilenziato ? (
+                    <button
+                      title="Riattiva alert"
+                      onClick={() => toggleSilenzia(item)}
+                      className="p-1.5 text-stone/40 hover:text-gold transition-colors"
+                    >
+                      <Bell size={13} />
+                    </button>
+                  ) : (
+                    <button
+                      title="Silenzia alert"
+                      onClick={() => setSilenziandoItem(item)}
+                      className="p-1.5 text-stone/40 hover:text-stone transition-colors"
+                    >
+                      <BellOff size={13} />
+                    </button>
+                  )}
+                  <button onClick={() => setEditItem(item)} className="p-1.5 text-stone/50 hover:text-gold transition-colors">
+                    <Pencil size={14} />
+                  </button>
+                </div>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div>
                     <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Qtà</p>
                     <QuantitaEditor value={item.quantita} onChange={val => saveQuantita(item.id, val)} />
+                    <CoperturaBarra
+                      quantita={item.quantita}
+                      soglia_minima={item.soglia_minima}
+                      silenziato={isSilenziato}
+                    />
                   </div>
                   <div>
                     <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Min.</p>
@@ -433,11 +599,20 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                     </div>
                   )}
                 </div>
-                {isAlert
-                  ? <span className="badge-alert text-[10px]"><AlertTriangle size={9} /> Sotto soglia</span>
-                  : <span className="badge-ok text-[10px]"><CheckCircle size={9} /> OK</span>
+                {isSilenziato
+                  ? <span className="badge text-[10px] text-stone border-stone/30 bg-stone/10 flex items-center gap-1">
+                      <BellOff size={9} /> Silenziato
+                    </span>
+                  : isAlert
+                    ? <span className="badge-alert text-[10px]"><AlertTriangle size={9} /> Sotto soglia</span>
+                    : <span className="badge-ok text-[10px]"><CheckCircle size={9} /> OK</span>
                 }
               </div>
+              {isSilenziato && item.alert_silenziato_motivo && (
+                <p className="text-[10px] text-stone/50 italic mt-1.5 border-t border-stone/10 pt-1.5">
+                  {item.alert_silenziato_motivo}
+                </p>
+              )}
             </div>
           )
         })}
@@ -498,10 +673,18 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                   </td>
                 </tr>
               ) : filtered.map(item => {
-                const isAlert = item.quantita < item.soglia_minima
+                const isAlert = item.quantita < item.soglia_minima && !item.alert_silenziato
+                const isSilenziato = item.alert_silenziato
                 return (
-                  <tr key={item.id} className={isAlert ? 'bg-red-400/5' : ''}>
-                    <td className="font-medium text-obsidian">{item.prodotto}</td>
+                  <tr key={item.id} className={isAlert ? 'bg-red-400/5' : isSilenziato ? 'bg-stone/5' : ''}>
+                    <td className="font-medium text-obsidian">
+                      {item.prodotto}
+                      {isSilenziato && item.alert_silenziato_motivo && (
+                        <p className="text-[9px] text-stone/50 italic font-normal mt-0.5 max-w-[200px] truncate">
+                          {item.alert_silenziato_motivo}
+                        </p>
+                      )}
+                    </td>
                     <td>{item.categoria}</td>
                     <td>{item.azienda ?? '—'}</td>
                     <td>{fornitori.find(f => f.id === item.fornitore_id)?.nome ?? '—'}</td>
@@ -512,21 +695,49 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
                         value={item.quantita}
                         onChange={val => saveQuantita(item.id, val)}
                       />
+                      <CoperturaBarra
+                        quantita={item.quantita}
+                        soglia_minima={item.soglia_minima}
+                        silenziato={isSilenziato}
+                      />
                     </td>
                     <td><SogliaMinimaEditor value={item.soglia_minima} onChange={val => saveSoglia(item.id, val)} /></td>
                     <td>
-                      {isAlert
-                        ? <span className="badge-alert"><AlertTriangle size={10} /> Sotto soglia</span>
-                        : <span className="badge-ok"><CheckCircle size={10} /> OK</span>
+                      {isSilenziato
+                        ? <span className="badge text-[10px] text-stone border-stone/30 bg-stone/10 flex items-center gap-1 w-fit">
+                            <BellOff size={9} /> Silenziato
+                          </span>
+                        : isAlert
+                          ? <span className="badge-alert"><AlertTriangle size={10} /> Sotto soglia</span>
+                          : <span className="badge-ok"><CheckCircle size={10} /> OK</span>
                       }
                     </td>
                     <td className={scadenzaColor(item.scadenza)}>
                       {formatDate(item.scadenza ?? undefined)}
                     </td>
                     <td>
-                      <button onClick={() => setEditItem(item)} className="btn-ghost p-1.5">
-                        <Pencil size={13} />
-                      </button>
+                      <div className="flex items-center gap-1">
+                        {isSilenziato ? (
+                          <button
+                            title="Riattiva alert"
+                            onClick={() => toggleSilenzia(item)}
+                            className="btn-ghost p-1.5 text-stone/40 hover:text-gold"
+                          >
+                            <Bell size={13} />
+                          </button>
+                        ) : (
+                          <button
+                            title="Silenzia alert"
+                            onClick={() => setSilenziandoItem(item)}
+                            className="btn-ghost p-1.5 text-stone/40 hover:text-stone"
+                          >
+                            <BellOff size={13} />
+                          </button>
+                        )}
+                        <button onClick={() => setEditItem(item)} className="btn-ghost p-1.5">
+                          <Pencil size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 )
@@ -544,6 +755,15 @@ export default function MagazzinoAdmin({ items: itemsProp, riordini, fornitori =
           quantitaAttuale={evadisciModal.quantitaAttuale}
           onClose={() => setEvadisciModal(null)}
           onConferma={confermaEvadisci}
+        />
+      )}
+
+      {/* Modal silenzia alert */}
+      {silenziandoItem && (
+        <SilenziaModal
+          item={silenziandoItem}
+          onClose={() => setSilenziandoItem(null)}
+          onConferma={(item, motivo) => toggleSilenzia(item, motivo)}
         />
       )}
 

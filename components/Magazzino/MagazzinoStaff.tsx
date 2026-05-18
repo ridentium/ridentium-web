@@ -3,7 +3,29 @@
 import { useState, useTransition } from 'react'
 import { MagazzinoItem, Fornitore } from '@/types'
 import { formatDate } from '@/lib/utils'
-import { AlertTriangle, CheckCircle, ShoppingCart, Check, Clock, AlertCircle, Phone, Mail } from 'lucide-react'
+import { AlertTriangle, CheckCircle, ShoppingCart, Check, Clock, AlertCircle, Phone, Mail, BellOff } from 'lucide-react'
+
+// Barra copertura scorte (read-only, staff)
+function CoperturaBarra({ quantita, soglia_minima, silenziato }: {
+  quantita: number; soglia_minima: number; silenziato: boolean
+}) {
+  if (soglia_minima === 0) return null
+  const perc = Math.min(100, Math.round((quantita / soglia_minima) * 100))
+  let barClass: string
+  if (silenziato) { barClass = 'bg-stone/50' }
+  else if (perc <= 25) { barClass = 'bg-red-700' }
+  else if (perc <= 60) { barClass = 'bg-amber-600' }
+  else if (perc < 100) { barClass = 'bg-gold' }
+  else { barClass = 'bg-emerald-600' }
+  return (
+    <div className="flex items-center gap-1.5 mt-1">
+      <div className="w-12 h-1 bg-stone/20 rounded-full overflow-hidden">
+        <div className={`h-full rounded-full ${barClass}`} style={{ width: `${silenziato ? 100 : perc}%` }} />
+      </div>
+      <span className="text-[9px] text-stone/40">{silenziato ? '—' : `${perc}%`}</span>
+    </div>
+  )
+}
 import { useRouter } from 'next/navigation'
 
 function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
@@ -41,7 +63,8 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
 
   const filtered = items.filter(item => {
     if (categoria !== 'Tutte' && item.categoria !== categoria) return false
-    if (soloAlert && item.quantita >= item.soglia_minima) return false
+    // soloAlert esclude i prodotti con alert silenziato (non sono emergenze reali)
+    if (soloAlert && (item.quantita >= item.soglia_minima || item.alert_silenziato)) return false
     if (soloScadenza) {
       const es = getExpiryStatus(item.scadenza)
       if (es === 'ok' || es === 'none') return false
@@ -49,7 +72,8 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
     return true
   })
 
-  const alertCount = items.filter(i => i.quantita < i.soglia_minima).length
+  // alertCount: solo prodotti veramente in alert (sotto soglia E non silenziati)
+  const alertCount = items.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato).length
   const scadenzaCount = items.filter(i => {
     const es = getExpiryStatus(i.scadenza)
     return es === 'expired' || es === 'expiring'
@@ -124,11 +148,13 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
             {filtered.length === 0 ? (
               <tr><td colSpan={9} className="text-center text-stone py-8">Nessun prodotto</td></tr>
             ) : filtered.map(item => {
-              const isAlert = item.quantita < item.soglia_minima
+              const isSilenziato = item.alert_silenziato
+              const isAlert = item.quantita < item.soglia_minima && !isSilenziato
               const expiryStatus = getExpiryStatus(item.scadenza)
               const riordinato = localRiordini.includes(item.id)
               const rowBg = isAlert
                 ? 'bg-red-400/5'
+                : isSilenziato ? 'bg-stone/5'
                 : expiryStatus === 'expired' ? 'bg-red-400/5'
                 : expiryStatus === 'expiring' ? 'bg-amber-400/5' : ''
               return (
@@ -137,7 +163,14 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   <td className="text-stone">{item.categoria}</td>
                   <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
                   <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
-                  <td className="font-medium">{item.quantita} {item.unita}</td>
+                  <td>
+                    <span className="font-medium">{item.quantita} {item.unita}</span>
+                    <CoperturaBarra
+                      quantita={item.quantita}
+                      soglia_minima={item.soglia_minima}
+                      silenziato={isSilenziato}
+                    />
+                  </td>
                   <td className={
                     expiryStatus === 'expired' ? 'text-red-700 font-medium' :
                     expiryStatus === 'expiring' ? 'text-amber-400 font-medium' : 'text-stone'
@@ -146,6 +179,11 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                   </td>
                   <td>
                     <div className="flex flex-col gap-1">
+                      {isSilenziato && (
+                        <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-stone/10 text-stone border border-stone/20 w-fit">
+                          <BellOff size={9} /> Silenziato
+                        </span>
+                      )}
                       {isAlert && (
                         <span className="badge-alert flex items-center gap-1"><AlertTriangle size={10} /> Sotto soglia</span>
                       )}
@@ -159,7 +197,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                           <Clock size={10} /> In scadenza
                         </span>
                       )}
-                      {!isAlert && expiryStatus !== 'expired' && expiryStatus !== 'expiring' && (
+                      {!isSilenziato && !isAlert && expiryStatus !== 'expired' && expiryStatus !== 'expiring' && (
                         <span className="badge-ok flex items-center gap-1"><CheckCircle size={10} /> OK</span>
                       )}
                     </div>
