@@ -29,6 +29,10 @@ export interface MagazzinoItem {
   ultimo_riordino?: string | null
   note?: string | null
   fornitore_id?: string | null
+  // Priorità operativa
+  priorita: 'critica' | 'alta' | 'normale' | 'bassa'
+  // Ultimo cambio quantità (aggiornato solo da PATCH con quantita o evadisci)
+  ultimo_movimento_at?: string | null
   // Alert silenziato
   alert_silenziato: boolean
   alert_silenziato_motivo?: string | null

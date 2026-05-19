@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 // ─── Aree consentite ──────────────────────────────────────────────────────────
 
-export type SettingArea = 'dashboard' | 'crm' | 'studio'
+export type SettingArea = 'dashboard' | 'crm' | 'studio' | 'magazzino'
 
 // ─── Defaults (fallback hardcoded — mai cambiano senza deploy) ────────────────
 //
@@ -24,6 +24,9 @@ export const SETTING_DEFAULTS: Record<SettingArea, Record<string, unknown>> = {
     nome:     '',
     email:    '',
     telefono: '',
+  },
+  magazzino: {
+    giorni_dormiente: 180,
   },
 }
 
@@ -46,6 +49,9 @@ export const SETTING_VALIDATORS: Record<SettingArea, Record<string, z.ZodTypeAny
       { message: 'Email non valida' }
     ),
     telefono: z.string().max(30),
+  },
+  magazzino: {
+    giorni_dormiente: z.number().int().min(30).max(730),
   },
 }
 
@@ -134,10 +140,11 @@ export async function getSettingsByArea(
 // ─── getAllSettings — tutte le aree per la UI ─────────────────────────────────
 
 export async function getAllSettings(): Promise<Record<SettingArea, Record<string, unknown>>> {
-  const [dashboard, crm, studio] = await Promise.all([
+  const [dashboard, crm, studio, magazzino] = await Promise.all([
     getSettingsByArea('dashboard'),
     getSettingsByArea('crm'),
     getSettingsByArea('studio'),
+    getSettingsByArea('magazzino'),
   ])
-  return { dashboard, crm, studio }
+  return { dashboard, crm, studio, magazzino }
 }

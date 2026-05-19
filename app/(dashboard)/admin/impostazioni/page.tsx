@@ -47,6 +47,9 @@ export default async function ImpostazioniAdminPage() {
       email:    String(allSettings.studio.email    ?? ''),
       telefono: String(allSettings.studio.telefono ?? ''),
     },
+    magazzino: {
+      giorni_dormiente: Number(allSettings.magazzino.giorni_dormiente ?? SETTING_DEFAULTS.magazzino.giorni_dormiente),
+    },
   }
 
   return (

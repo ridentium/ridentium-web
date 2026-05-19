@@ -158,6 +158,8 @@ export const updateContattoSchema = z.object({
 
 // ── Magazzino ────────────────────────────────────────────────────────────────
 
+const PRIORITA_MAGAZZINO = ['critica', 'alta', 'normale', 'bassa'] as const
+
 export const createMagazzinoItemSchema = z.object({
   prodotto:        nonEmptyString(255),
   categoria:       z.string().trim().min(1).max(100),
@@ -172,6 +174,7 @@ export const createMagazzinoItemSchema = z.object({
   scadenza:        z.string().optional().nullable(),
   note:            z.string().trim().max(500).optional().nullable(),
   fornitore_id:    uuid.optional().nullable(),
+  priorita:        z.enum(PRIORITA_MAGAZZINO).default('normale'),
 })
 
 export const updateMagazzinoItemSchema = z.object({
@@ -188,6 +191,7 @@ export const updateMagazzinoItemSchema = z.object({
   scadenza:        z.string().optional().nullable(),
   note:            z.string().trim().max(500).optional().nullable(),
   fornitore_id:    uuid.optional().nullable(),
+  priorita:        z.enum(PRIORITA_MAGAZZINO).optional(),
 })
 
 /** Schema specifico per silenziare/riattivare l'alert di un prodotto magazzino */

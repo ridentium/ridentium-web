@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import { SlidersHorizontal, Building2, Phone, Mail, LayoutDashboard, MessageSquare, Loader2, Check, AlertCircle } from 'lucide-react'
+import { SlidersHorizontal, Building2, Phone, Mail, LayoutDashboard, MessageSquare, Loader2, Check, AlertCircle, Package } from 'lucide-react'
 import type { SettingArea } from '@/lib/settings'
 
 // ── Tipi ─────────────────────────────────────────────────────────────────────
@@ -20,6 +20,9 @@ interface AllSettings {
     nome:     string
     email:    string
     telefono: string
+  }
+  magazzino: {
+    giorni_dormiente: number
   }
 }
 
@@ -148,10 +151,12 @@ export default function SettingsOperativi({ initialSettings, isReadOnly }: Props
   const [dashboard, setDashboard] = useState(initialSettings.dashboard)
   const [crm, setCrm]             = useState(initialSettings.crm)
   const [studio, setStudio]       = useState(initialSettings.studio)
+  const [magazzino, setMagazzino] = useState(initialSettings.magazzino)
 
-  const [statoDash,    setStatoDash]   = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
-  const [statoCrm,     setStatoCrm]    = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
-  const [statoStudio,  setStatoStudio] = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
+  const [statoDash,    setStatoDash]      = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
+  const [statoCrm,     setStatoCrm]       = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
+  const [statoStudio,  setStatoStudio]    = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
+  const [statoMag,     setStatoMag]       = useState<'idle' | 'saving' | 'ok' | 'error'>('idle')
 
   const [, startTransition] = useTransition()
 
@@ -174,6 +179,13 @@ export default function SettingsOperativi({ initialSettings, isReadOnly }: Props
     const err = await saveSetting('crm', 'giorni_followup_default', crm.giorni_followup_default)
     setStatoCrm(err ? 'error' : 'ok')
     setTimeout(() => setStatoCrm('idle'), 3000)
+  }
+
+  async function salvaMagazzino() {
+    setStatoMag('saving')
+    const err = await saveSetting('magazzino', 'giorni_dormiente', magazzino.giorni_dormiente)
+    setStatoMag(err ? 'error' : 'ok')
+    setTimeout(() => setStatoMag('idle'), 3000)
   }
 
   async function salvaStudio() {
@@ -284,6 +296,27 @@ export default function SettingsOperativi({ initialSettings, isReadOnly }: Props
                 Salva Studio
               </button>
             </div>
+          </div>
+        )}
+      </Sezione>
+
+      {/* ── Magazzino ── */}
+      <Sezione icon={Package} title="Magazzino">
+        <CampoNumero
+          label="Prodotti dormienti dopo" note="Giorni senza movimenti di quantità dopo cui un prodotto è considerato dormiente"
+          value={magazzino.giorni_dormiente} onChange={v => setMagazzino(m => ({ ...m, giorni_dormiente: v }))}
+          min={30} max={730} readOnly={isReadOnly}
+        />
+        {!isReadOnly && (
+          <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone/10">
+            <FeedbackSalva stato={statoMag} />
+            <button
+              onClick={() => startTransition(salvaMagazzino)}
+              disabled={statoMag === 'saving'}
+              className="btn-secondary text-xs px-3 py-1.5 disabled:opacity-50"
+            >
+              Salva Magazzino
+            </button>
           </div>
         )}
       </Sezione>
