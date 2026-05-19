@@ -28,6 +28,28 @@ function CoperturaBarra({ quantita, soglia_minima, silenziato }: {
 }
 import { useRouter } from 'next/navigation'
 
+/** Etichetta relativa per ultimo_movimento_at */
+function ultimoMovimentoLabel(ultimoMovimentoAt: string | null | undefined): string {
+  if (!ultimoMovimentoAt) return 'non disponibile'
+  const daysAgo = Math.floor((Date.now() - new Date(ultimoMovimentoAt).getTime()) / 86_400_000)
+  if (daysAgo === 0) return 'oggi'
+  if (daysAgo === 1) return 'ieri'
+  return `${daysAgo} gg fa`
+}
+
+/** Prodotto dormiente se senza movimenti quantità da ≥ X giorni */
+function isDormiente(item: MagazzinoItem, giorniDormiente: number): boolean {
+  const ref = item.ultimo_movimento_at ?? item.created_at
+  const daysAgo = Math.floor((Date.now() - new Date(ref).getTime()) / 86_400_000)
+  return daysAgo >= giorniDormiente
+}
+
+// Stili badge priorità (solo critica e alta sono visibili di default)
+const PRIORITA_BADGE: Record<string, string> = {
+  critica: 'bg-red-700/10 text-red-700 border-red-700/20',
+  alta:    'bg-amber-600/10 text-amber-700 border-amber-600/20',
+}
+
 function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
   if (!scadenza) return 'none'
   const today = new Date()
@@ -45,6 +67,7 @@ interface Props {
   riordiniAperti: string[]
   userId: string
   fornitori: Fornitore[]
+  giorniDormiente?: number
 }
 
 const CATEGORIE = [
@@ -52,7 +75,7 @@ const CATEGORIE = [
   'Consumabili', 'DPI & Sterilizzazione'
 ]
 
-export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitori }: Props) {
+export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitori, giorniDormiente = 180 }: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [categoria, setCategoria] = useState('Tutte')
@@ -152,6 +175,8 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
               const isAlert = item.quantita < item.soglia_minima && !isSilenziato
               const expiryStatus = getExpiryStatus(item.scadenza)
               const riordinato = localRiordini.includes(item.id)
+              const dormiente = isDormiente(item, giorniDormiente)
+              const ultMov = ultimoMovimentoLabel(item.ultimo_movimento_at)
               const rowBg = isAlert
                 ? 'bg-red-400/5'
                 : isSilenziato ? 'bg-stone/5'
@@ -159,7 +184,16 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                 : expiryStatus === 'expiring' ? 'bg-amber-400/5' : ''
               return (
                 <tr key={item.id} className={rowBg}>
-                  <td className="font-medium text-obsidian">{item.prodotto}</td>
+                  <td>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-medium text-obsidian">{item.prodotto}</span>
+                      {PRIORITA_BADGE[item.priorita] && (
+                        <span className={`inline-flex items-center text-[9px] px-1.5 py-0.5 rounded border w-fit font-medium capitalize ${PRIORITA_BADGE[item.priorita]}`}>
+                          {item.priorita}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="text-stone">{item.categoria}</td>
                   <td>{item.diametro ? `ø${item.diametro}` : '—'}</td>
                   <td>{item.lunghezza ? `${item.lunghezza}mm` : '—'}</td>
@@ -170,6 +204,7 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                       soglia_minima={item.soglia_minima}
                       silenziato={isSilenziato}
                     />
+                    <p className="text-[9px] text-stone/40 mt-0.5">Mov: {ultMov}</p>
                   </td>
                   <td className={
                     expiryStatus === 'expired' ? 'text-red-700 font-medium' :
@@ -199,6 +234,11 @@ export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitor
                       )}
                       {!isSilenziato && !isAlert && expiryStatus !== 'expired' && expiryStatus !== 'expiring' && (
                         <span className="badge-ok flex items-center gap-1"><CheckCircle size={10} /> OK</span>
+                      )}
+                      {dormiente && (
+                        <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-700 border border-amber-400/20 w-fit">
+                          <Clock size={9} /> Dormiente
+                        </span>
                       )}
                     </div>
                   </td>

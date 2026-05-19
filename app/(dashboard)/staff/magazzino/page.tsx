@@ -1,15 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import PageHeader from '@/components/Layout/PageHeader'
 import MagazzinoStaff from '@/components/Magazzino/MagazzinoStaff'
+import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
 
 export default async function MagazzinoStaffPage() {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  const M = SETTING_DEFAULTS.magazzino
+
   const [
     { data: items },
     { data: myRiordini },
     { data: fornitori },
+    giorniDormiente,
   ] = await Promise.all([
     supabase
       .from('magazzino')
@@ -24,6 +28,7 @@ export default async function MagazzinoStaffPage() {
       .eq('richiesto_da', user!.id)
       .eq('stato', 'aperta'),
     supabase.from('fornitori').select('*, fornitore_contatti(*)').order('nome'),
+    getSetting<number>('magazzino', 'giorni_dormiente', M.giorni_dormiente as number),
   ])
 
   const riordiniIds = (myRiordini ?? []).map((r: any) => r.magazzino_id)
@@ -39,6 +44,7 @@ export default async function MagazzinoStaffPage() {
         riordiniAperti={riordiniIds}
         userId={user!.id}
         fornitori={fornitori ?? []}
+        giorniDormiente={giorniDormiente}
       />
     </div>
   )

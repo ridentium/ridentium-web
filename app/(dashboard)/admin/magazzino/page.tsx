@@ -3,13 +3,22 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import PageHeader from '@/components/Layout/PageHeader'
 import MagazzinoAdmin from '@/components/Magazzino/MagazzinoAdmin'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
 
 export default async function MagazzinoPage() {
   const supabase = createClient()
   const adminDb = createAdminClient()
 
-  // Tutti i dati in parallelo
-  const [{ data: items }, { data: riordini }, { data: fornitori }, { data: ordiniRighe }] = await Promise.all([
+  const M = SETTING_DEFAULTS.magazzino
+
+  // Tutti i dati in parallelo (incluso setting dormienti)
+  const [
+    { data: items },
+    { data: riordini },
+    { data: fornitori },
+    { data: ordiniRighe },
+    giorniDormiente,
+  ] = await Promise.all([
     supabase
       .from('magazzino')
       .select('*')
@@ -30,6 +39,7 @@ export default async function MagazzinoPage() {
       .select('magazzino_id, ordini!inner(stato)')
       .in('ordini.stato', ['inviato', 'parziale'])
       .not('magazzino_id', 'is', null),
+    getSetting<number>('magazzino', 'giorni_dormiente', M.giorni_dormiente as number),
   ])
 
   // Estrai gli ID magazzino già ordinati
@@ -49,6 +59,7 @@ export default async function MagazzinoPage() {
           riordini={riordini ?? []}
           fornitori={fornitori ?? []}
           orderedItemIds={orderedItemIds}
+          giorniDormiente={giorniDormiente}
         />
       </ErrorBoundary>
     </div>
