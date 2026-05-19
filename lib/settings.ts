@@ -26,7 +26,11 @@ export const SETTING_DEFAULTS: Record<SettingArea, Record<string, unknown>> = {
     telefono: '',
   },
   magazzino: {
-    giorni_dormiente: 180,
+    giorni_dormiente:          180,
+    giorni_scadenza_critica:   30,
+    giorni_scadenza_attenzione: 90,
+    giorni_copertura_alert:    14,
+    giorni_consumo_medio:      30,
   },
 }
 
@@ -51,7 +55,11 @@ export const SETTING_VALIDATORS: Record<SettingArea, Record<string, z.ZodTypeAny
     telefono: z.string().max(30),
   },
   magazzino: {
-    giorni_dormiente: z.number().int().min(30).max(730),
+    giorni_dormiente:           z.number().int().min(30).max(730),
+    giorni_scadenza_critica:    z.number().int().min(7).max(90),
+    giorni_scadenza_attenzione: z.number().int().min(14).max(365),
+    giorni_copertura_alert:     z.number().int().min(3).max(60),
+    giorni_consumo_medio:       z.number().int().min(7).max(90),
   },
 }
 

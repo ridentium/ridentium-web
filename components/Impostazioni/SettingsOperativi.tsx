@@ -22,7 +22,11 @@ interface AllSettings {
     telefono: string
   }
   magazzino: {
-    giorni_dormiente: number
+    giorni_dormiente:           number
+    giorni_scadenza_critica:    number
+    giorni_scadenza_attenzione: number
+    giorni_copertura_alert:     number
+    giorni_consumo_medio:       number
   }
 }
 
@@ -183,8 +187,15 @@ export default function SettingsOperativi({ initialSettings, isReadOnly }: Props
 
   async function salvaMagazzino() {
     setStatoMag('saving')
-    const err = await saveSetting('magazzino', 'giorni_dormiente', magazzino.giorni_dormiente)
-    setStatoMag(err ? 'error' : 'ok')
+    const entries: [string, unknown][] = [
+      ['giorni_dormiente',           magazzino.giorni_dormiente],
+      ['giorni_scadenza_critica',    magazzino.giorni_scadenza_critica],
+      ['giorni_scadenza_attenzione', magazzino.giorni_scadenza_attenzione],
+      ['giorni_copertura_alert',     magazzino.giorni_copertura_alert],
+      ['giorni_consumo_medio',       magazzino.giorni_consumo_medio],
+    ]
+    const errors = await Promise.all(entries.map(([k, v]) => saveSetting('magazzino', k, v)))
+    setStatoMag(errors.some(Boolean) ? 'error' : 'ok')
     setTimeout(() => setStatoMag('idle'), 3000)
   }
 
@@ -306,6 +317,26 @@ export default function SettingsOperativi({ initialSettings, isReadOnly }: Props
           label="Prodotti dormienti dopo" note="Giorni senza movimenti di quantità dopo cui un prodotto è considerato dormiente"
           value={magazzino.giorni_dormiente} onChange={v => setMagazzino(m => ({ ...m, giorni_dormiente: v }))}
           min={30} max={730} readOnly={isReadOnly}
+        />
+        <CampoNumero
+          label="Scadenza critica entro" note="Giorni alla scadenza per badge arancione (alert imminente)"
+          value={magazzino.giorni_scadenza_critica} onChange={v => setMagazzino(m => ({ ...m, giorni_scadenza_critica: v }))}
+          min={7} max={90} readOnly={isReadOnly}
+        />
+        <CampoNumero
+          label="Scadenza attenzione entro" note="Giorni alla scadenza per badge giallo (avviso anticipato)"
+          value={magazzino.giorni_scadenza_attenzione} onChange={v => setMagazzino(m => ({ ...m, giorni_scadenza_attenzione: v }))}
+          min={14} max={365} readOnly={isReadOnly}
+        />
+        <CampoNumero
+          label="Alert copertura scorte entro" note="Giorni di copertura stimata sotto cui appare 'Finisce presto'"
+          value={magazzino.giorni_copertura_alert} onChange={v => setMagazzino(m => ({ ...m, giorni_copertura_alert: v }))}
+          min={3} max={60} readOnly={isReadOnly}
+        />
+        <CampoNumero
+          label="Finestra consumo medio" note="Giorni di scarichi usati per calcolare il consumo medio giornaliero"
+          value={magazzino.giorni_consumo_medio} onChange={v => setMagazzino(m => ({ ...m, giorni_consumo_medio: v }))}
+          min={7} max={90} readOnly={isReadOnly}
         />
         {!isReadOnly && (
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-stone/10">

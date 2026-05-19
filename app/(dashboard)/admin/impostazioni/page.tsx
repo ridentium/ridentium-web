@@ -48,7 +48,11 @@ export default async function ImpostazioniAdminPage() {
       telefono: String(allSettings.studio.telefono ?? ''),
     },
     magazzino: {
-      giorni_dormiente: Number(allSettings.magazzino.giorni_dormiente ?? SETTING_DEFAULTS.magazzino.giorni_dormiente),
+      giorni_dormiente:           Number(allSettings.magazzino.giorni_dormiente           ?? SETTING_DEFAULTS.magazzino.giorni_dormiente),
+      giorni_scadenza_critica:    Number(allSettings.magazzino.giorni_scadenza_critica    ?? SETTING_DEFAULTS.magazzino.giorni_scadenza_critica),
+      giorni_scadenza_attenzione: Number(allSettings.magazzino.giorni_scadenza_attenzione ?? SETTING_DEFAULTS.magazzino.giorni_scadenza_attenzione),
+      giorni_copertura_alert:     Number(allSettings.magazzino.giorni_copertura_alert     ?? SETTING_DEFAULTS.magazzino.giorni_copertura_alert),
+      giorni_consumo_medio:       Number(allSettings.magazzino.giorni_consumo_medio       ?? SETTING_DEFAULTS.magazzino.giorni_consumo_medio),
     },
   }
 
