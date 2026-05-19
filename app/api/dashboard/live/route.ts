@@ -12,6 +12,7 @@ export interface MagazzinoAlert {
   quantita: number
   soglia_minima: number
   categoria: string
+  priorita: string
 }
 
 export interface OrdineAperto {
@@ -58,6 +59,8 @@ export interface DashboardLiveData {
   ts: string
   magazzino: {
     sottoSoglia: number
+    critici: number      // sotto soglia + priorità critica + non silenziati
+    dormienti: number    // nessun movimento quantità da > giorniDormiente gg
     items: MagazzinoAlert[]
   }
   ordini: {
@@ -133,11 +136,13 @@ export async function GET() {
   }
 
   // Carica settings operativi (con fallback hardcoded se DB non risponde)
-  const [giorniStantio, giorniAdempienti, giorniManutenzione, maxItems] = await Promise.all([
+  const M = SETTING_DEFAULTS.magazzino
+  const [giorniStantio, giorniAdempienti, giorniManutenzione, maxItems, giorniDormiente] = await Promise.all([
     getSetting<number>('dashboard', 'giorni_stantio',            D.giorni_stantio            as number),
     getSetting<number>('dashboard', 'giorni_adempimenti_alert',  D.giorni_adempimenti_alert  as number),
     getSetting<number>('dashboard', 'giorni_manutenzione_alert', D.giorni_manutenzione_alert as number),
     getSetting<number>('dashboard', 'max_items_preview',         D.max_items_preview         as number),
+    getSetting<number>('magazzino', 'giorni_dormiente',          M.giorni_dormiente          as number),
   ])
 
   // Date di riferimento
@@ -170,7 +175,7 @@ export async function GET() {
     { data: ricorrentiAll },
   ] = await Promise.all([
     // 1. Magazzino — tutti gli item (colonne minimali, escludi silenziati da alert)
-    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato'),
+    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato, priorita, ultimo_movimento_at, created_at'),
 
     // 2. Ordini in attesa (non ancora ricevuti)
     adminDb
@@ -229,10 +234,27 @@ export async function GET() {
   ])
 
   // ── 1. Magazzino sotto soglia (escludi prodotti con alert silenziato) ────────
-  const sottoSoglia = (magazzinoAll ?? []).filter(
-    (i: { quantita: number; soglia_minima: number; alert_silenziato: boolean }) =>
-      i.quantita < i.soglia_minima && !i.alert_silenziato
-  ) as MagazzinoAlert[]
+  type MagLiveRow = {
+    id: string; prodotto: string; quantita: number; soglia_minima: number
+    categoria: string; alert_silenziato: boolean; priorita: string
+    ultimo_movimento_at: string | null; created_at: string
+  }
+  const allMag = (magazzinoAll ?? []) as MagLiveRow[]
+
+  const sottoSoglia = allMag.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato)
+  const criticiN    = sottoSoglia.filter(i => i.priorita === 'critica').length
+
+  const dormienteCutoff = new Date(Date.now() - giorniDormiente * 86_400_000)
+  const dormientiN = allMag.filter(i => {
+    const ref = i.ultimo_movimento_at ?? i.created_at
+    return ref && new Date(ref) < dormienteCutoff
+  }).length
+
+  // Ordina items preview: critici prima, poi alta, normale, bassa
+  const PRIO_ORDER: Record<string, number> = { critica: 0, alta: 1, normale: 2, bassa: 3 }
+  const sottoSogliaOrdinati = [...sottoSoglia].sort(
+    (a, b) => (PRIO_ORDER[a.priorita] ?? 2) - (PRIO_ORDER[b.priorita] ?? 2)
+  )
 
   // ── 2. Ordini aperti + stantii ────────────────────────────────────────────
   const ordiniProcessed: OrdineAperto[] = (ordiniAperti ?? []).map((o: {
@@ -375,7 +397,9 @@ export async function GET() {
     ts: new Date().toISOString(),
     magazzino: {
       sottoSoglia: sottoSoglia.length,
-      items: sottoSoglia.slice(0, maxItems),
+      critici:     criticiN,
+      dormienti:   dormientiN,
+      items: sottoSogliaOrdinati.slice(0, maxItems) as MagazzinoAlert[],
     },
     ordini: {
       aperti: ordiniProcessed.length,

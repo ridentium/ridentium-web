@@ -35,11 +35,12 @@ export async function GET(req: NextRequest) {
     // Fetch items below minimum threshold — escludi prodotti con alert silenziato
     const { data: items } = await adminDb
       .from('magazzino')
-      .select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato')
+      .select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato, priorita')
 
     if (!items) return NextResponse.json({ ok: true, alerts: 0 })
 
-    const below = items.filter((i: any) => i.quantita < i.soglia_minima && !i.alert_silenziato)
+    const below   = items.filter((i: any) => i.quantita < i.soglia_minima && !i.alert_silenziato)
+    const critici = below.filter((i: any) => i.priorita === 'critica')
 
     if (below.length === 0) {
       return NextResponse.json({ ok: true, alerts: 0 })
@@ -56,12 +57,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ ok: true, alerts: below.length, skipped: 'disabled' })
     }
 
-    const names = below.slice(0, 3).map((i: any) => i.prodotto).join(', ')
-    const extra = below.length > 3 ? ` e altri ${below.length - 3}` : ''
+    // Critici in cima al corpo notifica, poi gli altri
+    const hasCritici = critici.length > 0
+    const preview = [
+      ...critici.slice(0, hasCritici ? 2 : 0),
+      ...below.filter((i: any) => i.priorita !== 'critica').slice(0, hasCritici ? 1 : 3),
+    ]
+    const names = preview.map((i: any) => i.prodotto).join(', ')
+    const extra = below.length > preview.length ? ` e altri ${below.length - preview.length}` : ''
 
     const notifyPayload = {
       tipo: 'stock_minimo',
-      title: `⚠️ Scorte sotto soglia`,
+      title: hasCritici ? `🔴 Scorte critiche in esaurimento` : `⚠️ Scorte sotto soglia`,
       body: `${below.length} prodott${below.length === 1 ? 'o' : 'i'} in esaurimento: ${names}${extra}`,
       url: '/admin/magazzino',
       tag: 'stock-alert',

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import {
   CheckSquare, RefreshCw, Loader2, TrendingUp,
   ShieldCheck, Package, ClipboardList, Wrench, Phone, AlertCircle,
+  AlertTriangle, Clock,
 } from 'lucide-react'
 import type { DashboardLiveData } from '@/app/api/dashboard/live/route'
 
@@ -239,9 +240,9 @@ export default function KPIRealiWidget() {
       {/* ── Riga 2: KPI contatori ────────────────────────────────────────── */}
       <div>
         <p className="text-[9px] text-stone/40 uppercase tracking-widest mb-2">Situazione operativa</p>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
           {loading ? (
-            Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} />)
+            Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)
           ) : data ? (
             <>
               <KPICountCard
@@ -261,6 +262,24 @@ export default function KPIRealiWidget() {
                 valore={data.magazzino.sottoSoglia}
                 label="sotto soglia"
                 urgenza={urgenza(data.magazzino.sottoSoglia > 10 ? data.magazzino.sottoSoglia : 0, data.magazzino.sottoSoglia)}
+                subValore={data.magazzino.critici > 0 ? data.magazzino.critici : undefined}
+                subLabel="critici"
+              />
+              <KPICountCard
+                href="/admin/magazzino"
+                icon={AlertTriangle}
+                title="Scorte critiche"
+                valore={data.magazzino.critici}
+                label="priorità critica"
+                urgenza={urgenza(data.magazzino.critici, 0)}
+              />
+              <KPICountCard
+                href="/admin/magazzino"
+                icon={Clock}
+                title="Dormienti"
+                valore={data.magazzino.dormienti}
+                label="senza movimenti"
+                urgenza={urgenza(0, data.magazzino.dormienti)}
               />
               <KPICountCard
                 href="/admin/ordini"

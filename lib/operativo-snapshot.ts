@@ -5,6 +5,7 @@ import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
 // Alias defaults per leggibilità
 const D = SETTING_DEFAULTS.dashboard
 const S = SETTING_DEFAULTS.studio
+const M = SETTING_DEFAULTS.magazzino
 
 // ─── Helper ───────────────────────────────────────────────────────────────────
 
@@ -33,13 +34,14 @@ export async function buildOperativoSnapshot(
 ): Promise<string> {
 
   // Carica settings operativi in parallelo con le query (fallback garantito)
-  const [giorniStantio, giorniAdempimenti, giorniManutenzione, maxItems, nomeStudio] =
+  const [giorniStantio, giorniAdempimenti, giorniManutenzione, maxItems, nomeStudio, giorniDormiente] =
     await Promise.all([
       getSetting<number>('dashboard', 'giorni_stantio',            D.giorni_stantio            as number),
       getSetting<number>('dashboard', 'giorni_adempimenti_alert',  D.giorni_adempimenti_alert  as number),
       getSetting<number>('dashboard', 'giorni_manutenzione_alert', D.giorni_manutenzione_alert as number),
       getSetting<number>('dashboard', 'max_items_preview',         D.max_items_preview         as number),
       getSetting<string>('studio',    'nome',                      S.nome                      as string),
+      getSetting<number>('magazzino', 'giorni_dormiente',          M.giorni_dormiente          as number),
     ])
 
   const oggi     = new Date()
@@ -58,7 +60,7 @@ export async function buildOperativoSnapshot(
   // ── 8 query in parallelo — allSettled = fault-tolerant per sezione ────────
   const [magR, ordR, adR, tskR, attrR, crmR, tskCountR, ricR] = await Promise.allSettled([
     db.from('magazzino')
-      .select('prodotto, quantita, soglia_minima, alert_silenziato'),                       // 0
+      .select('prodotto, quantita, soglia_minima, alert_silenziato, priorita, ultimo_movimento_at, created_at'), // 0
 
     db.from('ordini')
       .select('fornitore_nome, stato, data_invio')
@@ -115,20 +117,37 @@ export async function buildOperativoSnapshot(
 
   // 1. Magazzino
   {
-    type MagRow = { prodotto: string; quantita: number; soglia_minima: number; alert_silenziato: boolean }
+    type MagRow = {
+      prodotto: string; quantita: number; soglia_minima: number
+      alert_silenziato: boolean; priorita: string
+      ultimo_movimento_at: string | null; created_at: string
+    }
     const mag   = safeData<MagRow>(magR)
     if (magR.status === 'rejected') {
       lines.push('MAGAZZINO: dati non disponibili')
     } else {
       // Escludi prodotti con alert silenziato — non sono emergenze operative
-      const sotto = mag.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato)
-      lines.push(`MAGAZZINO: ${sotto.length} prodott${sotto.length === 1 ? 'o' : 'i'} sotto soglia`)
-      sotto.slice(0, maxItems).forEach(i => {
-        const note = i.quantita === 0 ? ' ⚠ ESAURITO' : ''
-        lines.push(`  • ${i.prodotto}: ${i.quantita} (min ${i.soglia_minima})${note}`)
+      const sotto   = mag.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato)
+      const critici = sotto.filter(i => i.priorita === 'critica')
+      const dormienteCutoff = new Date(Date.now() - giorniDormiente * 86_400_000)
+      const dormienti = mag.filter(i => {
+        const ref = i.ultimo_movimento_at ?? i.created_at
+        return ref && new Date(ref) < dormienteCutoff
+      })
+      lines.push(`MAGAZZINO: ${sotto.length} sotto soglia (${critici.length} critici), ${dormienti.length} dormienti`)
+      // Critici prima, poi gli altri
+      const sorted = [
+        ...sotto.filter(i => i.priorita === 'critica'),
+        ...sotto.filter(i => i.priorita !== 'critica'),
+      ]
+      sorted.slice(0, maxItems).forEach(i => {
+        const critFlag = i.priorita === 'critica' ? ' 🔴 CRITICO' : ''
+        const note     = i.quantita === 0 ? ' ⚠ ESAURITO' : ''
+        lines.push(`  • ${i.prodotto}: ${i.quantita} (min ${i.soglia_minima})${critFlag}${note}`)
       })
       if (sotto.length > maxItems) lines.push(`  [+ ${sotto.length - maxItems} altri]`)
-      if (sotto.length === 0) lines.push('  • Tutto in ordine ✓')
+      if (sotto.length === 0 && dormienti.length === 0) lines.push('  • Tutto in ordine ✓')
+      if (sotto.length === 0 && dormienti.length > 0) lines.push(`  • Scorte OK — ${dormienti.length} prodott${dormienti.length === 1 ? 'o dormiente' : 'i dormienti'} (nessun movimento da >${giorniDormiente}gg)`)
     }
   }
 
