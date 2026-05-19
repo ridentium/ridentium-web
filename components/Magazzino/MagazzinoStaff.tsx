@@ -68,6 +68,10 @@ interface Props {
   userId: string
   fornitori: Fornitore[]
   giorniDormiente?: number
+  giorniScadenzaCritica?: number
+  giorniScadenzaAttenzione?: number
+  giorniCopertura?: number
+  giorniConsumo?: number
 }
 
 const CATEGORIE = [
@@ -75,7 +79,14 @@ const CATEGORIE = [
   'Consumabili', 'DPI & Sterilizzazione'
 ]
 
-export default function MagazzinoStaff({ items, riordiniAperti, userId, fornitori, giorniDormiente = 180 }: Props) {
+export default function MagazzinoStaff({
+  items, riordiniAperti, userId, fornitori,
+  giorniDormiente = 180,
+  giorniScadenzaCritica = 30,
+  giorniScadenzaAttenzione = 90,
+  giorniCopertura = 14,
+  giorniConsumo = 30,
+}: Props) {
   const router = useRouter()
   const [, startTransition] = useTransition()
   const [categoria, setCategoria] = useState('Tutte')

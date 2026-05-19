@@ -14,6 +14,10 @@ export default async function MagazzinoStaffPage() {
     { data: myRiordini },
     { data: fornitori },
     giorniDormiente,
+    giorniScadenzaCritica,
+    giorniScadenzaAttenzione,
+    giorniCopertura,
+    giorniConsumo,
   ] = await Promise.all([
     supabase
       .from('magazzino')
@@ -28,7 +32,11 @@ export default async function MagazzinoStaffPage() {
       .eq('richiesto_da', user!.id)
       .eq('stato', 'aperta'),
     supabase.from('fornitori').select('*, fornitore_contatti(*)').order('nome'),
-    getSetting<number>('magazzino', 'giorni_dormiente', M.giorni_dormiente as number),
+    getSetting<number>('magazzino', 'giorni_dormiente',           M.giorni_dormiente           as number),
+    getSetting<number>('magazzino', 'giorni_scadenza_critica',    M.giorni_scadenza_critica    as number),
+    getSetting<number>('magazzino', 'giorni_scadenza_attenzione', M.giorni_scadenza_attenzione as number),
+    getSetting<number>('magazzino', 'giorni_copertura_alert',     M.giorni_copertura_alert     as number),
+    getSetting<number>('magazzino', 'giorni_consumo_medio',       M.giorni_consumo_medio       as number),
   ])
 
   const riordiniIds = (myRiordini ?? []).map((r: any) => r.magazzino_id)
@@ -45,6 +53,10 @@ export default async function MagazzinoStaffPage() {
         userId={user!.id}
         fornitori={fornitori ?? []}
         giorniDormiente={giorniDormiente}
+        giorniScadenzaCritica={giorniScadenzaCritica}
+        giorniScadenzaAttenzione={giorniScadenzaAttenzione}
+        giorniCopertura={giorniCopertura}
+        giorniConsumo={giorniConsumo}
       />
     </div>
   )

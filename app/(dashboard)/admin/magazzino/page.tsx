@@ -11,13 +11,17 @@ export default async function MagazzinoPage() {
 
   const M = SETTING_DEFAULTS.magazzino
 
-  // Tutti i dati in parallelo (incluso setting dormienti)
+  // Tutti i dati in parallelo (inclusi settings magazzino v2)
   const [
     { data: items },
     { data: riordini },
     { data: fornitori },
     { data: ordiniRighe },
     giorniDormiente,
+    giorniScadenzaCritica,
+    giorniScadenzaAttenzione,
+    giorniCopertura,
+    giorniConsumo,
   ] = await Promise.all([
     supabase
       .from('magazzino')
@@ -39,7 +43,11 @@ export default async function MagazzinoPage() {
       .select('magazzino_id, ordini!inner(stato)')
       .in('ordini.stato', ['inviato', 'parziale'])
       .not('magazzino_id', 'is', null),
-    getSetting<number>('magazzino', 'giorni_dormiente', M.giorni_dormiente as number),
+    getSetting<number>('magazzino', 'giorni_dormiente',           M.giorni_dormiente           as number),
+    getSetting<number>('magazzino', 'giorni_scadenza_critica',    M.giorni_scadenza_critica    as number),
+    getSetting<number>('magazzino', 'giorni_scadenza_attenzione', M.giorni_scadenza_attenzione as number),
+    getSetting<number>('magazzino', 'giorni_copertura_alert',     M.giorni_copertura_alert     as number),
+    getSetting<number>('magazzino', 'giorni_consumo_medio',       M.giorni_consumo_medio       as number),
   ])
 
   // Estrai gli ID magazzino già ordinati
@@ -60,6 +68,10 @@ export default async function MagazzinoPage() {
           fornitori={fornitori ?? []}
           orderedItemIds={orderedItemIds}
           giorniDormiente={giorniDormiente}
+          giorniScadenzaCritica={giorniScadenzaCritica}
+          giorniScadenzaAttenzione={giorniScadenzaAttenzione}
+          giorniCopertura={giorniCopertura}
+          giorniConsumo={giorniConsumo}
         />
       </ErrorBoundary>
     </div>

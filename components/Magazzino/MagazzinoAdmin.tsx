@@ -163,6 +163,14 @@ interface Props {
   orderedItemIds?: string[]
   /** Giorni senza movimenti dopo cui un prodotto è dormiente (da settings) */
   giorniDormiente?: number
+  /** Giorni alla scadenza per badge critico (default 30) */
+  giorniScadenzaCritica?: number
+  /** Giorni alla scadenza per badge attenzione (default 90) */
+  giorniScadenzaAttenzione?: number
+  /** Giorni di copertura stimata sotto cui appare "Finisce presto" (default 14) */
+  giorniCopertura?: number
+  /** Finestra giorni per calcolo consumo medio (default 30) */
+  giorniConsumo?: number
 }
 
 interface ItemModalProps {
@@ -180,6 +188,10 @@ interface EvadisciModalState {
 export default function MagazzinoAdmin({
   items: itemsProp, riordini, fornitori = [], orderedItemIds = [],
   giorniDormiente = 180,
+  giorniScadenzaCritica = 30,
+  giorniScadenzaAttenzione = 90,
+  giorniCopertura = 14,
+  giorniConsumo = 30,
 }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
