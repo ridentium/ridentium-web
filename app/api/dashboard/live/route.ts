@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPeriodoKey } from '@/lib/periodo'
 import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
+import { calcolaConsumoBatch } from '@/lib/magazzino-consumo'
 
 // ─── Tipi risposta ────────────────────────────────────────────────────────────
 
@@ -59,8 +60,11 @@ export interface DashboardLiveData {
   ts: string
   magazzino: {
     sottoSoglia: number
-    critici: number      // sotto soglia + priorità critica + non silenziati
-    dormienti: number    // nessun movimento quantità da > giorniDormiente gg
+    critici: number         // sotto soglia + priorità critica + non silenziati
+    dormienti: number       // nessun movimento quantità da > giorniDormiente gg
+    scaduti: number         // scadenza < oggi
+    inScadenza: number      // scadenza entro giorniScadenzaAttenzione gg
+    finisconoPresto: number // copertura stimata ≤ giorniCopertura gg (non già sotto soglia)
     items: MagazzinoAlert[]
   }
   ordini: {
@@ -137,12 +141,18 @@ export async function GET() {
 
   // Carica settings operativi (con fallback hardcoded se DB non risponde)
   const M = SETTING_DEFAULTS.magazzino
-  const [giorniStantio, giorniAdempienti, giorniManutenzione, maxItems, giorniDormiente] = await Promise.all([
+  const [
+    giorniStantio, giorniAdempienti, giorniManutenzione, maxItems,
+    giorniDormiente, giorniScadenzaAttenzione, giorniCopertura, giorniConsumo,
+  ] = await Promise.all([
     getSetting<number>('dashboard', 'giorni_stantio',            D.giorni_stantio            as number),
     getSetting<number>('dashboard', 'giorni_adempimenti_alert',  D.giorni_adempimenti_alert  as number),
     getSetting<number>('dashboard', 'giorni_manutenzione_alert', D.giorni_manutenzione_alert as number),
     getSetting<number>('dashboard', 'max_items_preview',         D.max_items_preview         as number),
     getSetting<number>('magazzino', 'giorni_dormiente',          M.giorni_dormiente          as number),
+    getSetting<number>('magazzino', 'giorni_scadenza_attenzione', M.giorni_scadenza_attenzione as number),
+    getSetting<number>('magazzino', 'giorni_copertura_alert',    M.giorni_copertura_alert    as number),
+    getSetting<number>('magazzino', 'giorni_consumo_medio',      M.giorni_consumo_medio      as number),
   ])
 
   // Date di riferimento
@@ -175,7 +185,7 @@ export async function GET() {
     { data: ricorrentiAll },
   ] = await Promise.all([
     // 1. Magazzino — tutti gli item (colonne minimali, escludi silenziati da alert)
-    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato, priorita, ultimo_movimento_at, created_at'),
+    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato, priorita, ultimo_movimento_at, created_at, scadenza'),
 
     // 2. Ordini in attesa (non ancora ricevuti)
     adminDb
@@ -238,6 +248,7 @@ export async function GET() {
     id: string; prodotto: string; quantita: number; soglia_minima: number
     categoria: string; alert_silenziato: boolean; priorita: string
     ultimo_movimento_at: string | null; created_at: string
+    scadenza: string | null
   }
   const allMag = (magazzinoAll ?? []) as MagLiveRow[]
 
@@ -248,6 +259,27 @@ export async function GET() {
   const dormientiN = allMag.filter(i => {
     const ref = i.ultimo_movimento_at ?? i.created_at
     return ref && new Date(ref) < dormienteCutoff
+  }).length
+
+  // Scaduti e in scadenza (entro giorniScadenzaAttenzione gg)
+  const scadutiN = allMag.filter(i => i.scadenza && i.scadenza < todayStr).length
+  const inScadenzaStr = toDateStr(new Date(oggi.getTime() + giorniScadenzaAttenzione * 86_400_000))
+  const inScadenzaN   = allMag.filter(i =>
+    i.scadenza && i.scadenza >= todayStr && i.scadenza <= inScadenzaStr
+  ).length
+
+  // "Finisce presto" — consumo medio batch (una query aggiuntiva a magazzino_movimenti)
+  const consumoMap = await calcolaConsumoBatch(
+    adminDb,
+    allMag.map(i => ({ id: i.id, quantita: i.quantita })),
+    giorniConsumo,
+  )
+  const finisconoPrestoN = allMag.filter(i => {
+    if (i.alert_silenziato) return false
+    if (i.quantita < i.soglia_minima) return false  // già in alert stock, non duplicare
+    const c = consumoMap.get(i.id)
+    if (!c || c.giorniCopertura === null) return false
+    return c.giorniCopertura <= giorniCopertura
   }).length
 
   // Ordina items preview: critici prima, poi alta, normale, bassa
@@ -396,9 +428,12 @@ export async function GET() {
   const payload: DashboardLiveData = {
     ts: new Date().toISOString(),
     magazzino: {
-      sottoSoglia: sottoSoglia.length,
-      critici:     criticiN,
-      dormienti:   dormientiN,
+      sottoSoglia:     sottoSoglia.length,
+      critici:         criticiN,
+      dormienti:       dormientiN,
+      scaduti:         scadutiN,
+      inScadenza:      inScadenzaN,
+      finisconoPresto: finisconoPrestoN,
       items: sottoSogliaOrdinati.slice(0, maxItems) as MagazzinoAlert[],
     },
     ordini: {

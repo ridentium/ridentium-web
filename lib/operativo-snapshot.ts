@@ -34,7 +34,7 @@ export async function buildOperativoSnapshot(
 ): Promise<string> {
 
   // Carica settings operativi in parallelo con le query (fallback garantito)
-  const [giorniStantio, giorniAdempimenti, giorniManutenzione, maxItems, nomeStudio, giorniDormiente] =
+  const [giorniStantio, giorniAdempimenti, giorniManutenzione, maxItems, nomeStudio, giorniDormiente, giorniScadenzaAttenzione] =
     await Promise.all([
       getSetting<number>('dashboard', 'giorni_stantio',            D.giorni_stantio            as number),
       getSetting<number>('dashboard', 'giorni_adempimenti_alert',  D.giorni_adempimenti_alert  as number),
@@ -42,6 +42,7 @@ export async function buildOperativoSnapshot(
       getSetting<number>('dashboard', 'max_items_preview',         D.max_items_preview         as number),
       getSetting<string>('studio',    'nome',                      S.nome                      as string),
       getSetting<number>('magazzino', 'giorni_dormiente',          M.giorni_dormiente          as number),
+      getSetting<number>('magazzino', 'giorni_scadenza_attenzione', M.giorni_scadenza_attenzione as number),
     ])
 
   const oggi     = new Date()
@@ -60,7 +61,7 @@ export async function buildOperativoSnapshot(
   // ── 8 query in parallelo — allSettled = fault-tolerant per sezione ────────
   const [magR, ordR, adR, tskR, attrR, crmR, tskCountR, ricR] = await Promise.allSettled([
     db.from('magazzino')
-      .select('prodotto, quantita, soglia_minima, alert_silenziato, priorita, ultimo_movimento_at, created_at'), // 0
+      .select('prodotto, quantita, soglia_minima, alert_silenziato, priorita, ultimo_movimento_at, created_at, scadenza'), // 0
 
     db.from('ordini')
       .select('fornitore_nome, stato, data_invio')
@@ -121,6 +122,7 @@ export async function buildOperativoSnapshot(
       prodotto: string; quantita: number; soglia_minima: number
       alert_silenziato: boolean; priorita: string
       ultimo_movimento_at: string | null; created_at: string
+      scadenza: string | null
     }
     const mag   = safeData<MagRow>(magR)
     if (magR.status === 'rejected') {
@@ -134,7 +136,10 @@ export async function buildOperativoSnapshot(
         const ref = i.ultimo_movimento_at ?? i.created_at
         return ref && new Date(ref) < dormienteCutoff
       })
-      lines.push(`MAGAZZINO: ${sotto.length} sotto soglia (${critici.length} critici), ${dormienti.length} dormienti`)
+      const scadutiMag = mag.filter(i => i.scadenza && i.scadenza < todayStr)
+      const inScadenzaStr = new Date(Date.now() + giorniScadenzaAttenzione * 86_400_000).toISOString().slice(0, 10)
+      const inScadenzaMag = mag.filter(i => i.scadenza && i.scadenza >= todayStr && i.scadenza <= inScadenzaStr)
+      lines.push(`MAGAZZINO: ${sotto.length} sotto soglia (${critici.length} critici), ${dormienti.length} dormienti, ${scadutiMag.length} scaduti, ${inScadenzaMag.length} in scadenza entro ${giorniScadenzaAttenzione}gg`)
       // Critici prima, poi gli altri
       const sorted = [
         ...sotto.filter(i => i.priorita === 'critica'),
@@ -146,7 +151,13 @@ export async function buildOperativoSnapshot(
         lines.push(`  • ${i.prodotto}: ${i.quantita} (min ${i.soglia_minima})${critFlag}${note}`)
       })
       if (sotto.length > maxItems) lines.push(`  [+ ${sotto.length - maxItems} altri]`)
-      if (sotto.length === 0 && dormienti.length === 0) lines.push('  • Tutto in ordine ✓')
+      if (scadutiMag.length > 0) {
+        lines.push(`  SCADUTI: ${scadutiMag.slice(0, 3).map(i => i.prodotto).join(', ')}${scadutiMag.length > 3 ? ` e altri ${scadutiMag.length - 3}` : ''}`)
+      }
+      if (inScadenzaMag.length > 0) {
+        lines.push(`  IN SCADENZA (${giorniScadenzaAttenzione}gg): ${inScadenzaMag.slice(0, 3).map(i => `${i.prodotto} (${i.scadenza})`).join(', ')}${inScadenzaMag.length > 3 ? ` e altri ${inScadenzaMag.length - 3}` : ''}`)
+      }
+      if (sotto.length === 0 && dormienti.length === 0 && scadutiMag.length === 0) lines.push('  • Tutto in ordine ✓')
       if (sotto.length === 0 && dormienti.length > 0) lines.push(`  • Scorte OK — ${dormienti.length} prodott${dormienti.length === 1 ? 'o dormiente' : 'i dormienti'} (nessun movimento da >${giorniDormiente}gg)`)
     }
   }

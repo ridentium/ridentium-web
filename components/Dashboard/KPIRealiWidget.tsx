@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   CheckSquare, RefreshCw, Loader2, TrendingUp,
   ShieldCheck, Package, ClipboardList, Wrench, Phone, AlertCircle,
-  AlertTriangle, Clock,
+  AlertTriangle, Clock, TrendingDown,
 } from 'lucide-react'
 import type { DashboardLiveData } from '@/app/api/dashboard/live/route'
 
@@ -242,7 +242,7 @@ export default function KPIRealiWidget() {
         <p className="text-[9px] text-stone/40 uppercase tracking-widest mb-2">Situazione operativa</p>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3">
           {loading ? (
-            Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} />)
+            Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} />)
           ) : data ? (
             <>
               <KPICountCard
@@ -280,6 +280,24 @@ export default function KPIRealiWidget() {
                 valore={data.magazzino.dormienti}
                 label="senza movimenti"
                 urgenza={urgenza(0, data.magazzino.dormienti)}
+              />
+              <KPICountCard
+                href="/admin/magazzino"
+                icon={AlertCircle}
+                title="Scadenze"
+                valore={data.magazzino.scaduti}
+                label="prodotti scaduti"
+                urgenza={urgenza(data.magazzino.scaduti, data.magazzino.inScadenza)}
+                subValore={data.magazzino.inScadenza > 0 ? data.magazzino.inScadenza : undefined}
+                subLabel="in scadenza"
+              />
+              <KPICountCard
+                href="/admin/magazzino"
+                icon={TrendingDown}
+                title="Finisce presto"
+                valore={data.magazzino.finisconoPresto}
+                label="copertura bassa"
+                urgenza={urgenza(0, data.magazzino.finisconoPresto)}
               />
               <KPICountCard
                 href="/admin/ordini"
