@@ -6,7 +6,7 @@ import { formatDate } from '@/lib/utils'
 import {
   AlertTriangle, CheckCircle, ChevronDown, ChevronUp,
   ChevronsUpDown, Plus, Pencil, Search, X, Zap, History,
-  BellOff, Bell, Clock,
+  BellOff, Bell, Clock, AlertCircle, TrendingDown,
 } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import SottoSogliaOrdina from '@/components/Dashboard/SottoSogliaOrdina'
@@ -14,14 +14,44 @@ import Toast, { type ToastState } from '@/components/ui/Toast'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function scadenzaColor(scadenza: string | null | undefined): string {
-  if (!scadenza) return ''
+type ScadenzaStatus = 'scaduto' | 'critica' | 'attenzione' | 'ok' | 'none'
+
+function getScadenzaStatus(
+  scadenza: string | null | undefined,
+  giorniCritica: number,
+  giorniAttenzione: number,
+): ScadenzaStatus {
+  if (!scadenza) return 'none'
   const oggi = new Date(); oggi.setHours(0, 0, 0, 0)
   const scad = new Date(scadenza); scad.setHours(0, 0, 0, 0)
   const giorni = Math.ceil((scad.getTime() - oggi.getTime()) / 86400000)
-  if (giorni < 0) return 'text-red-700'
-  if (giorni <= 30) return 'text-amber-600'
-  return 'text-emerald-700'
+  if (giorni < 0) return 'scaduto'
+  if (giorni <= giorniCritica) return 'critica'
+  if (giorni <= giorniAttenzione) return 'attenzione'
+  return 'ok'
+}
+
+function ScadenzaBadge({
+  status, scadenza,
+}: { status: ScadenzaStatus; scadenza: string | null | undefined }) {
+  const label = scadenza ? (formatDate(scadenza) ?? '—') : '—'
+  if (status === 'none') return <span className="text-stone/40 text-xs">—</span>
+  if (status === 'scaduto') return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-red-700/10 text-red-700 border-red-700/20 font-medium">
+      <AlertCircle size={9} /> {label}
+    </span>
+  )
+  if (status === 'critica') return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-amber-600/10 text-amber-700 border-amber-600/20 font-medium">
+      <Clock size={9} /> {label}
+    </span>
+  )
+  if (status === 'attenzione') return (
+    <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-gold/10 text-amber-800 border-gold/20">
+      <Clock size={9} /> {label}
+    </span>
+  )
+  return <span className="text-stone text-xs">{label}</span>
 }
 
 /** Etichetta relativa per ultimo_movimento_at */
@@ -133,6 +163,62 @@ function SilenziaModal({ item, onClose, onConferma }: SilenziaModalProps) {
   )
 }
 
+// ── Ultimi movimenti (within ItemModal) ───────────────────────────────────────
+
+function UltimiMovimenti({ itemId }: { itemId: string }) {
+  const [movimenti, setMovimenti] = useState<any[] | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    setLoading(true)
+    fetch(`/api/magazzino/${itemId}/movimenti`)
+      .then(r => r.json())
+      .then(d => setMovimenti(d.movimenti ?? []))
+      .catch(() => setMovimenti([]))
+      .finally(() => setLoading(false))
+  }, [itemId])
+
+  if (loading) return <p className="text-xs text-stone/50">Caricamento movimenti…</p>
+  if (!movimenti || movimenti.length === 0) {
+    return <p className="text-xs text-stone/40 italic">Nessun movimento registrato.</p>
+  }
+
+  const TIPO_LABEL: Record<string, string> = {
+    carico_manuale: 'Carico manuale',
+    scarico_manuale: 'Scarico manuale',
+    ricezione_ordine: 'Ricezione ordine',
+    rettifica: 'Rettifica',
+    rollback: 'Rollback',
+  }
+
+  return (
+    <div className="space-y-0">
+      {movimenti.map((m: any) => (
+        <div key={m.id} className="flex items-center gap-2.5 py-1.5 border-b border-stone/10 last:border-0">
+          <span className="text-[10px] text-stone/40 w-20 flex-shrink-0">
+            {new Date(m.created_at).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}{' '}
+            {new Date(m.created_at).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium flex-shrink-0 ${
+            m.quantita_delta > 0
+              ? 'text-emerald-700 bg-emerald-700/10'
+              : 'text-red-700 bg-red-700/10'
+          }`}>
+            {m.quantita_delta > 0 ? '+' : ''}{m.quantita_delta}
+          </span>
+          <span className="text-[10px] text-stone flex-1 truncate">
+            {TIPO_LABEL[m.tipo] ?? m.tipo}
+            {m.note ? <span className="text-stone/50 ml-1">· {m.note}</span> : null}
+          </span>
+          {m.profili && (
+            <span className="text-[10px] text-stone/40 flex-shrink-0">{m.profili.nome}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 interface StoricoEntry {
@@ -171,6 +257,8 @@ interface Props {
   giorniCopertura?: number
   /** Finestra giorni per calcolo consumo medio (default 30) */
   giorniConsumo?: number
+  /** Consumo medio pre-calcolato server-side: Record<magazzino_id, { consumoGiornaliero, giorniCopertura }> */
+  consumoData?: Record<string, { consumoGiornaliero: number | null; giorniCopertura: number | null }>
 }
 
 interface ItemModalProps {
@@ -192,6 +280,7 @@ export default function MagazzinoAdmin({
   giorniScadenzaAttenzione = 90,
   giorniCopertura = 14,
   giorniConsumo = 30,
+  consumoData = {},
 }: Props) {
   const [items, setItems] = useState<MagazzinoItem[]>(itemsProp)
   const [categoria, setCategoria] = useState('Tutte')
@@ -203,6 +292,9 @@ export default function MagazzinoAdmin({
   }, [])
 
   const [soloAlert, setSoloAlert] = useState(false)
+  const [soloScaduti, setSoloScaduti] = useState(false)
+  const [soloInScadenza, setSoloInScadenza] = useState(false)
+  const [soloFiniscePresto, setSoloFiniscePresto] = useState(false)
   const [mostraSilenziati, setMostraSilenziati] = useState(false)
   const [soloOrfani, setSoloOrfani] = useState(false)
   const [silenziandoItem, setSilenziandoItem] = useState<MagazzinoItem | null>(null)
@@ -240,6 +332,15 @@ export default function MagazzinoAdmin({
       : <ChevronDown size={11} className="text-gold inline ml-1" />
   }
 
+  // ── Helper: "finisce presto" per un singolo item ───────────────────────────
+  function isFiniscePresto(item: MagazzinoItem): boolean {
+    if (item.alert_silenziato) return false
+    if (item.quantita < item.soglia_minima) return false  // già in alert, non duplicare
+    const c = consumoData[item.id]
+    if (!c || c.giorniCopertura === null || c.giorniCopertura === undefined) return false
+    return c.giorniCopertura <= giorniCopertura
+  }
+
   // ── Valori calcolati ──────────────────────────────────────────────────────
   const alertItems    = items.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato)
   const alertCount    = alertItems.length
@@ -248,6 +349,15 @@ export default function MagazzinoAdmin({
   const orfaniItems   = items.filter(i => isDormiente(i, giorniDormiente))
   const orfaniCount   = orfaniItems.length
 
+  const scadutiCount = items.filter(i =>
+    getScadenzaStatus(i.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione) === 'scaduto'
+  ).length
+  const inScadenzaCount = items.filter(i => {
+    const s = getScadenzaStatus(i.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
+    return s === 'critica' || s === 'attenzione'
+  }).length
+  const finiscePrestoCount = items.filter(isFiniscePresto).length
+
   const filtered = items
     .filter(item => {
       if (categoria !== 'Tutte' && item.categoria !== categoria) return false
@@ -255,6 +365,14 @@ export default function MagazzinoAdmin({
       if (soloAlert && (item.quantita >= item.soglia_minima || item.alert_silenziato)) return false
       if (mostraSilenziati && !item.alert_silenziato) return false
       if (soloOrfani && !isDormiente(item, giorniDormiente)) return false
+      if (soloScaduti) {
+        if (getScadenzaStatus(item.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione) !== 'scaduto') return false
+      }
+      if (soloInScadenza) {
+        const s = getScadenzaStatus(item.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
+        if (s !== 'critica' && s !== 'attenzione') return false
+      }
+      if (soloFiniscePresto && !isFiniscePresto(item)) return false
       if (cerca.trim()) {
         const q = cerca.toLowerCase()
         const match =
@@ -405,6 +523,16 @@ export default function MagazzinoAdmin({
     startTransition(() => router.refresh())
   }
 
+  // ── Helper toggle filtri mutuamente esclusivi ──────────────────────────────
+  function toggleFiltro(nome: 'soloAlert' | 'soloScaduti' | 'soloInScadenza' | 'soloFiniscePresto' | 'mostraSilenziati' | 'soloOrfani') {
+    setSoloAlert(nome === 'soloAlert' ? v => !v : false)
+    setSoloScaduti(nome === 'soloScaduti' ? v => !v : false)
+    setSoloInScadenza(nome === 'soloInScadenza' ? v => !v : false)
+    setSoloFiniscePresto(nome === 'soloFiniscePresto' ? v => !v : false)
+    setMostraSilenziati(nome === 'mostraSilenziati' ? v => !v : false)
+    setSoloOrfani(nome === 'soloOrfani' ? v => !v : false)
+  }
+
   // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
@@ -459,7 +587,7 @@ export default function MagazzinoAdmin({
           {showOrdineRapido && (
             <div className="mt-4">
               <SottoSogliaOrdina
-                alertItems={alertItems.filter(i => i.priorita !== 'bassa')} // escludi bassa dall'ordine rapido
+                alertItems={alertItems.filter(i => i.priorita !== 'bassa')}
                 fornitori={fornitori}
                 orderedItemIds={orderedItemIds}
               />
@@ -492,7 +620,7 @@ export default function MagazzinoAdmin({
         </button>
       </div>
 
-      {/* Filtri — riga 1: categoria + alert + silenziati + dormienti */}
+      {/* Filtri — riga 1: categoria + filtri rapidi */}
       <div className="flex items-center gap-2">
         <div className="flex-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
           <div className="flex items-center gap-2" style={{ width: 'max-content' }}>
@@ -506,9 +634,9 @@ export default function MagazzinoAdmin({
             ))}
           </div>
         </div>
-        {/* Alert */}
+        {/* Alert stock */}
         <button
-          onClick={() => { setSoloAlert(!soloAlert); if (mostraSilenziati) setMostraSilenziati(false) }}
+          onClick={() => toggleFiltro('soloAlert')}
           className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
             soloAlert ? 'bg-red-400/10 text-red-400 border-red-400/30' : 'border-stone/30 text-stone hover:border-stone hover:text-obsidian'
           }`}>
@@ -516,10 +644,46 @@ export default function MagazzinoAdmin({
           <span className="hidden sm:inline">Sotto soglia</span>
           <span className="text-xs">({alertCount})</span>
         </button>
+        {/* Scaduti */}
+        {scadutiCount > 0 && (
+          <button
+            onClick={() => toggleFiltro('soloScaduti')}
+            className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+              soloScaduti ? 'bg-red-700/10 text-red-700 border-red-700/30' : 'border-stone/30 text-stone/60 hover:border-stone hover:text-obsidian'
+            }`}>
+            <AlertCircle size={11} />
+            <span className="hidden sm:inline">Scaduti</span>
+            <span className="text-xs">({scadutiCount})</span>
+          </button>
+        )}
+        {/* In scadenza */}
+        {inScadenzaCount > 0 && (
+          <button
+            onClick={() => toggleFiltro('soloInScadenza')}
+            className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+              soloInScadenza ? 'bg-amber-600/10 text-amber-700 border-amber-600/30' : 'border-stone/30 text-stone/60 hover:border-stone hover:text-obsidian'
+            }`}>
+            <Clock size={11} />
+            <span className="hidden sm:inline">In scadenza</span>
+            <span className="text-xs">({inScadenzaCount})</span>
+          </button>
+        )}
+        {/* Finisce presto */}
+        {finiscePrestoCount > 0 && (
+          <button
+            onClick={() => toggleFiltro('soloFiniscePresto')}
+            className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
+              soloFiniscePresto ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'border-stone/30 text-stone/60 hover:border-stone hover:text-obsidian'
+            }`}>
+            <TrendingDown size={11} />
+            <span className="hidden sm:inline">Finisce presto</span>
+            <span className="text-xs">({finiscePrestoCount})</span>
+          </button>
+        )}
         {/* Silenziati */}
         {silenziatiCount > 0 && (
           <button
-            onClick={() => { setMostraSilenziati(!mostraSilenziati); if (soloAlert) setSoloAlert(false) }}
+            onClick={() => toggleFiltro('mostraSilenziati')}
             className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
               mostraSilenziati ? 'bg-stone/20 text-stone border-stone/40' : 'border-stone/30 text-stone/60 hover:border-stone hover:text-obsidian'
             }`}>
@@ -530,7 +694,7 @@ export default function MagazzinoAdmin({
         )}
         {/* Dormienti */}
         {orfaniCount > 0 && (
-          <button onClick={() => setSoloOrfani(!soloOrfani)}
+          <button onClick={() => toggleFiltro('soloOrfani')}
             className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded border transition-colors ${
               soloOrfani ? 'bg-amber-500/10 text-amber-700 border-amber-500/30' : 'border-stone/30 text-stone/60 hover:border-stone hover:text-obsidian'
             }`}>
@@ -578,11 +742,16 @@ export default function MagazzinoAdmin({
           const isAlert    = item.quantita < item.soglia_minima && !item.alert_silenziato
           const isSilenziato = item.alert_silenziato
           const dormiente  = isDormiente(item, giorniDormiente)
+          const finisceP   = isFiniscePresto(item)
           const ultMov     = ultimoMovimentoLabel(item.ultimo_movimento_at)
+          const scadStatus = getScadenzaStatus(item.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
+          const copertura  = consumoData[item.id]
           return (
             <div key={item.id} className={`card p-4 ${
               isAlert ? 'border-red-400/20 bg-red-400/5'
-              : isSilenziato ? 'border-stone/20 bg-stone/5' : ''
+              : isSilenziato ? 'border-stone/20 bg-stone/5'
+              : scadStatus === 'scaduto' ? 'border-red-400/20 bg-red-400/5'
+              : scadStatus === 'critica' ? 'border-amber-600/20 bg-amber-600/5' : ''
             }`}>
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
@@ -632,7 +801,7 @@ export default function MagazzinoAdmin({
                   {item.scadenza && (
                     <div>
                       <p className="text-[9px] text-stone/50 uppercase tracking-wider mb-0.5">Scad.</p>
-                      <p className={`text-xs ${scadenzaColor(item.scadenza) || 'text-stone'}`}>{formatDate(item.scadenza)}</p>
+                      <ScadenzaBadge status={scadStatus} scadenza={item.scadenza} />
                     </div>
                   )}
                 </div>
@@ -646,6 +815,11 @@ export default function MagazzinoAdmin({
                   {dormiente && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 text-amber-700 flex items-center gap-0.5">
                       <Clock size={8} /> Dormiente
+                    </span>
+                  )}
+                  {finisceP && copertura?.giorniCopertura !== null && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 text-amber-800 flex items-center gap-0.5">
+                      <TrendingDown size={8} /> ~{copertura!.giorniCopertura}gg
                     </span>
                   )}
                 </div>
@@ -688,9 +862,17 @@ export default function MagazzinoAdmin({
                 const isAlert    = item.quantita < item.soglia_minima && !item.alert_silenziato
                 const isSilenziato = item.alert_silenziato
                 const dormiente  = isDormiente(item, giorniDormiente)
+                const finisceP   = isFiniscePresto(item)
                 const ultMov     = ultimoMovimentoLabel(item.ultimo_movimento_at)
+                const scadStatus = getScadenzaStatus(item.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
+                const copertura  = consumoData[item.id]
+                const rowBg = isAlert
+                  ? 'bg-red-400/5'
+                  : isSilenziato ? 'bg-stone/5'
+                  : scadStatus === 'scaduto' ? 'bg-red-400/5'
+                  : scadStatus === 'critica' ? 'bg-amber-600/5' : ''
                 return (
-                  <tr key={item.id} className={isAlert ? 'bg-red-400/5' : isSilenziato ? 'bg-stone/5' : ''}>
+                  <tr key={item.id} className={rowBg}>
                     {/* Prodotto + badge priorità */}
                     <td className="font-medium text-obsidian">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -721,7 +903,7 @@ export default function MagazzinoAdmin({
                       </p>
                     </td>
                     <td><SogliaMinimaEditor value={item.soglia_minima} onChange={val => saveSoglia(item.id, val)} /></td>
-                    {/* Stato: alert/ok/silenziato + dormiente */}
+                    {/* Stato: alert/ok/silenziato + dormiente + finisce presto */}
                     <td>
                       <div className="flex flex-col gap-1">
                         {isSilenziato
@@ -735,9 +917,15 @@ export default function MagazzinoAdmin({
                             <Clock size={8} /> Dormiente
                           </span>
                         )}
+                        {finisceP && copertura?.giorniCopertura !== null && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/20 bg-amber-500/5 text-amber-800 flex items-center gap-0.5 w-fit">
+                            <TrendingDown size={8} /> Finisce ~{copertura!.giorniCopertura}gg
+                          </span>
+                        )}
                       </div>
                     </td>
-                    <td className={scadenzaColor(item.scadenza)}>{formatDate(item.scadenza ?? undefined)}</td>
+                    {/* Scadenza — badge strutturato */}
+                    <td><ScadenzaBadge status={scadStatus} scadenza={item.scadenza} /></td>
                     {/* Azioni */}
                     <td>
                       <div className="flex items-center gap-1">
@@ -953,6 +1141,7 @@ function ItemModal({ item, fornitori, onClose, onSave }: ItemModalProps) {
     quantita: 0, soglia_minima: 2, unita: 'pz', priorita: 'normale',
   })
   const [saving, setSaving] = useState(false)
+  const [showMovimenti, setShowMovimenti] = useState(false)
   const set = (k: string, v: any) => setForm(f => ({ ...f, [k]: v }))
 
   async function handleSave() {
@@ -1027,6 +1216,11 @@ function ItemModal({ item, fornitori, onClose, onSave }: ItemModalProps) {
             <input className="input" value={form.codice_articolo ?? ''} onChange={e => set('codice_articolo', e.target.value)} />
           </div>
           <div>
+            <label className="label-field block mb-1.5">Lotto</label>
+            <input className="input" value={form.lotto ?? ''} onChange={e => set('lotto', e.target.value || null)}
+              placeholder="es. LOT-2024-001" maxLength={100} />
+          </div>
+          <div>
             <label className="label-field block mb-1.5">Unità</label>
             <select className="input" value={form.unita ?? 'pz'} onChange={e => set('unita', e.target.value)}>
               {['pz','conf','ml','rotoli','kit','scatole'].map(u => <option key={u}>{u}</option>)}
@@ -1061,6 +1255,22 @@ function ItemModal({ item, fornitori, onClose, onSave }: ItemModalProps) {
             <textarea className="input resize-none" rows={2} value={form.note ?? ''} onChange={e => set('note', e.target.value)} />
           </div>
         </div>
+
+        {/* Ultimi movimenti — solo per prodotti esistenti */}
+        {item && (
+          <div className="mt-5 pt-4 border-t border-stone/20">
+            <button
+              onClick={() => setShowMovimenti(v => !v)}
+              className="flex items-center gap-2 text-xs text-stone hover:text-obsidian transition-colors mb-3"
+            >
+              <History size={12} className="text-stone/50" />
+              <span className="uppercase tracking-wider">Ultimi movimenti</span>
+              {showMovimenti ? <ChevronUp size={11} className="text-stone/40" /> : <ChevronDown size={11} className="text-stone/40" />}
+            </button>
+            {showMovimenti && <UltimiMovimenti itemId={item.id} />}
+          </div>
+        )}
+
         <div className="flex gap-3 mt-6">
           <button onClick={onClose} className="btn-secondary flex-1">Annulla</button>
           <button onClick={handleSave} disabled={saving} className="btn-primary flex-1 disabled:opacity-50">

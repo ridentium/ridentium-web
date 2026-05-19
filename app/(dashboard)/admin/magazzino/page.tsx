@@ -4,6 +4,7 @@ import PageHeader from '@/components/Layout/PageHeader'
 import MagazzinoAdmin from '@/components/Magazzino/MagazzinoAdmin'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import { getSetting, SETTING_DEFAULTS } from '@/lib/settings'
+import { calcolaConsumoBatch } from '@/lib/magazzino-consumo'
 
 export default async function MagazzinoPage() {
   const supabase = createClient()
@@ -55,6 +56,19 @@ export default async function MagazzinoPage() {
     .map((r: any) => r.magazzino_id as string)
     .filter(Boolean)
 
+  // Calcolo consumo batch — una sola query per tutti i prodotti
+  const consumoMap = await calcolaConsumoBatch(
+    adminDb,
+    (items ?? []).map(i => ({ id: i.id, quantita: i.quantita })),
+    giorniConsumo,
+  )
+
+  // Serializza la Map in un plain object (props React devono essere serializzabili)
+  const consumoData: Record<string, { consumoGiornaliero: number | null; giorniCopertura: number | null }> = {}
+  consumoMap.forEach((val, id) => {
+    consumoData[id] = { consumoGiornaliero: val.consumoGiornaliero, giorniCopertura: val.giorniCopertura }
+  })
+
   return (
     <div>
       <PageHeader
@@ -72,6 +86,7 @@ export default async function MagazzinoPage() {
           giorniScadenzaAttenzione={giorniScadenzaAttenzione}
           giorniCopertura={giorniCopertura}
           giorniConsumo={giorniConsumo}
+          consumoData={consumoData}
         />
       </ErrorBoundary>
     </div>

@@ -50,15 +50,20 @@ const PRIORITA_BADGE: Record<string, string> = {
   alta:    'bg-amber-600/10 text-amber-700 border-amber-600/20',
 }
 
-function getExpiryStatus(scadenza?: string | null): 'expired' | 'expiring' | 'ok' | 'none' {
+type StaffExpiryStatus = 'expired' | 'expiring_critica' | 'expiring_attenzione' | 'ok' | 'none'
+
+function getExpiryStatus(
+  scadenza: string | null | undefined,
+  giorniCritica = 30,
+  giorniAttenzione = 90,
+): StaffExpiryStatus {
   if (!scadenza) return 'none'
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const expDate = new Date(scadenza)
-  if (expDate < today) return 'expired'
-  const in30 = new Date(today)
-  in30.setDate(in30.getDate() + 30)
-  if (expDate <= in30) return 'expiring'
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const expDate = new Date(scadenza); expDate.setHours(0, 0, 0, 0)
+  const giorni = Math.ceil((expDate.getTime() - today.getTime()) / 86400000)
+  if (giorni < 0) return 'expired'
+  if (giorni <= giorniCritica) return 'expiring_critica'
+  if (giorni <= giorniAttenzione) return 'expiring_attenzione'
   return 'ok'
 }
 
@@ -100,7 +105,7 @@ export default function MagazzinoStaff({
     // soloAlert esclude i prodotti con alert silenziato (non sono emergenze reali)
     if (soloAlert && (item.quantita >= item.soglia_minima || item.alert_silenziato)) return false
     if (soloScadenza) {
-      const es = getExpiryStatus(item.scadenza)
+      const es = getExpiryStatus(item.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
       if (es === 'ok' || es === 'none') return false
     }
     return true
@@ -109,8 +114,8 @@ export default function MagazzinoStaff({
   // alertCount: solo prodotti veramente in alert (sotto soglia E non silenziati)
   const alertCount = items.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato).length
   const scadenzaCount = items.filter(i => {
-    const es = getExpiryStatus(i.scadenza)
-    return es === 'expired' || es === 'expiring'
+    const es = getExpiryStatus(i.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
+    return es === 'expired' || es === 'expiring_critica' || es === 'expiring_attenzione'
   }).length
 
   async function richiediRiordine(itemId: string) {
@@ -184,7 +189,7 @@ export default function MagazzinoStaff({
             ) : filtered.map(item => {
               const isSilenziato = item.alert_silenziato
               const isAlert = item.quantita < item.soglia_minima && !isSilenziato
-              const expiryStatus = getExpiryStatus(item.scadenza)
+              const expiryStatus = getExpiryStatus(item.scadenza, giorniScadenzaCritica, giorniScadenzaAttenzione)
               const riordinato = localRiordini.includes(item.id)
               const dormiente = isDormiente(item, giorniDormiente)
               const ultMov = ultimoMovimentoLabel(item.ultimo_movimento_at)
@@ -192,7 +197,8 @@ export default function MagazzinoStaff({
                 ? 'bg-red-400/5'
                 : isSilenziato ? 'bg-stone/5'
                 : expiryStatus === 'expired' ? 'bg-red-400/5'
-                : expiryStatus === 'expiring' ? 'bg-amber-400/5' : ''
+                : expiryStatus === 'expiring_critica' ? 'bg-amber-400/5'
+                : expiryStatus === 'expiring_attenzione' ? 'bg-amber-400/3' : ''
               return (
                 <tr key={item.id} className={rowBg}>
                   <td>
@@ -217,11 +223,24 @@ export default function MagazzinoStaff({
                     />
                     <p className="text-[9px] text-stone/40 mt-0.5">Mov: {ultMov}</p>
                   </td>
-                  <td className={
-                    expiryStatus === 'expired' ? 'text-red-700 font-medium' :
-                    expiryStatus === 'expiring' ? 'text-amber-400 font-medium' : 'text-stone'
-                  }>
-                    {item.scadenza ? formatDate(item.scadenza) : '—'}
+                  <td>
+                    {!item.scadenza ? (
+                      <span className="text-stone/40">—</span>
+                    ) : expiryStatus === 'expired' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-red-700/10 text-red-700 border-red-700/20 font-medium">
+                        <AlertCircle size={9} /> {formatDate(item.scadenza)}
+                      </span>
+                    ) : expiryStatus === 'expiring_critica' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-amber-600/10 text-amber-700 border-amber-600/20 font-medium">
+                        <Clock size={9} /> {formatDate(item.scadenza)}
+                      </span>
+                    ) : expiryStatus === 'expiring_attenzione' ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded border bg-gold/10 text-amber-800 border-gold/20">
+                        <Clock size={9} /> {formatDate(item.scadenza)}
+                      </span>
+                    ) : (
+                      <span className="text-stone text-xs">{formatDate(item.scadenza)}</span>
+                    )}
                   </td>
                   <td>
                     <div className="flex flex-col gap-1">
@@ -234,16 +253,21 @@ export default function MagazzinoStaff({
                         <span className="badge-alert flex items-center gap-1"><AlertTriangle size={10} /> Sotto soglia</span>
                       )}
                       {expiryStatus === 'expired' && (
-                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-red-400/15 text-red-400 border border-red-400/20 w-fit">
+                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-red-700/15 text-red-700 border border-red-700/20 w-fit font-medium">
                           <AlertCircle size={10} /> Scaduto
                         </span>
                       )}
-                      {expiryStatus === 'expiring' && (
-                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-amber-400/15 text-amber-400 border border-amber-400/20 w-fit">
+                      {expiryStatus === 'expiring_critica' && (
+                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-amber-600/15 text-amber-700 border border-amber-600/20 w-fit font-medium">
                           <Clock size={10} /> In scadenza
                         </span>
                       )}
-                      {!isSilenziato && !isAlert && expiryStatus !== 'expired' && expiryStatus !== 'expiring' && (
+                      {expiryStatus === 'expiring_attenzione' && (
+                        <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-gold/10 text-amber-800 border border-gold/20 w-fit">
+                          <Clock size={10} /> In scadenza
+                        </span>
+                      )}
+                      {!isSilenziato && !isAlert && expiryStatus !== 'expired' && expiryStatus !== 'expiring_critica' && expiryStatus !== 'expiring_attenzione' && (
                         <span className="badge-ok flex items-center gap-1"><CheckCircle size={10} /> OK</span>
                       )}
                       {dormiente && (
