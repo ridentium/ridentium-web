@@ -45,7 +45,11 @@ export async function POST(req: NextRequest) {
     adminDb.from('riordini').update({ stato: 'evasa' }).eq('id', riordine_id),
     adminDb
       .from('magazzino')
-      .update({ quantita: nuovaQty, updated_at: new Date().toISOString() })
+      .update({
+        quantita:            nuovaQty,
+        updated_at:          new Date().toISOString(),
+        ultimo_movimento_at: new Date().toISOString(), // ricezione merce = movimento quantità
+      })
       .eq('id', magazzino_id)
       .select()
       .single(),

@@ -44,8 +44,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(zodError(parsed), { status: 400 })
   }
 
+  // Imposta ultimo_movimento_at al momento della creazione (la quantità viene impostata ora)
   const { data, error } = await adminDb
-    .from('magazzino').insert(parsed.data).select().single()
+    .from('magazzino')
+    .insert({ ...parsed.data, ultimo_movimento_at: new Date().toISOString() })
+    .select()
+    .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   await logActivityServer(user.id, userNome, 'Prodotto aggiunto al magazzino', data.prodotto, 'magazzino')

@@ -31,20 +31,47 @@ export async function PATCH(
     return NextResponse.json(zodError(parsed), { status: 400 })
   }
 
+  // Se la priorità cambia, leggi il valore attuale per il log
+  let prioritaVecchia: string | null = null
+  if (parsed.data.priorita !== undefined) {
+    const { data: current } = await adminDb
+      .from('magazzino').select('priorita').eq('id', params.id).maybeSingle()
+    prioritaVecchia = current?.priorita ?? null
+  }
+
+  // Componi il payload di aggiornamento
+  const updatePayload: Record<string, unknown> = {
+    ...parsed.data,
+    updated_at: new Date().toISOString(),
+  }
+
+  // ultimo_movimento_at si aggiorna SOLO se cambia la quantità
+  if (parsed.data.quantita !== undefined) {
+    updatePayload.ultimo_movimento_at = new Date().toISOString()
+  }
+
   const { data, error } = await adminDb
     .from('magazzino')
-    .update({ ...parsed.data, updated_at: new Date().toISOString() })
+    .update(updatePayload)
     .eq('id', params.id)
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Log differenziato: aggiornamento quantità vs modifica scheda prodotto
+  // Log differenziato: quantità vs scheda prodotto vs priorità
   if (parsed.data.quantita !== undefined && Object.keys(parsed.data).length === 1) {
     await logActivityServer(
       user.id, userNome,
       `Quantità aggiornata: ${data.prodotto}`,
       `${data.quantita} ${data.unita ?? 'pz'}`,
+      'magazzino'
+    )
+  } else if (parsed.data.priorita !== undefined && prioritaVecchia !== null && prioritaVecchia !== parsed.data.priorita) {
+    // Log dedicato cambio priorità (anche se altri campi sono inclusi)
+    await logActivityServer(
+      user.id, userNome,
+      `Priorità modificata: ${data.prodotto}`,
+      `${prioritaVecchia} → ${parsed.data.priorita}`,
       'magazzino'
     )
   } else {
