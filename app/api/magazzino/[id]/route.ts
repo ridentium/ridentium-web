@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { updateMagazzinoItemSchema, zodError } from '@/lib/validation'
+import { insertMovimento } from '@/lib/magazzino-movimenti'
 
 // PATCH /api/magazzino/[id] — aggiorna un prodotto (o solo la quantità) (admin/manager)
 export async function PATCH(
@@ -31,11 +32,17 @@ export async function PATCH(
     return NextResponse.json(zodError(parsed), { status: 400 })
   }
 
-  // Se la priorità cambia, leggi il valore attuale per il log
+  // Leggi i valori correnti se necessario (quantita o priorita stanno cambiando)
+  let quantitaVecchia: number | null = null
   let prioritaVecchia: string | null = null
-  if (parsed.data.priorita !== undefined) {
+
+  if (parsed.data.quantita !== undefined || parsed.data.priorita !== undefined) {
     const { data: current } = await adminDb
-      .from('magazzino').select('priorita').eq('id', params.id).maybeSingle()
+      .from('magazzino')
+      .select('quantita, priorita')
+      .eq('id', params.id)
+      .maybeSingle()
+    quantitaVecchia = current?.quantita ?? null
     prioritaVecchia = current?.priorita ?? null
   }
 
@@ -57,6 +64,23 @@ export async function PATCH(
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Inserisci movimento se la quantità è cambiata
+  if (
+    parsed.data.quantita !== undefined &&
+    quantitaVecchia !== null &&
+    data.quantita !== quantitaVecchia
+  ) {
+    const delta = data.quantita - quantitaVecchia
+    await insertMovimento(adminDb, {
+      magazzino_id:   params.id,
+      tipo:           delta > 0 ? 'carico_manuale' : 'scarico_manuale',
+      quantita_delta: delta,
+      quantita_prima: quantitaVecchia,
+      quantita_dopo:  data.quantita,
+      created_by:     user.id,
+    })
+  }
 
   // Log differenziato: quantità vs scheda prodotto vs priorità
   if (parsed.data.quantita !== undefined && Object.keys(parsed.data).length === 1) {

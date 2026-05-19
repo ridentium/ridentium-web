@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { evadisciRiordineSchema, zodError } from '@/lib/validation'
+import { insertMovimento } from '@/lib/magazzino-movimenti'
 
 // POST /api/magazzino/evadisci — segna un riordine come evaso e aggiorna la giacenza (admin/manager)
 // Operazione atomica: aggiorna riordini.stato e magazzino.quantita in parallelo.
@@ -61,6 +62,17 @@ export async function POST(req: NextRequest) {
   if (magazzinoRes.error) {
     return NextResponse.json({ error: magazzinoRes.error.message }, { status: 500 })
   }
+
+  // Traccia il movimento di ricezione ordine
+  await insertMovimento(adminDb, {
+    magazzino_id:   magazzino_id,
+    tipo:           'ricezione_ordine',
+    quantita_delta: qty_ricevuta,
+    quantita_prima: itemCorrente.quantita,
+    quantita_dopo:  nuovaQty,
+    note:           `Riordine #${riordine_id}`,
+    created_by:     user.id,
+  })
 
   const azione = `Ricevute ${qty_ricevuta} ${itemCorrente.unita ?? 'pz'} → giacenza ${nuovaQty}`
   await logActivityServer(user.id, userNome, `Merce ricevuta: ${itemCorrente.prodotto}`, azione, 'magazzino')

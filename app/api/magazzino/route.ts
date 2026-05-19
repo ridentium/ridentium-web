@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivityServer } from '@/lib/registro-server'
 import { createMagazzinoItemSchema, zodError } from '@/lib/validation'
 import { requireAuth } from '@/lib/auth-helpers'
+import { insertMovimento } from '@/lib/magazzino-movimenti'
 
 // GET /api/magazzino — lista prodotti (staff e superiori)
 // Qualsiasi ruolo dello studio registrato nel DB puo leggere il magazzino.
@@ -51,6 +52,19 @@ export async function POST(req: NextRequest) {
     .select()
     .single()
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // Traccia movimento iniziale se la quantità di partenza è > 0
+  if (data.quantita > 0) {
+    await insertMovimento(adminDb, {
+      magazzino_id:   data.id,
+      tipo:           'carico_manuale',
+      quantita_delta: data.quantita,
+      quantita_prima: 0,
+      quantita_dopo:  data.quantita,
+      note:           'Stock iniziale alla creazione del prodotto',
+      created_by:     user.id,
+    })
+  }
 
   await logActivityServer(user.id, userNome, 'Prodotto aggiunto al magazzino', data.prodotto, 'magazzino')
   return NextResponse.json({ item: data }, { status: 201 })
