@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotifica } from '@/lib/notifiche'
 
 // POST /api/magazzino/check-soglia
@@ -18,6 +19,16 @@ export async function POST(req: NextRequest) {
 
   const { id, prodotto, quantita, soglia_minima } = await req.json()
   if (!prodotto) return NextResponse.json({ error: 'Dati mancanti' }, { status: 400 })
+
+  // Verifica server-side: non inviare notifica se l'alert è silenziato
+  if (id) {
+    const adminDb = createAdminClient()
+    const { data: item } = await adminDb
+      .from('magazzino').select('alert_silenziato').eq('id', id).maybeSingle()
+    if (item?.alert_silenziato) {
+      return NextResponse.json({ ok: true, skipped: 'silenziato' })
+    }
+  }
 
   try {
     await createNotifica({

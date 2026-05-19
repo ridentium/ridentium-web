@@ -32,14 +32,14 @@ export async function GET(req: NextRequest) {
 
     const adminDb = createAdminClient()
 
-    // Fetch items below minimum threshold
+    // Fetch items below minimum threshold — escludi prodotti con alert silenziato
     const { data: items } = await adminDb
       .from('magazzino')
-      .select('id, prodotto, quantita, soglia_minima, categoria')
+      .select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato')
 
     if (!items) return NextResponse.json({ ok: true, alerts: 0 })
 
-    const below = items.filter((i: any) => i.quantita < i.soglia_minima)
+    const below = items.filter((i: any) => i.quantita < i.soglia_minima && !i.alert_silenziato)
 
     if (below.length === 0) {
       return NextResponse.json({ ok: true, alerts: 0 })

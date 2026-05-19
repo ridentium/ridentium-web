@@ -58,7 +58,7 @@ export async function buildOperativoSnapshot(
   // ── 8 query in parallelo — allSettled = fault-tolerant per sezione ────────
   const [magR, ordR, adR, tskR, attrR, crmR, tskCountR, ricR] = await Promise.allSettled([
     db.from('magazzino')
-      .select('prodotto, quantita, soglia_minima'),                                         // 0
+      .select('prodotto, quantita, soglia_minima, alert_silenziato'),                       // 0
 
     db.from('ordini')
       .select('fornitore_nome, stato, data_invio')
@@ -115,12 +115,13 @@ export async function buildOperativoSnapshot(
 
   // 1. Magazzino
   {
-    type MagRow = { prodotto: string; quantita: number; soglia_minima: number }
+    type MagRow = { prodotto: string; quantita: number; soglia_minima: number; alert_silenziato: boolean }
     const mag   = safeData<MagRow>(magR)
     if (magR.status === 'rejected') {
       lines.push('MAGAZZINO: dati non disponibili')
     } else {
-      const sotto = mag.filter(i => i.quantita < i.soglia_minima)
+      // Escludi prodotti con alert silenziato — non sono emergenze operative
+      const sotto = mag.filter(i => i.quantita < i.soglia_minima && !i.alert_silenziato)
       lines.push(`MAGAZZINO: ${sotto.length} prodott${sotto.length === 1 ? 'o' : 'i'} sotto soglia`)
       sotto.slice(0, maxItems).forEach(i => {
         const note = i.quantita === 0 ? ' ⚠ ESAURITO' : ''

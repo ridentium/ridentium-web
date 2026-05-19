@@ -169,8 +169,8 @@ export async function GET() {
     { count: tasksCompletatiSettimana },
     { data: ricorrentiAll },
   ] = await Promise.all([
-    // 1. Magazzino — tutti gli item (colonne minimali)
-    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria'),
+    // 1. Magazzino — tutti gli item (colonne minimali, escludi silenziati da alert)
+    adminDb.from('magazzino').select('id, prodotto, quantita, soglia_minima, categoria, alert_silenziato'),
 
     // 2. Ordini in attesa (non ancora ricevuti)
     adminDb
@@ -228,9 +228,10 @@ export async function GET() {
       .eq('attiva', true),
   ])
 
-  // ── 1. Magazzino sotto soglia ──────────────────────────────────────────────
+  // ── 1. Magazzino sotto soglia (escludi prodotti con alert silenziato) ────────
   const sottoSoglia = (magazzinoAll ?? []).filter(
-    (i: { quantita: number; soglia_minima: number }) => i.quantita < i.soglia_minima
+    (i: { quantita: number; soglia_minima: number; alert_silenziato: boolean }) =>
+      i.quantita < i.soglia_minima && !i.alert_silenziato
   ) as MagazzinoAlert[]
 
   // ── 2. Ordini aperti + stantii ────────────────────────────────────────────

@@ -14,14 +14,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Dati paralleli per layout + contesto Lina
   const [{ data: profilo }, { data: scoreRaw }, { data: tasksRaw }] = await Promise.all([
     adminDb.from('profili').select('*').eq('id', user.id).single(),
-    supabase.from('magazzino').select('quantita, soglia_minima'),
+    supabase.from('magazzino').select('quantita, soglia_minima, alert_silenziato'),
     supabase.from('tasks').select('id').neq('stato', 'completato').is('deleted_at', null),
   ])
 
   if (profilo?.ruolo !== 'admin') redirect('/staff')
 
+  // alertCount: solo prodotti realmente in alert (sotto soglia E non silenziati)
   const alertCount = (scoreRaw ?? []).filter(
-    (i: any) => i.quantita < i.soglia_minima
+    (i: any) => i.quantita < i.soglia_minima && !i.alert_silenziato
   ).length
 
   const tasksCount = tasksRaw?.length ?? 0
